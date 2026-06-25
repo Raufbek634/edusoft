@@ -539,6 +539,16 @@ def init_data():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     pc.init_platform_data()
 
+TEACHER_ALLOWED_PATHS = [
+    '/dashboard', '/api/dashboard',
+    '/attendance', '/api/attendance',
+    '/grades', '/api/grades', '/api/grade-types',
+    '/api/students?status=active', '/api/students?status=active',
+    '/api/courses', '/api/groups', '/api/search',
+    '/api/settings', '/api/notifications', '/api/teachers',
+    '/api/parent-portfolios',
+]
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -548,6 +558,13 @@ def login_required(f):
             return f(*args, **kwargs)
         if not session.get('kindergarten_id'):
             return redirect(url_for('login', login=1))
+        if session.get('role') == 'teacher':
+            path = request.path
+            allowed = any(path.startswith(p) for p in TEACHER_ALLOWED_PATHS)
+            if not allowed:
+                if request.is_json or path.startswith('/api/'):
+                    return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
+                return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated
 
