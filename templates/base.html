@@ -70,6 +70,9 @@
     <a href="/attendance" class="nav-item {% if request.path == '/attendance' %}active{% endif %}">
       <span class="nav-icon"><i class="fas fa-calendar-days"></i></span><span class="nav-label">{{ _('attendance') }}</span>
     </a>
+    <a href="/grades" class="nav-item {% if request.path == '/grades' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-star"></i></span><span class="nav-label">Baholar</span>
+    </a>
     <a href="/payments" class="nav-item {% if request.path == '/payments' %}active{% endif %}">
       <span class="nav-icon"><i class="fas fa-credit-card"></i></span><span class="nav-label">{{ _('payments') }}</span>
       <span class="nav-badge" id="checkBadge" style="display:none">0</span>

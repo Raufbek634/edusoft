@@ -3415,6 +3415,7 @@ def bulk_attendance():
         return jsonify({'success': False, 'message': 'date va records majburiy'}), 400
 
     att = load_json('attendance.json')
+    absent_students = []
     for rec in records:
         found = False
         for i, a in enumerate(att):
@@ -3433,8 +3434,28 @@ def bulk_attendance():
                 'marked_by': session.get('admin_name', 'Admin'),
                 'created_at': datetime.now().isoformat()
             })
+        if rec.get('status') == 'absent':
+            absent_students.append(rec['student_id'])
     save_json('attendance.json', att)
     _audit('attendance_bulk_edit', f"{att_date} — {len(records)} records")
+
+    # Notify parents of absent students
+    if absent_students:
+        students = {s['id']: s for s in load_json('students.json')}
+        portfolios = load_json('parent_portfolios.json')
+        for portfolio in portfolios:
+            for sid in portfolio.get('student_ids', []):
+                if sid in absent_students:
+                    s = students.get(sid)
+                    if s:
+                        msg = f"❌ Kechirasiz, farzandingiz <b>{esc_html(s.get('first_name',''))} {esc_html(s.get('last_name',''))}</b> {att_date} sanasida darsga kelmadi."
+                        add_notification(f"Davomat: {s.get('first_name','')} {s.get('last_name','')} {att_date} da yo'q", 'warning')
+                        # Try Telegram if parent has chat_id
+                        pchat = portfolio.get('telegram_chat_id', '')
+                        if pchat:
+                            send_telegram_message(pchat, msg)
+                    break
+
     return jsonify({'success': True})
 
 @app.route('/api/attendance/month-summary')
@@ -3463,6 +3484,146 @@ def month_summary():
             'debt': max(payable - paid, 0)
         })
     return jsonify(result)
+
+# ─── Grades (Baholar) ─────────────────────────────────────────────────────────
+
+@app.route('/grades')
+@login_required
+def grades_page():
+    settings = load_settings()
+    return render_template('grades.html', settings=settings, admin_name=session.get('admin_name'))
+
+@app.route('/api/grade-types', methods=['GET'])
+@login_required
+def get_grade_types():
+    types = load_json('grade_types.json')
+    return jsonify(types)
+
+@app.route('/api/grade-types', methods=['POST'])
+@login_required
+def create_grade_type():
+    data = request.get_json() or {}
+    name = sanitize_html(data.get('name', '')).strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'Baho turi nomini kiriting'})
+    types = load_json('grade_types.json')
+    gt = {
+        'id': f"GRT-{uuid.uuid4().hex[:8].upper()}",
+        'name': name,
+        'max_score': min(safe_int(data.get('max_score', 5), 5), 10),
+        'color': data.get('color', '#6366f1'),
+        'created_at': datetime.now().isoformat()
+    }
+    types.append(gt)
+    save_json('grade_types.json', types)
+    _audit('grade_type_created', f"Baho turi: {name}")
+    return jsonify({'success': True, 'grade_type': gt})
+
+@app.route('/api/grade-types/<gtid>', methods=['PUT'])
+@login_required
+def update_grade_type(gtid):
+    data = request.get_json() or {}
+    types = load_json('grade_types.json')
+    for gt in types:
+        if gt['id'] == gtid:
+            gt['name'] = sanitize_html(data.get('name', gt['name'])).strip()
+            gt['max_score'] = min(safe_int(data.get('max_score', gt.get('max_score', 5)), 5), 10)
+            gt['color'] = data.get('color', gt.get('color', '#6366f1'))
+            save_json('grade_types.json', types)
+            _audit('grade_type_updated', f"Baho turi: {gt['name']}")
+            return jsonify({'success': True, 'grade_type': gt})
+    return jsonify({'success': False, 'message': 'Baho turi topilmadi'}), 404
+
+@app.route('/api/grade-types/<gtid>', methods=['DELETE'])
+@login_required
+def delete_grade_type(gtid):
+    types = load_json('grade_types.json')
+    types = [gt for gt in types if gt['id'] != gtid]
+    save_json('grade_types.json', types)
+    _audit('grade_type_deleted', f"Baho turi ID: {gtid}")
+    return jsonify({'success': True})
+
+@app.route('/api/grades', methods=['GET'])
+@login_required
+def get_grades():
+    grades = load_json('grades.json')
+    student_id = request.args.get('student_id', '')
+    course_id = request.args.get('course_id', '')
+    group_name = request.args.get('group', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+
+    if student_id:
+        grades = [g for g in grades if g['student_id'] == student_id]
+    if course_id:
+        grades = [g for g in grades if g.get('course_id') == course_id]
+    if group_name:
+        grades = [g for g in grades if g.get('group_name') == group_name]
+    if date_from:
+        grades = [g for g in grades if g.get('date', '') >= date_from]
+    if date_to:
+        grades = [g for g in grades if g.get('date', '') <= date_to]
+
+    students = {s['id']: s for s in load_json('students.json')}
+    grade_types = {gt['id']: gt for gt in load_json('grade_types.json')}
+    for g in grades:
+        s = students.get(g['student_id'])
+        g['_student_name'] = f"{s['first_name']} {s['last_name']}" if s else '—'
+        gt = grade_types.get(g['grade_type_id'])
+        g['_grade_type_name'] = gt['name'] if gt else '—'
+
+    return jsonify(sorted(grades, key=lambda x: x.get('date', ''), reverse=True))
+
+@app.route('/api/grades/bulk', methods=['POST'])
+@login_required
+def bulk_grades():
+    data = request.get_json() or {}
+    records = data.get('records', [])
+    if not records:
+        return jsonify({'success': False, 'message': 'Ma\'lumot yo\'q'}), 400
+    grades = load_json('grades.json')
+    saved = 0
+    for rec in records:
+        student_id = rec.get('student_id', '')
+        grade_type_id = rec.get('grade_type_id', '')
+        score = safe_int(rec.get('score', 0))
+        date_val = rec.get('date', '')
+        if not student_id or not grade_type_id or not date_val:
+            continue
+        existing = None
+        for i, g in enumerate(grades):
+            if g['student_id'] == student_id and g['grade_type_id'] == grade_type_id and g.get('date') == date_val:
+                existing = i
+                break
+        if existing is not None:
+            grades[existing]['score'] = score
+            grades[existing]['comment'] = rec.get('comment', '')
+            grades[existing]['updated_at'] = datetime.now().isoformat()
+        else:
+            grades.append({
+                'id': f"GRD-{uuid.uuid4().hex[:8].upper()}",
+                'student_id': student_id,
+                'grade_type_id': grade_type_id,
+                'course_id': rec.get('course_id', ''),
+                'group_name': rec.get('group_name', ''),
+                'score': score,
+                'date': date_val,
+                'comment': rec.get('comment', ''),
+                'created_by': session.get('admin_name', 'Admin'),
+                'created_at': datetime.now().isoformat()
+            })
+        saved += 1
+    save_json('grades.json', grades)
+    _audit('grades_bulk', f"{saved} baho saqlandi")
+    return jsonify({'success': True, 'saved': saved})
+
+@app.route('/api/grades/<gid>', methods=['DELETE'])
+@login_required
+def delete_grade(gid):
+    grades = load_json('grades.json')
+    grades = [g for g in grades if g['id'] != gid]
+    save_json('grades.json', grades)
+    return jsonify({'success': True})
 
 # ─── Payments ─────────────────────────────────────────────────────────────────
 

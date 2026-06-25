@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}Baholar — EduSoft{% endblock %}
+{% block page_title %}<i class="fas fa-star"></i> Baholar{% endblock %}
+
+{% block content %}
+<style>
+.grade-types-list{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.grade-type-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--surface2);border:1px solid var(--border)}
+.grade-type-tag .remove-btn{width:18px;height:18px;border:none;background:rgba(0,0,0,.15);border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;color:inherit;opacity:.6}
+.grade-type-tag .remove-btn:hover{opacity:1}
+.grade-input{width:52px;padding:6px;text-align:center;font-weight:700;border-radius:6px;border:1px solid var(--border);font-size:14px}
+.grade-input:focus{border-color:var(--primary);outline:none}
+.grade-input.perfect{background:rgba(34,197,94,.12);border-color:var(--success);color:var(--success)}
+.grade-input.good{background:rgba(99,102,241,.12);border-color:var(--primary);color:var(--primary)}
+.grade-input.ok{background:rgba(234,179,8,.12);border-color:var(--warning);color:var(--warning)}
+.grade-input.bad{background:rgba(239,68,68,.12);border-color:var(--danger);color:var(--danger)}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+</style>
+
+<div class="section-header">
+  <div>
+    <div class="section-title">Baholash tizimi</div>
+    <div class="section-sub">5 ballik tizim. Admin baho turlarini qo'shishi/o'chirishi mumkin</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select class="form-control" id="courseFilter" style="max-width:160px" onchange="onCourseChange()">
+      <option value="">Kursni tanlang</option>
+    </select>
+    <select class="form-control" id="groupFilter" style="max-width:160px" onchange="loadGrades()">
+      <option value="">Guruhni tanlang</option>
+    </select>
+    <input type="date" class="form-control" id="dateFilter" style="max-width:150px" onchange="loadGrades()">
+    <button class="btn btn-primary" onclick="saveGrades()"><i class="fas fa-check"></i> Saqlash</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('entry',this)"><i class="fas fa-pen"></i> Baho qo'yish</button>
+  <button class="tab-btn" onclick="switchTab('types',this)"><i class="fas fa-tags"></i> Baho turlari</button>
+  <button class="tab-btn" onclick="switchTab('history',this)"><i class="fas fa-clock-rotate-left"></i> Tarix</button>
+</div>
+
+<div id="tab-entry">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title" id="entryTitle">O'quvchilar bo'yicha baholar</span>
+      <span style="font-size:12px;color:var(--text3)">1 — eng past, 5 — eng yuqori</span>
+    </div>
+    <div id="entryContent">
+      <div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Avval kurs va guruhni tanlang</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-types" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Baho turlari</span>
+      <button class="btn btn-primary btn-sm" onclick="addGradeType()"><i class="fas fa-plus"></i> Yangi tur</button>
+    </div>
+    <div class="card-body" id="gradeTypesContent">
+      <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-history" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Baho tarixi</span>
+    </div>
+    <div id="historyContent">
+      <div class="empty-state"><div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div><p>O'quvchining baho tarixini ko'rish uchun ustiga bosing</p></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+let allStudents = [];
+let allCourses = [];
+let gradeTypes = [];
+let gradesData = {};
+let dirty = {};
+let teachersCache = [];
+
+function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  allStudents = await api('/api/students?status=active');
+  allCourses = await api('/api/courses');
+  gradeTypes = await api('/api/grade-types');
+  teachersCache = await api('/api/teachers');
+  window._teachers = teachersCache;
+  loadCourseFilter();
+  loadGradeTypes();
+});
+
+function loadCourseFilter() {
+  const sel = document.getElementById('courseFilter');
+  allCourses.filter(c => c.status === 'active').forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name; sel.appendChild(o);
+  });
+}
+
+function onCourseChange() {
+  const courseId = document.getElementById('courseFilter').value;
+  const sel = document.getElementById('groupFilter');
+  sel.innerHTML = '<option value="">Guruhni tanlang</option>';
+  if (!courseId) { loadGrades(); return; }
+  const crs = allCourses.find(c => c.id === courseId);
+  if (crs && crs.groups) {
+    crs.groups.forEach(g => {
+      const o = document.createElement('option');
+      const gname = typeof g === 'string' ? g : g.name;
+      o.value = gname; o.textContent = gname; sel.appendChild(o);
+    });
+  }
+  loadGrades();
+}
+
+function switchTab(name, btn) {
+  ['entry','types','history'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'types') loadGradeTypes();
+  if (name === 'history') loadHistory();
+}
+
+function avatarHtml(s) {
+  const initial = (s.first_name||'?')[0].toUpperCase();
+  return `<div class="avatar avatar-sm" style="background:var(--primary);color:#fff;width:28px;height:28px;font-size:11px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${initial}</div>`;
+}
+
+/* ─── Grade Entry ─── */
+
+async function loadGrades() {
+  const courseId = document.getElementById('courseFilter').value;
+  const groupName = document.getElementById('groupFilter').value;
+  const dateVal = document.getElementById('dateFilter').value || new Date().toISOString().split('T')[0];
+  document.getElementById('dateFilter').value = dateVal;
+
+  if (!courseId || !groupName) {
+    document.getElementById('entryContent').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Avval kurs va guruhni tanlang</p></div>';
+    document.getElementById('entryTitle').textContent = 'O\'quvchilar bo\'yicha baholar';
+    return;
+  }
+
+  const crs = allCourses.find(c => c.id === courseId);
+  document.getElementById('entryTitle').textContent = `${esc(crs?.name||'')} — ${esc(groupName)} (${dateVal})`;
+
+  let students = allStudents.filter(s => s.course_id === courseId && s.group === groupName && s.status === 'active');
+
+  if (!students.length) {
+    document.getElementById('entryContent').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>Bu guruhda faol o\'quvchilar yo\'q</p></div>';
+    return;
+  }
+
+  // Load existing grades for this date + group
+  const existing = await api(`/api/grades?course_id=${courseId}&group=${encodeURIComponent(groupName)}&date_from=${dateVal}&date_to=${dateVal}`);
+  gradesData = {};
+  existing.forEach(g => {
+    const key = g.student_id + '_' + g.grade_type_id;
+    gradesData[key] = g;
+  });
+  dirty = {};
+
+  const crsGroups = crs.groups||[];
+  const teacherName = id => {
+    const t = teachersCache.find(tc => tc.id === id);
+    return t ? `${t.first_name} ${t.last_name}` : '';
+  };
+  // Find group object for teacher display
+  const grpObj = crsGroups.find(g => (typeof g === 'string' ? g : g.name) === groupName);
+  const grpInfo = grpObj && typeof grpObj !== 'string' ? grpObj : null;
+
+  let html = `<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr>
+      <th>O'quvchi</th>`;
+  gradeTypes.forEach(gt => {
+    html += `<th style="text-align:center;color:${gt.color||'var(--text)'}">${esc(gt.name)}<br><small style="font-weight:400;color:var(--text3)">1-${gt.max_score||5}</small></th>`;
+  });
+  html += `<th style="text-align:center;width:60px">O'rt.</th>
+    </tr></thead><tbody>`;
+
+  students.forEach(s => {
+    html += `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s)}<b>${esc(s.first_name)} ${esc(s.last_name)}</b></div></td>`;
+    let sum = 0, count = 0;
+    gradeTypes.forEach(gt => {
+      const key = s.id + '_' + gt.id;
+      const g = gradesData[key];
+      const val = g ? g.score : 0;
+      if (val > 0) { sum += val; count++; }
+      let cls = 'grade-input';
+      if (val >= 4) cls += ' perfect';
+      else if (val >= 3) cls += ' good';
+      else if (val >= 2) cls += ' ok';
+      else if (val === 1) cls += ' bad';
+      html += `<td style="text-align:center">
+        <input class="${cls}" type="number" min="0" max="${gt.max_score||5}" value="${val}" id="g-${s.id}-${gt.id}" onchange="onGradeChange('${s.id}','${gt.id}',this.value)">
+      </td>`;
+    });
+    const avg = count > 0 ? (sum/count).toFixed(1) : '—';
+    html += `<td style="text-align:center;font-weight:700">${avg}</td>`;
+    html += `</tr>`;
+  });
+
+  // Group info row
+  if (grpInfo) {
+    html += `<tr style="background:var(--surface2)"><td colspan="${2+gradeTypes.length}" style="font-size:12px;color:var(--text3)">
+      <i class="fas fa-chalkboard-user"></i> Asosiy: ${esc(teacherName(grpInfo.main_teacher_id)) || '—'}
+      &nbsp;&nbsp; <i class="fas fa-user-plus"></i> Support: ${esc(teacherName(grpInfo.support_teacher_id)) || '—'}
+      ${grpInfo.day ? `&nbsp;&nbsp; <i class="fas fa-calendar-week"></i> ${esc(grpInfo.day)}` : ''}
+      ${grpInfo.time ? `&nbsp;&nbsp; <i class="fas fa-clock"></i> ${esc(grpInfo.time)}` : ''}
+      ${grpInfo.room ? `&nbsp;&nbsp; <i class="fas fa-door-open"></i> ${esc(grpInfo.room)}` : ''}
+    </td></tr>`;
+  }
+
+  html += `</tbody></table></div>`;
+  html += `<div style="margin-top:12px;font-size:12px;color:var(--text3)">
+    <i class="fas fa-circle" style="color:var(--success)"></i> 4-5 a'lo
+    <i class="fas fa-circle" style="color:var(--primary)"></i> 3 yaxshi
+    <i class="fas fa-circle" style="color:var(--warning)"></i> 2 qoniqarli
+    <i class="fas fa-circle" style="color:var(--danger)"></i> 1 qoniqarsiz
+  </div>`;
+
+  document.getElementById('entryContent').innerHTML = html;
+}
+
+function onGradeChange(studentId, gradeTypeId, val) {
+  const key = studentId + '_' + gradeTypeId;
+  dirty[key] = parseInt(val) || 0;
+}
+
+async function saveGrades() {
+  const courseId = document.getElementById('courseFilter').value;
+  const groupName = document.getElementById('groupFilter').value;
+  const dateVal = document.getElementById('dateFilter').value;
+
+  if (!courseId || !groupName || !dateVal) return toast('Kurs, guruh va sanani tanlang', 'error');
+
+  const records = [];
+  Object.keys(dirty).forEach(key => {
+    const [studentId, gradeTypeId] = key.split('_');
+    records.push({
+      student_id: studentId,
+      grade_type_id: gradeTypeId,
+      course_id: courseId,
+      group_name: groupName,
+      score: dirty[key],
+      date: dateVal
+    });
+  });
+
+  if (!records.length) return toast('O\'zgartirilgan baho yo\'q', 'warning');
+
+  const res = await api('/api/grades/bulk', 'POST', { records });
+  if (res?.success) {
+    toast(`${res.saved} ta baho saqlandi`, 'success');
+    dirty = {};
+    loadGrades();
+  } else {
+    toast(res?.message || 'Xatolik', 'error');
+  }
+}
+
+/* ─── Grade Types ─── */
+
+async function loadGradeTypes() {
+  gradeTypes = await api('/api/grade-types');
+  const container = document.getElementById('gradeTypesContent');
+  if (!gradeTypes.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-tags"></i></div><p>Baho turlari yo\'q. Yangi tur qo\'shing</p></div>';
+    return;
+  }
+  container.innerHTML = `<div class="grade-types-list">${gradeTypes.map(gt => `
+    <span class="grade-type-tag">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${gt.color||'#6366f1'}"></span>
+      ${esc(gt.name)} <small style="color:var(--text3)">1-${gt.max_score||5}</small>
+      <button class="remove-btn" onclick="deleteGradeType('${gt.id}')" title="O'chirish">&times;</button>
+    </span>
+  `).join('')}</div>`;
+}
+
+async function addGradeType() {
+  const name = prompt('Baho turi nomini kiriting (mas: Test, Uy ishi, Imtihon):');
+  if (!name || !name.trim()) return;
+  const res = await api('/api/grade-types', 'POST', { name: name.trim(), max_score: 5 });
+  if (res?.success) {
+    toast('Baho turi qo\'shildi', 'success');
+    loadGradeTypes();
+  } else {
+    toast(res?.message || 'Xatolik', 'error');
+  }
+}
+
+async function deleteGradeType(id) {
+  const gt = gradeTypes.find(t => t.id === id);
+  if (!confirm(`"${gt?.name}" turini o'chirishni tasdiqlaysizmi?`)) return;
+  const res = await api(`/api/grade-types/${id}`, 'DELETE');
+  if (res?.success) {
+    toast('Baho turi o\'chirildi', 'success');
+    loadGradeTypes();
+  }
+}
+
+/* ─── History ─── */
+
+async function loadHistory() {
+  const courseId = document.getElementById('courseFilter').value;
+  const groupName = document.getElementById('groupFilter').value;
+  const container = document.getElementById('historyContent');
+
+  let url = '/api/grades';
+  const params = [];
+  if (courseId) params.push(`course_id=${courseId}`);
+  if (groupName) params.push(`group=${encodeURIComponent(groupName)}`);
+  if (params.length) url += '?' + params.join('&');
+
+  const grades = await api(url);
+  if (!grades.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div><p>Baho tarixi yo\'q</p></div>';
+    return;
+  }
+
+  container.innerHTML = `<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>Sana</th><th>O'quvchi</th><th>Baho turi</th><th>Baho</th><th>Kurs</th><th>Guruh</th><th></th></tr></thead>
+    <tbody>${grades.slice(0, 100).map(g => `
+      <tr>
+        <td>${esc(g.date||'')}</td>
+        <td><b>${esc(g._student_name||'')}</b></td>
+        <td><span class="badge" style="background:${gradeTypes.find(t=>t.id===g.grade_type_id)?.color||'var(--primary)'}">${esc(g._grade_type_name||'')}</span></td>
+        <td style="text-align:center;font-weight:700;font-size:16px">${g.score||0}</td>
+        <td>${esc(g.course_id||'')}</td>
+        <td><span class="badge badge-primary">${esc(g.group_name||'')}</span></td>
+        <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteGrade('${g.id}')"><i class="fas fa-trash"></i></button></td>
+      </tr>
+    `).join('')}</tbody></table></div>
+    ${grades.length > 100 ? '<div style="text-align:center;padding:12px;color:var(--text3)">Oxirgi 100 ta ko\'rsatilmoqda</div>' : ''}`;
+}
+
+async function deleteGrade(id) {
+  if (!confirm('Bahoni o\'chirishni tasdiqlaysizmi?')) return;
+  const res = await api(`/api/grades/${id}`, 'DELETE');
+  if (res?.success) {
+    toast('Baho o\'chirildi', 'success');
+    loadHistory();
+  }
+}
+</script>
+{% endblock %}
