@@ -4772,24 +4772,23 @@ def tezcheck_create_payment():
             order_id = result.get('order_id')
             student_id = data.get('student_id', '')
             month = data.get('month', '')
-            if student_id and month and order_id:
-                payments = load_json('payments.json', kg_id)
-                payments.append({
-                    'id': f"TZ-{order_id}",
-                    'student_id': student_id,
-                    'student_name': parent_name,
-                    'amount': amount,
-                    'date': datetime.now().strftime('%Y-%m-%d'),
-                    'month': month,
-                    'type': 'full',
-                    'category': 'tuition',
-                    'status': 'pending',
-                    'order_id': str(order_id),
-                    'note': 'TezCheck orqali to\'lov',
-                    'admin_name': 'Avtomatik',
-                    'created_at': datetime.now().isoformat()
-                })
-                save_json('payments.json', payments, kg_id)
+            payments = load_json('payments.json', kg_id)
+            payments.append({
+                'id': f"TZ-{order_id}",
+                'student_id': student_id,
+                'student_name': parent_name,
+                'amount': amount,
+                'date': datetime.now().strftime('%Y-%m-%d'),
+                'month': month,
+                'type': 'full',
+                'category': 'tuition' if student_id else 'balance_topup',
+                'status': 'pending',
+                'order_id': str(order_id),
+                'note': 'TezCheck orqali to\'lov' if student_id else 'Balans to\'ldirish',
+                'admin_name': 'Avtomatik',
+                'created_at': datetime.now().isoformat()
+            })
+            save_json('payments.json', payments, kg_id)
             return jsonify({
                 'success': True,
                 'order_id': order_id,
