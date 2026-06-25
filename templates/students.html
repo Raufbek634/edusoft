@@ -280,12 +280,12 @@ function studentForm(s = {}) {
             ${window._courses ? window._courses.map(c => `<option value="${c.id}" ${s.course_id===c.id?'selected':''}>${c.name}</option>`).join('') : ''}
           </select></div>
       </div>
-      <div class="form-group"><label class="form-label">{{ _('group') }}</label>
-        <select class="form-control" id="f_group">
+      <div class="form-group"><label class="form-label">{{ _('group') }} *</label>
+        <select class="form-control" id="f_group" style="display:none">
           <option value="">Guruh tanlanmagan</option>
         </select>
-        <input class="form-control" id="f_group_text" value="${s.group||''}" placeholder="Yangi guruh nomi" style="display:${s.group && !window._courses?.find(c=>c.id===s.course_id)?.groups?.includes(s.group) ? '' : 'none'};margin-top:6px">
-        <small style="color:var(--text3);font-size:11px">Kurs tanlang yoki yangi guruh nomini yozing</small></div>
+        <input class="form-control" id="f_group_text" value="${s.group||''}" placeholder="Guruh nomini kiriting" style="margin-top:6px">
+        <small style="color:var(--text3);font-size:11px">Kurs tanlang yoki guruh nomini yozing</small></div>
       <div class="form-group"><label class="form-label">{{ _('parent_name') }}</label>
         <input class="form-control" id="f_parent_name" value="${s.parent_name||''}" placeholder="{{ _('parent_name') }}"></div>
       <div class="form-grid">
