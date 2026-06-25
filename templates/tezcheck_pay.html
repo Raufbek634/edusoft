@@ -103,6 +103,12 @@ h1{font-size:22px;font-weight:800;margin-bottom:6px;background:linear-gradient(1
     <button class="btn btn-primary" id="checkStatusBtn" onclick="checkStatus()" style="margin-bottom:10px">
       <i class="fas fa-sync"></i> Holatni tekshirish
     </button>
+    <button class="btn btn-secondary" onclick="reopenPayPage()" style="margin-bottom:10px">
+      <i class="fas fa-external-link-alt"></i> To'lov sahifasini qayta ochish
+    </button>
+    <button class="btn btn-secondary" onclick="cancelPayment()" style="margin-bottom:10px">
+      <i class="fas fa-times"></i> Bekor qilish
+    </button>
     <div id="statusResult"></div>
   </div>
 
@@ -117,14 +123,13 @@ const parentPhone = urlParams.get('phone') || '{{ parent_phone|default('') }}';
 const studentId = urlParams.get('student_id') || '{{ student_id|default('') }}';
 const month = urlParams.get('month') || '{{ month|default('') }}';
 const orderIdFromUrl = urlParams.get('order_id');
-const payUrlFromUrl = urlParams.get('pay_url');
 
-if (orderIdFromUrl && payUrlFromUrl) {
+if (orderIdFromUrl) {
   document.getElementById('payForm').style.display = 'none';
   document.getElementById('waitingSection').style.display = 'block';
-  if (!sessionStorage.getItem('tezcheck_tab_opened_' + orderIdFromUrl)) {
-    window.open(payUrlFromUrl, '_blank');
-    sessionStorage.setItem('tezcheck_tab_opened_' + orderIdFromUrl, '1');
+  const savedPayUrl = sessionStorage.getItem('tz_pay_url_' + orderIdFromUrl);
+  if (savedPayUrl) {
+    window.open(savedPayUrl, '_blank');
   }
 }
 
@@ -154,10 +159,14 @@ function startPayment() {
     loading.style.display = 'none';
     btn.disabled = false;
     if (d.success) {
+      sessionStorage.setItem('tz_pay_url_' + d.order_id, d.pay_url);
       const params = new URLSearchParams(window.location.search);
       params.set('order_id', d.order_id);
-      params.set('pay_url', d.pay_url);
-      window.location.search = params.toString();
+      history.replaceState(null, '', '?' + params.toString());
+      document.getElementById('payForm').style.display = 'none';
+      document.getElementById('waitingSection').style.display = 'block';
+      document.getElementById('statusResult').innerHTML = '';
+      window.open(d.pay_url, '_blank');
     } else {
       showResult(d.message || 'Xatolik yuz berdi', 'error');
     }
@@ -169,7 +178,8 @@ function startPayment() {
 }
 
 function checkStatus() {
-  const oid = urlParams.get('order_id') || orderIdFromUrl;
+  const p = new URLSearchParams(window.location.search);
+  const oid = p.get('order_id');
   if (!oid) return;
   const btn = document.getElementById('checkStatusBtn');
   btn.disabled = true;
@@ -208,6 +218,28 @@ function showResult(msg, type) {
   const el = document.getElementById('result');
   el.innerHTML = '<div class="result-msg ' + type + '"><i class="fas fa-' +
     (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + msg + '</div>';
+}
+
+function cancelPayment() {
+  const p = new URLSearchParams(window.location.search);
+  const oid = p.get('order_id');
+  if (oid) sessionStorage.removeItem('tz_pay_url_' + oid);
+  history.replaceState(null, '', window.location.pathname + window.location.hash);
+  document.getElementById('waitingSection').style.display = 'none';
+  document.getElementById('payForm').style.display = 'block';
+  document.getElementById('statusResult').innerHTML = '';
+}
+
+function reopenPayPage() {
+  const p = new URLSearchParams(window.location.search);
+  const oid = p.get('order_id');
+  const saved = sessionStorage.getItem('tz_pay_url_' + oid);
+  if (saved) {
+    window.open(saved, '_blank');
+  } else {
+    document.getElementById('statusResult').innerHTML =
+      '<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> To\'lov sahifasi topilmadi. Yangidan boshing.</div>';
+  }
 }
 </script>
 </body>
