@@ -478,7 +478,7 @@ def notify_super_admin(message, notif_type='info'):
         except Exception:
             pass
 
-BASE_URL = os.environ.get('SITE_URL', 'https://sofgardercrm.vercel.app').rstrip('/')
+BASE_URL = os.environ.get('SITE_URL', 'https://edusoft-five.vercel.app').rstrip('/')
 
 def notify_login(admin_name, role, ip, lat='', lng='', extra=''):
     plat = pc.load_platform()
@@ -2323,7 +2323,7 @@ def send_payment_request():
     sent = 0
     skipped_paid = 0
     no_chat = 0
-    base_url = os.environ.get('SITE_URL', 'https://sofgardercrm.vercel.app').rstrip('/')
+    base_url = os.environ.get('SITE_URL', 'https://edusoft-five.vercel.app').rstrip('/')
     target_students = [s for s in students if not student_ids or s['id'] in student_ids]
     for s in target_students:
         if s.get('status') != 'active':
@@ -6138,7 +6138,7 @@ def cron_payment_reminders():
                 continue
             chat_id = s['telegram_chat_id']
             name = f"{s.get('first_name', '')} {s.get('last_name', '')}".strip()
-            base_url = os.environ.get('SITE_URL', 'https://sofgardercrm.vercel.app').rstrip('/')
+            base_url = os.environ.get('SITE_URL', 'https://edusoft-five.vercel.app').rstrip('/')
             pay_url = f"{base_url}/pay/{s['id']}/{this_month}"
             msg = message.replace('{name}', name)
             debt = s.get('monthly_fee', 0)
