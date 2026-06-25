@@ -214,7 +214,7 @@ class SupabaseStore:
 
     def set(self, key, data):
         if not self._ensure_table():
-            return
+            raise Exception('jsondata table does not exist in Supabase')
         existing = self.get(key)
         if existing is not None:
             self._api('PATCH', f'jsondata?key=eq.{key}', json={'value': data})
