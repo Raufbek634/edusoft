@@ -356,11 +356,13 @@ function onCourseChange(selectedGroup) {
       if (crs.groups && crs.groups.length) {
         crs.groups.forEach(g => {
           const o = document.createElement('option');
-          o.value = g; o.textContent = g; sel.appendChild(o);
+          const gname = typeof g === 'string' ? g : g.name;
+          o.value = gname; o.textContent = gname; sel.appendChild(o);
         });
         sel.style.display = '';
         txt.style.display = 'none';
-        if (selectedGroup && crs.groups.includes(selectedGroup)) {
+        if (selectedGroup && crs.groups.some(g => (typeof g === 'string' ? g : g.name) === selectedGroup)) {
+          sel.value = selectedGroup;
           sel.value = selectedGroup;
         } else if (selectedGroup) {
           txt.value = selectedGroup;

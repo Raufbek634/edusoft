@@ -3190,6 +3190,75 @@ def delete_course(course_id):
     _audit('course_deleted', f"Kurs ID: {course_id}")
     return jsonify({'success': True})
 
+@app.route('/api/courses/<course_id>/groups', methods=['POST'])
+@login_required
+def create_group(course_id):
+    data = request.get_json() or {}
+    name = sanitize_html(data.get('name', '')).strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'Guruh nomini kiriting'})
+    courses = load_json('courses.json')
+    for c in courses:
+        if c['id'] == course_id:
+            groups = c.get('groups', [])
+            if isinstance(groups, list) and groups and isinstance(groups[0], str):
+                groups = [{'id': f"GRP-{uuid.uuid4().hex[:8].upper()}", 'name': g} for g in groups]
+            group = {
+                'id': f"GRP-{uuid.uuid4().hex[:8].upper()}",
+                'name': name,
+                'day': sanitize_html(data.get('day', '')).strip(),
+                'time': sanitize_html(data.get('time', '')).strip(),
+                'room': sanitize_html(data.get('room', '')).strip(),
+                'main_teacher_id': data.get('main_teacher_id', ''),
+                'support_teacher_id': data.get('support_teacher_id', '')
+            }
+            groups.append(group)
+            c['groups'] = groups
+            save_json('courses.json', courses)
+            _audit('group_created', f"Guruh: {name} (Kurs: {c['name']})")
+            return jsonify({'success': True, 'group': group})
+    return jsonify({'success': False, 'message': 'Kurs topilmadi'}), 404
+
+@app.route('/api/courses/<course_id>/groups/<group_id>', methods=['PUT'])
+@login_required
+def update_group(course_id, group_id):
+    data = request.get_json() or {}
+    courses = load_json('courses.json')
+    for c in courses:
+        if c['id'] == course_id:
+            groups = c.get('groups', [])
+            if isinstance(groups, list) and groups and isinstance(groups[0], str):
+                return jsonify({'success': False, 'message': 'Avval guruhlarni qayta saqlang'})
+            for g in groups:
+                if g['id'] == group_id:
+                    g['name'] = sanitize_html(data.get('name', g['name'])).strip()
+                    g['day'] = sanitize_html(data.get('day', g.get('day', ''))).strip()
+                    g['time'] = sanitize_html(data.get('time', g.get('time', ''))).strip()
+                    g['room'] = sanitize_html(data.get('room', g.get('room', ''))).strip()
+                    g['main_teacher_id'] = data.get('main_teacher_id', g.get('main_teacher_id', ''))
+                    g['support_teacher_id'] = data.get('support_teacher_id', g.get('support_teacher_id', ''))
+                    save_json('courses.json', courses)
+                    _audit('group_updated', f"Guruh: {g['name']} (Kurs: {c['name']})")
+                    return jsonify({'success': True, 'group': g})
+            return jsonify({'success': False, 'message': 'Guruh topilmadi'}), 404
+    return jsonify({'success': False, 'message': 'Kurs topilmadi'}), 404
+
+@app.route('/api/courses/<course_id>/groups/<group_id>', methods=['DELETE'])
+@login_required
+def delete_group(course_id, group_id):
+    courses = load_json('courses.json')
+    for c in courses:
+        if c['id'] == course_id:
+            groups = c.get('groups', [])
+            if isinstance(groups, list) and groups and isinstance(groups[0], str):
+                c['groups'] = [g for g in groups if g != group_id]
+            else:
+                c['groups'] = [g for g in groups if g.get('id') != group_id]
+            save_json('courses.json', courses)
+            _audit('group_deleted', f"Guruh ID: {group_id} (Kurs: {c['name']})")
+            return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Kurs topilmadi'}), 404
+
 # ─── Teachers ─────────────────────────────────────────────────────────────────
 
 @app.route('/teachers')
