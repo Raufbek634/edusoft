@@ -21,6 +21,9 @@
     <span class="search-icon"><i class="fas fa-search"></i></span>
     <input class="form-control" id="searchInput" placeholder="{{ _('search_placeholder') }}" oninput="filterStudents()">
   </div>
+  <select class="form-control" id="courseFilterStudent" onchange="filterStudents()" style="max-width:160px">
+    <option value="">Barcha kurslar</option>
+  </select>
   <select class="form-control" id="groupFilter" onchange="filterStudents()" style="max-width:160px">
     <option value="">{{ _('all') }} {{ _('group') }}</option>
   </select>
@@ -100,6 +103,7 @@ let currency = 'UZS';
 document.addEventListener('DOMContentLoaded', async () => {
   const settings = await api('/api/settings');
   currency = settings.currency || 'UZS';
+  window._courses = await api('/api/courses');
   await loadPendingRegistrations();
   await loadStudents();
   await loadGroups();
@@ -152,15 +156,19 @@ async function rejectReg(id) {
 
 async function loadStudents() {
   const search = document.getElementById('searchInput').value;
+  const courseId = document.getElementById('courseFilterStudent').value;
   const group = document.getElementById('groupFilter').value;
   const status = document.getElementById('statusFilter').value;
 
   let url = '/api/students?';
   if (search) url += `search=${encodeURIComponent(search)}&`;
+  if (courseId) url += `course_id=${encodeURIComponent(courseId)}&`;
   if (group) url += `group=${encodeURIComponent(group)}&`;
   if (status) url += `status=${status}`;
 
   allStudents = await api(url);
+  // client-side filter as well for course
+  if (courseId) allStudents = allStudents.filter(s => s.course_id === courseId);
   document.getElementById('studentCount').textContent = `{{ _('total') }}: ${allStudents.length} {{ _('student') }}`;
   renderStudents();
 }
@@ -174,6 +182,14 @@ async function loadGroups() {
     const opt = document.createElement('option');
     opt.value = g; opt.textContent = g;
     sel.appendChild(opt);
+  });
+  // Load courses into filter
+  const courses = window._courses || [];
+  const selc = document.getElementById('courseFilterStudent');
+  courses.filter(c => c.status === 'active').forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    selc.appendChild(opt);
   });
 }
 
@@ -210,8 +226,9 @@ function renderStudents() {
           <span><i class="fas fa-user"></i> ${s.parent_name || '—'}</span>
           <span><i class="fas fa-phone"></i> <a class="phone-link" href="tel:${s.parent_phone}">${s.parent_phone || '—'}</a></span>
           <span><i class="fas fa-credit-card"></i> <b class="currency">${Number(s.monthly_fee).toLocaleString()} ${currency}</b>/oy ${s.discount_percent > 0 ? `<span class="badge badge-warning">-${s.discount_percent}%</span>` : ''}${s.subsidy_amount > 0 ? ` <span class="badge badge-primary">-${Number(s.subsidy_amount).toLocaleString()}</span>` : ''}</span>
-          <span><i class="fas fa-calendar-days"></i> {{ _('join_date') }}: ${fmtDate(s.join_date)}</span>
-          <span style="font-family:monospace;font-size:11px;color:var(--text3)">ID: ${s.id}</span>
+            <span><i class="fas fa-book"></i> ${s.course_name || (window._courses||[]).find(c=>c.id===s.course_id)?.name || 'Kurs yo\'q'}</span>
+            <span><i class="fas fa-calendar-days"></i> {{ _('join_date') }}: ${fmtDate(s.join_date)}</span>
+            <span style="font-family:monospace;font-size:11px;color:var(--text3)">ID: ${s.id}</span>
         </div>
         <div class="student-card-footer">
           <button class="btn btn-ghost btn-sm" onclick="viewBalance('${s.id}')"><i class="fas fa-chart-simple"></i> {{ _('view') }}</button>
@@ -227,7 +244,7 @@ function renderStudents() {
       <tr>
         <td style="font-family:monospace;font-size:11px;color:var(--text3)">${s.id}</td>
         <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s)}<b>${s.first_name} ${s.last_name}</b></div></td>
-        <td><span class="badge badge-primary">${s.group || '—'}</span></td>
+        <td><span class="badge badge-primary">${s.group || '—'}</span> ${s.course_name ? `<br><small style="color:var(--text3)">${s.course_name}</small>` : ''}</td>
         <td>${s.parent_name || '—'}</td>
         <td>${phoneLink(s.parent_phone)}</td>
         <td class="currency">${Number(s.monthly_fee).toLocaleString()} ${currency}</td>
@@ -257,9 +274,18 @@ function studentForm(s = {}) {
       <div class="form-grid">
         <div class="form-group"><label class="form-label">{{ _('birth_date') }}</label>
           <input class="form-control" type="date" id="f_birth_date" value="${s.birth_date||''}"></div>
-        <div class="form-group"><label class="form-label">{{ _('group') }} *</label>
-          <input class="form-control" id="f_group" value="${s.group||''}" placeholder="{{ _('group_name') }}" required></div>
+        <div class="form-group"><label class="form-label">Kurs</label>
+          <select class="form-control" id="f_course_id" onchange="onCourseChange()">
+            <option value="">Kurs tanlanmagan</option>
+            ${window._courses ? window._courses.map(c => `<option value="${c.id}" ${s.course_id===c.id?'selected':''}>${c.name}</option>`).join('') : ''}
+          </select></div>
       </div>
+      <div class="form-group"><label class="form-label">{{ _('group') }}</label>
+        <select class="form-control" id="f_group">
+          <option value="">Guruh tanlanmagan</option>
+        </select>
+        <input class="form-control" id="f_group_text" value="${s.group||''}" placeholder="Yangi guruh nomi" style="display:${s.group && !window._courses?.find(c=>c.id===s.course_id)?.groups?.includes(s.group) ? '' : 'none'};margin-top:6px">
+        <small style="color:var(--text3);font-size:11px">Kurs tanlang yoki yangi guruh nomini yozing</small></div>
       <div class="form-group"><label class="form-label">{{ _('parent_name') }}</label>
         <input class="form-control" id="f_parent_name" value="${s.parent_name||''}" placeholder="{{ _('parent_name') }}"></div>
       <div class="form-grid">
@@ -314,12 +340,53 @@ async function handleImgUpload(input) {
   }
 }
 
+function onCourseChange(selectedGroup) {
+  const courseId = document.getElementById('f_course_id').value;
+  const sel = document.getElementById('f_group');
+  const txt = document.getElementById('f_group_text');
+  sel.innerHTML = '<option value="">Guruh tanlanmagan</option>';
+  if (courseId) {
+    const crs = (window._courses||[]).find(c => c.id === courseId);
+    if (crs) {
+      // Autofill monthly fee from course price
+      const feeInput = document.getElementById('f_monthly_fee');
+      if (crs.price && (!feeInput.dataset.userEdited || feeInput.value == '0')) {
+        feeInput.value = crs.price;
+      }
+      if (crs.groups && crs.groups.length) {
+        crs.groups.forEach(g => {
+          const o = document.createElement('option');
+          o.value = g; o.textContent = g; sel.appendChild(o);
+        });
+        sel.style.display = '';
+        txt.style.display = 'none';
+        if (selectedGroup && crs.groups.includes(selectedGroup)) {
+          sel.value = selectedGroup;
+        } else if (selectedGroup) {
+          txt.value = selectedGroup;
+          txt.style.display = '';
+          sel.style.display = 'none';
+        }
+        return;
+      }
+    }
+  }
+  sel.style.display = 'none';
+  txt.style.display = '';
+  if (selectedGroup) txt.value = selectedGroup;
+}
+
 function getFormData() {
+  const courseId = document.getElementById('f_course_id').value;
+  const crs = (window._courses||[]).find(c => c.id === courseId);
+  const hasGroups = crs && crs.groups && crs.groups.length;
+  const groupVal = hasGroups ? document.getElementById('f_group').value : document.getElementById('f_group_text').value.trim();
   return {
     first_name: document.getElementById('f_first_name').value.trim(),
     last_name: document.getElementById('f_last_name').value.trim(),
     birth_date: document.getElementById('f_birth_date').value,
-    group: document.getElementById('f_group').value.trim(),
+    group: groupVal,
+    course_id: courseId,
     parent_name: document.getElementById('f_parent_name').value.trim(),
     parent_phone: document.getElementById('f_parent_phone').value.trim(),
     telegram_chat_id: document.getElementById('f_telegram_chat_id').value.trim(),
@@ -340,6 +407,8 @@ function openAddStudent() {
       <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
       <button class="btn btn-primary" onclick="saveNewStudent()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
     </div>`, 'modal-lg');
+  document.getElementById('f_monthly_fee')?.addEventListener('input', function() { this.dataset.userEdited = '1'; });
+  setTimeout(() => onCourseChange(), 50);
 }
 
 async function saveNewStudent() {
@@ -361,6 +430,7 @@ async function openEditStudent(id) {
       <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
       <button class="btn btn-primary" onclick="saveEditStudent('${id}')"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
     </div>`, 'modal-lg');
+  setTimeout(() => onCourseChange(s.group), 50);
 }
 
 async function saveEditStudent(id) {

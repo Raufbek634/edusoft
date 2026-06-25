@@ -61,6 +61,12 @@
     <a href="/students" class="nav-item {% if request.path == '/students' %}active{% endif %}">
       <span class="nav-icon"><i class="fas fa-user-graduate"></i></span><span class="nav-label">{{ _('students') }}</span>
     </a>
+    <a href="/courses" class="nav-item {% if request.path == '/courses' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-book"></i></span><span class="nav-label">Kurslar</span>
+    </a>
+    <a href="/teachers" class="nav-item {% if request.path == '/teachers' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-chalkboard-user"></i></span><span class="nav-label">O'qituvchilar</span>
+    </a>
     <a href="/attendance" class="nav-item {% if request.path == '/attendance' %}active{% endif %}">
       <span class="nav-icon"><i class="fas fa-calendar-days"></i></span><span class="nav-label">{{ _('attendance') }}</span>
     </a>

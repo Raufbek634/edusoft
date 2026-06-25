@@ -542,11 +542,21 @@ def init_data():
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if session.get('role') not in ('kg_admin', 'super'):
+        if session.get('role') not in ('kg_admin', 'super', 'teacher'):
             return redirect(url_for('login', login=1))
         if session.get('role') == 'super' and not session.get('kindergarten_id'):
             return f(*args, **kwargs)
         if not session.get('kindergarten_id'):
+            return redirect(url_for('login', login=1))
+        return f(*args, **kwargs)
+    return decorated
+
+def teacher_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get('role') != 'teacher':
+            if request.is_json or request.path.startswith('/api/'):
+                return jsonify({'success': False, 'message': 'Faqat o\'qituvchilar uchun'}), 403
             return redirect(url_for('login', login=1))
         return f(*args, **kwargs)
     return decorated
@@ -2744,12 +2754,15 @@ def get_students():
     group = request.args.get('group', '')
     search = request.args.get('search', '').lower()
     status = request.args.get('status', '')
+    course_id = request.args.get('course_id', '')
 
     result = students
     if group:
         result = [s for s in result if s.get('group', '') == group]
     if status:
         result = [s for s in result if s.get('status', '') == status]
+    if course_id:
+        result = [s for s in result if s.get('course_id', '') == course_id]
     if search:
         result = [s for s in result if
                   search in s.get('first_name', '').lower() or
@@ -2788,6 +2801,7 @@ def add_student():
         'parent_name': data.get('parent_name', '').strip(),
         'parent_phone': normalize_phone(phone) or phone,
         'group': data.get('group', '').strip(),
+        'course_id': data.get('course_id', ''),
         'monthly_fee': safe_int(data.get('monthly_fee'), 0),
         'payment_due_day': safe_int(data.get('payment_due_day'), 1),
         'join_date': data.get('join_date', date.today().isoformat()),
@@ -2876,6 +2890,8 @@ def get_student(student_id):
     s = next((s for s in students if s['id'] == student_id), None)
     if not s:
         return jsonify({'success': False, 'message': 'Ўқувчи топилмади'}), 404
+    courses_map = {c['id']: c['name'] for c in load_json('courses.json')}
+    s['course_name'] = courses_map.get(s.get('course_id', ''), '')
     return jsonify(s)
 
 @app.route('/api/students/<student_id>', methods=['PUT'])
@@ -2900,6 +2916,7 @@ def update_student(student_id):
                 'parent_name': sanitize_html(data.get('parent_name', s['parent_name'])).strip(),
                 'parent_phone': data.get('parent_phone', s['parent_phone']).strip(),
                 'group': data.get('group', s['group']).strip(),
+                'course_id': data.get('course_id', s.get('course_id', '')),
                 'monthly_fee': safe_int(data.get('monthly_fee'), s.get('monthly_fee', 0)),
                 'payment_due_day': safe_int(data.get('payment_due_day'), s.get('payment_due_day', 1)),
                 'status': data.get('status', s['status']),
@@ -3093,6 +3110,163 @@ def global_search():
         'phone_matches': phone_results
     })
 
+# ─── Courses ──────────────────────────────────────────────────────────────────
+
+@app.route('/courses')
+@login_required
+def courses_page():
+    return render_template('courses.html', admin_name=session.get('admin_name'))
+
+@app.route('/api/courses', methods=['GET'])
+@login_required
+def get_courses():
+    courses = load_json('courses.json')
+    students = load_json('students.json')
+    for c in courses:
+        c['student_count'] = len([s for s in students if s.get('course_id') == c['id'] and s.get('status') == 'active'])
+        c['groups'] = c.get('groups', [])
+    return jsonify(courses)
+
+@app.route('/api/courses', methods=['POST'])
+@login_required
+def create_course():
+    data = request.get_json() or {}
+    name = sanitize_html(data.get('name', '')).strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'Kurs nomini kiriting'})
+    courses = load_json('courses.json')
+    groups = data.get('groups', [])
+    if isinstance(groups, str):
+        groups = [g.strip() for g in groups.split(',') if g.strip()]
+    course = {
+        'id': f"CRS-{uuid.uuid4().hex[:8].upper()}",
+        'name': name,
+        'description': sanitize_html(data.get('description', '')).strip(),
+        'price': safe_int(data.get('price', 0)),
+        'status': data.get('status', 'active'),
+        'start_date': data.get('start_date', ''),
+        'end_date': data.get('end_date', ''),
+        'groups': groups
+    }
+    courses.append(course)
+    save_json('courses.json', courses)
+    _audit('course_created', f"Kurs: {name}")
+    return jsonify({'success': True, 'course': course})
+
+@app.route('/api/courses/<course_id>', methods=['PUT'])
+@login_required
+def update_course(course_id):
+    data = request.get_json() or {}
+    courses = load_json('courses.json')
+    for c in courses:
+        if c['id'] == course_id:
+            c['name'] = sanitize_html(data.get('name', c['name'])).strip()
+            c['description'] = sanitize_html(data.get('description', c.get('description', ''))).strip()
+            c['price'] = safe_int(data.get('price', c.get('price', 0)))
+            c['status'] = data.get('status', c.get('status', 'active'))
+            c['start_date'] = data.get('start_date', c.get('start_date', ''))
+            c['end_date'] = data.get('end_date', c.get('end_date', ''))
+            groups = data.get('groups', c.get('groups', []))
+            if isinstance(groups, str):
+                groups = [g.strip() for g in groups.split(',') if g.strip()]
+            c['groups'] = groups
+            save_json('courses.json', courses)
+            _audit('course_updated', f"Kurs: {c['name']}")
+            return jsonify({'success': True, 'course': c})
+    return jsonify({'success': False, 'message': 'Kurs topilmadi'}), 404
+
+@app.route('/api/courses/<course_id>', methods=['DELETE'])
+@login_required
+def delete_course(course_id):
+    courses = load_json('courses.json')
+    courses = [c for c in courses if c['id'] != course_id]
+    save_json('courses.json', courses)
+    _audit('course_deleted', f"Kurs ID: {course_id}")
+    return jsonify({'success': True})
+
+# ─── Teachers ─────────────────────────────────────────────────────────────────
+
+@app.route('/teachers')
+@login_required
+def teachers_page():
+    return render_template('teachers.html', admin_name=session.get('admin_name'))
+
+@app.route('/api/teachers', methods=['GET'])
+@login_required
+def get_teachers():
+    teachers = load_json('teachers.json')
+    courses = {c['id']: c['name'] for c in load_json('courses.json')}
+    for t in teachers:
+        t['_courses'] = [courses.get(cid, cid) for cid in t.get('course_ids', [])]
+    return jsonify(teachers)
+
+@app.route('/api/teachers', methods=['POST'])
+@login_required
+def create_teacher():
+    data = request.get_json() or {}
+    name = sanitize_html(data.get('name', '')).strip()
+    login = sanitize_html(data.get('login', '')).strip()
+    password = data.get('password', '')
+    if not name or not login or not password:
+        return jsonify({'success': False, 'message': 'Ism, login va parolni kiriting'})
+    if len(password) < 4:
+        return jsonify({'success': False, 'message': 'Parol kamida 4 belgi'})
+    teachers = load_json('teachers.json')
+    for t in teachers:
+        if t.get('login') == login:
+            return jsonify({'success': False, 'message': 'Bu login band'})
+    teacher = {
+        'id': f"TCH-{uuid.uuid4().hex[:8].upper()}",
+        'name': name,
+        'login': login,
+        'password': hash_password(password),
+        'phone': sanitize_html(data.get('phone', '')).strip(),
+        'course_ids': data.get('course_ids', []),
+        'status': data.get('status', 'active')
+    }
+    teachers.append(teacher)
+    save_json('teachers.json', teachers)
+    _audit('teacher_created', f"O'qituvchi: {name}, login: {login}")
+    return jsonify({'success': True, 'teacher': {k: v for k, v in teacher.items() if k != 'password'}})
+
+@app.route('/api/teachers/<teacher_id>', methods=['PUT'])
+@login_required
+def update_teacher(teacher_id):
+    data = request.get_json() or {}
+    teachers = load_json('teachers.json')
+    for t in teachers:
+        if t['id'] == teacher_id:
+            if data.get('name'):
+                t['name'] = sanitize_html(data['name']).strip()
+            if data.get('login'):
+                new_login = sanitize_html(data['login']).strip()
+                if new_login != t['login']:
+                    for other in teachers:
+                        if other.get('login') == new_login:
+                            return jsonify({'success': False, 'message': 'Bu login band'})
+                t['login'] = new_login
+            if data.get('password'):
+                t['password'] = hash_password(data['password'])
+            if 'phone' in data:
+                t['phone'] = sanitize_html(data.get('phone', '')).strip()
+            if 'course_ids' in data:
+                t['course_ids'] = data['course_ids']
+            if 'status' in data:
+                t['status'] = data['status']
+            save_json('teachers.json', teachers)
+            _audit('teacher_updated', f"O'qituvchi: {t['name']}")
+            return jsonify({'success': True, 'teacher': {k: v for k, v in t.items() if k != 'password'}})
+    return jsonify({'success': False, 'message': 'O\'qituvchi topilmadi'}), 404
+
+@app.route('/api/teachers/<teacher_id>', methods=['DELETE'])
+@login_required
+def delete_teacher(teacher_id):
+    teachers = load_json('teachers.json')
+    teachers = [t for t in teachers if t['id'] != teacher_id]
+    save_json('teachers.json', teachers)
+    _audit('teacher_deleted', f"O'qituvchi ID: {teacher_id}")
+    return jsonify({'success': True})
+
 # ─── Attendance ───────────────────────────────────────────────────────────────
 
 @app.route('/attendance')
@@ -3108,6 +3282,7 @@ def get_attendance():
     date_filter = request.args.get('date', '')
     student_id = request.args.get('student_id', '')
     month = request.args.get('month', '')
+    course_id = request.args.get('course_id', '')
 
     result = att
     if date_filter:
@@ -3116,6 +3291,9 @@ def get_attendance():
         result = [a for a in result if a['student_id'] == student_id]
     if month:
         result = [a for a in result if a['date'].startswith(month)]
+    if course_id:
+        students_map = {s['id']: s.get('course_id', '') for s in load_json('students.json')}
+        result = [a for a in result if students_map.get(a['student_id'], '') == course_id]
 
     return jsonify(result)
 
@@ -5079,7 +5257,10 @@ def get_parents():
                 'phone': p.get('phone', ''),
                 'children': children
             })
-        return jsonify(result)
+    courses_map = {c['id']: c['name'] for c in load_json('courses.json')}
+    for s in result:
+        s['course_name'] = courses_map.get(s.get('course_id', ''), '')
+    return jsonify(result)
 
     students = load_json('students.json')
     parents = {}

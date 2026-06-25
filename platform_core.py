@@ -531,6 +531,23 @@ class PlatformCtx:
                     'name': a.get('name', 'Admin'),
                     'kindergarten_id': 'default'
                 }
+        # Teacher login — o'qituvchilar faqat o'z guruhlarini boshqaradi
+        for kg in self.load_kindergartens():
+            if kg.get('status') != 'active':
+                continue
+            kg_id = kg['id']
+            teachers = self.load_json('teachers.json', kg_id)
+            for t in teachers:
+                if t.get('login') == login_val and verify_password(password, t.get('password', '')):
+                    if t.get('status') == 'inactive':
+                        continue
+                    return {
+                        'role': 'teacher',
+                        'id': t['id'],
+                        'name': t.get('name', 'O\'qituvchi'),
+                        'kindergarten_id': kg_id,
+                        'teacher_id': t['id']
+                    }
         return None
 
     def subscription_status(self, kg):

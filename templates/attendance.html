@@ -9,8 +9,8 @@
     <div class="section-sub" id="attSubtitle">{{ _('loading') }}</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <select class="form-control" id="groupFilterAtt" onchange="loadDayAttendance()" style="max-width:160px">
-      <option value="">{{ _('all') }} {{ _('group') }}</option>
+    <select class="form-control" id="courseFilterAtt" onchange="loadDayAttendance();loadCalStudents()" style="max-width:160px">
+      <option value="">{{ _('all') }} kurslar</option>
     </select>
     <input type="date" class="form-control" id="dateInput" style="max-width:160px" onchange="loadDayAttendance()">
     <button class="btn btn-primary" onclick="saveBulkAttendance()">💾 {{ _('save') }}</button>
@@ -88,13 +88,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('summaryMonth').value = today.slice(0,7);
 
   allStudents = await api('/api/students?status=active');
-  loadGroups();
+  loadCourses();
   loadCalStudents();
   loadDayAttendance();
   loadSummary();
 
   document.getElementById('attSubtitle').textContent = `{{ _('active') }}: ${allStudents.length}`;
 });
+
+async function loadCourses() {
+  const courses = await api('/api/courses');
+  const sel = document.getElementById('courseFilterAtt');
+  courses.filter(c => c.status === 'active').forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name; sel.appendChild(o);
+  });
+}
 
 async function loadGroups() {
   const groups = await api('/api/groups');
@@ -107,7 +116,11 @@ async function loadGroups() {
 
 function loadCalStudents() {
   const sel = document.getElementById('calStudentSelect');
-  allStudents.forEach(s => {
+  const courseId = document.getElementById('courseFilterAtt').value;
+  sel.innerHTML = '<option value="">O\'quvchi</option>';
+  let students = allStudents;
+  if (courseId) students = students.filter(s => s.course_id === courseId);
+  students.forEach(s => {
     const o = document.createElement('option');
     o.value = s.id; o.textContent = `${s.first_name} ${s.last_name}`;
     sel.appendChild(o);
@@ -124,7 +137,7 @@ function switchTab(name, btn) {
 
 async function loadDayAttendance() {
   const dateVal = document.getElementById('dateInput').value;
-  const group = document.getElementById('groupFilterAtt').value;
+  const courseId = document.getElementById('courseFilterAtt').value;
   if (!dateVal) return;
 
   const d = new Date(dateVal);
@@ -143,7 +156,7 @@ async function loadDayAttendance() {
   existing.forEach(a => { dayRecords[a.student_id] = { status: a.status, note: a.note || '' }; });
 
   let students = allStudents;
-  if (group) students = students.filter(s => s.group === group);
+  if (courseId) students = students.filter(s => s.course_id === courseId);
 
   if (!students.length) {
     document.getElementById('dayAttContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>{{ _('no_data') }}</p></div>`;

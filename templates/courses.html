@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Kurslar — EduSoft{% endblock %}
+{% block page_title %}Kurslar{% endblock %}
+{% block content %}
+<style>
+.courses-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.courses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.course-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:.2s}
+.course-card:hover{border-color:var(--primary);box-shadow:var(--shadow-sm)}
+.course-card h3{margin:0 0 6px;font-size:15px;font-weight:700}
+.course-card .course-desc{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.4}
+.course-card .course-meta{display:flex;gap:12px;font-size:12px;color:var(--text2);margin-bottom:14px;flex-wrap:wrap}
+.course-card .course-meta span{white-space:nowrap}
+.course-card .course-actions{display:flex;gap:8px}
+.course-card .badge{font-size:11px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+</style>
+
+<div class="courses-header">
+  <div><h2 style="margin:0">Kurslar</h2></div>
+  <button class="btn btn-primary" onclick="openCourseModal()"><i class="fas fa-plus"></i> Yangi kurs</button>
+</div>
+
+<div id="coursesContainer" class="courses-grid">
+  <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)">Yuklanmoqda...</div>
+</div>
+
+<div class="modal-overlay" id="courseModal" style="display:none" onclick="if(event.target===this)closeCourseModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="courseModalTitle">Yangi kurs</h3>
+      <button class="modal-close" onclick="closeCourseModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Kurs nomi *</label>
+        <input class="form-control" id="c_name" placeholder="Masalan: Matematika">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tavsif</label>
+        <textarea class="form-control" id="c_desc" rows="2" placeholder="Qisqacha tavsif"></textarea>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Boshlanish sanasi</label>
+          <input class="form-control" id="c_start" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tugash sanasi</label>
+          <input class="form-control" id="c_end" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Narxi (so'm/oy)</label>
+        <input class="form-control" id="c_price" type="number" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Guruhlar (vergul bilan ajrating)</label>
+        <input class="form-control" id="c_groups" placeholder="Masalan: Intensiv, Standart, Weekend">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Holati</label>
+        <select class="form-control" id="c_status">
+          <option value="active">Faol</option>
+          <option value="inactive">Nofaol</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCourseModal()">Bekor qilish</button>
+      <button class="btn btn-primary" id="c_saveBtn" onclick="saveCourse()">Saqlash</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+let courses = [];
+let editId = '';
+
+async function loadCourses() {
+  const res = await api('/api/courses');
+  courses = res || [];
+  renderCourses();
+}
+
+function renderCourses() {
+  const c = document.getElementById('coursesContainer');
+  if (!courses.length) {
+    c.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3)"><i class="fas fa-book" style="font-size:32px;display:block;margin-bottom:12px;opacity:.4"></i>Hozircha kurslar yo\'q</div>';
+    return;
+  }
+  c.innerHTML = courses.map(crs => {
+    const groups = (crs.groups||[]).map(g => `<span class="badge badge-primary">${esc(g)}</span>`).join('');
+    return `<div class="course-card">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+        <h3>${esc(crs.name)}</h3>
+        <span class="badge ${crs.status === 'active' ? 'badge-success' : 'badge-gray'}">${crs.status === 'active' ? 'Faol' : 'Nofaol'}</span>
+      </div>
+      ${crs.description ? `<div class="course-desc">${esc(crs.description)}</div>` : ''}
+      <div class="course-meta">
+        ${crs.price ? `<span><i class="fas fa-tag"></i> ${Number(crs.price).toLocaleString()} so'm</span>` : ''}
+        <span><i class="fas fa-users"></i> ${crs.student_count||0} ta o'quvchi</span>
+        ${crs.start_date ? `<span><i class="fas fa-calendar-plus"></i> ${crs.start_date}</span>` : ''}
+        ${crs.end_date ? `<span><i class="fas fa-calendar-minus"></i> ${crs.end_date}</span>` : ''}
+      </div>
+      ${groups ? `<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:4px">${groups}</div>` : ''}
+      <div class="course-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editCourse('${crs.id}')"><i class="fas fa-pen"></i> Tahrirlash</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteCourse('${crs.id}')"><i class="fas fa-trash"></i> O'chirish</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCourseModal(data) {
+  editId = data?.id || '';
+  document.getElementById('courseModalTitle').textContent = editId ? 'Kursni tahrirlash' : 'Yangi kurs';
+  document.getElementById('c_name').value = data?.name || '';
+  document.getElementById('c_desc').value = data?.description || '';
+  document.getElementById('c_start').value = data?.start_date || '';
+  document.getElementById('c_end').value = data?.end_date || '';
+  document.getElementById('c_price').value = data?.price || '';
+  document.getElementById('c_groups').value = (data?.groups||[]).join(', ');
+  document.getElementById('c_status').value = data?.status || 'active';
+  document.getElementById('courseModal').style.display = 'flex';
+}
+
+function closeCourseModal() {
+  document.getElementById('courseModal').style.display = 'none';
+  editId = '';
+}
+
+function editCourse(id) {
+  const crs = courses.find(c => c.id === id);
+  if (crs) openCourseModal(crs);
+}
+
+async function saveCourse() {
+  const name = document.getElementById('c_name').value.trim();
+  if (!name) return toast('Kurs nomini kiriting', 'error');
+  const groupsStr = document.getElementById('c_groups').value.trim();
+  const groups = groupsStr ? groupsStr.split(',').map(s => s.trim()).filter(s => s) : [];
+  const body = {
+    name,
+    description: document.getElementById('c_desc').value.trim(),
+    start_date: document.getElementById('c_start').value,
+    end_date: document.getElementById('c_end').value,
+    price: parseInt(document.getElementById('c_price').value) || 0,
+    groups,
+    status: document.getElementById('c_status').value
+  };
+  let res;
+  if (editId) {
+    res = await api(`/api/courses/${editId}`, 'PUT', body);
+  } else {
+    res = await api('/api/courses', 'POST', body);
+  }
+  if (res?.success) {
+    toast(editId ? 'Kurs tahrirlandi' : 'Kurs qo\'shildi', 'success');
+    closeCourseModal();
+    loadCourses();
+  } else {
+    toast(res?.message || 'Xatolik', 'error');
+  }
+}
+
+async function deleteCourse(id) {
+  if (!confirm('Kursni o\'chirishni tasdiqlaysizmi?')) return;
+  const res = await api(`/api/courses/${id}`, 'DELETE');
+  if (res?.success) {
+    toast('Kurs o\'chirildi', 'success');
+    loadCourses();
+  }
+}
+
+loadCourses();
+</script>
+{% endblock %}
