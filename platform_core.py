@@ -94,13 +94,16 @@ class PgStore:
             sslmode = qs.get('sslmode', ['disable'])[0]
             self._conn = psycopg2.connect(self.url, sslmode=sslmode)
             self._conn.autocommit = True
-            with self._conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS jsondata (
-                        key TEXT PRIMARY KEY,
-                        value JSONB NOT NULL
-                    )
-                """)
+            try:
+                with self._conn.cursor() as cur:
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS jsondata (
+                            key TEXT PRIMARY KEY,
+                            value JSONB NOT NULL
+                        )
+                    """)
+            except Exception:
+                pass  # DDL may fail via pooler; table likely exists
         return self._conn
 
     def get(self, key):
