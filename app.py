@@ -2296,6 +2296,12 @@ def public_pay(student_id, month):
     fee = int(student.get('monthly_fee', 0))
     paid_amount = sum(p.get('amount', 0) for p in month_payments if p.get('status') == 'paid')
     pending_amount = sum(p.get('amount', 0) for p in month_payments if p.get('status') == 'pending')
+    if settings.get('payment_provider') == 'tezcheck':
+        name = sanitize_html(f"{student.get('first_name','')} {student.get('last_name','')}")
+        phone = sanitize_html(student.get('parent_phone', ''))
+        return redirect(url_for('tezcheck_pay_page', kg_id=kg_id,
+                                student_id=student_id, month=month,
+                                amount=fee, name=name, phone=phone))
     return render_template('pay.html', found=True, paid=paid, student=student,
                           month=month, fee=fee, paid_amount=paid_amount,
                           pending_amount=pending_amount, kg_id=kg_id,
@@ -4734,9 +4740,16 @@ def tezcheck_pay_page(kg_id):
     """Public payment page for parents. Shows payment form and generates invoice."""
     kg = pc.get_kindergarten(kg_id)
     if not kg:
-        return render_template('tezcheck_pay.html', found=False, error="Bog'cha topilmadi", kg=None)
+        return render_template('tezcheck_pay.html', found=False, error="O'quv markaz topilmadi", kg=None)
     settings = pc.load_settings(kg_id)
-    return render_template('tezcheck_pay.html', found=True, kg=kg, settings=settings)
+    student_id = request.args.get('student_id', '')
+    month = request.args.get('month', '')
+    amount = request.args.get('amount', '')
+    parent_name = request.args.get('name', '')
+    parent_phone = request.args.get('phone', '')
+    return render_template('tezcheck_pay.html', found=True, kg=kg, settings=settings,
+                          student_id=student_id, month=month, preset_amount=amount,
+                          parent_name=parent_name, parent_phone=parent_phone)
 
 @app.route('/api/tezcheck/create-payment', methods=['POST'])
 def tezcheck_create_payment():
@@ -4756,9 +4769,30 @@ def tezcheck_create_payment():
             return jsonify({'success': False, 'message': 'Bog\'cha topilmadi'})
         result = pc.create_invoice(amount, description, kg_id, parent_name, parent_phone)
         if result:
+            order_id = result.get('order_id')
+            student_id = data.get('student_id', '')
+            month = data.get('month', '')
+            if student_id and month and order_id:
+                payments = load_json('payments.json', kg_id)
+                payments.append({
+                    'id': f"TZ-{order_id}",
+                    'student_id': student_id,
+                    'student_name': parent_name,
+                    'amount': amount,
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'month': month,
+                    'type': 'full',
+                    'category': 'tuition',
+                    'status': 'pending',
+                    'order_id': str(order_id),
+                    'note': 'TezCheck orqali to\'lov',
+                    'admin_name': 'Avtomatik',
+                    'created_at': datetime.now().isoformat()
+                })
+                save_json('payments.json', payments, kg_id)
             return jsonify({
                 'success': True,
-                'order_id': result.get('order_id'),
+                'order_id': order_id,
                 'pay_url': result.get('pay_url')
             })
         return jsonify({'success': False, 'message': 'TezCheck API xatolik'})
