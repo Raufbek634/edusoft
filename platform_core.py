@@ -137,16 +137,143 @@ class PgStore:
             cur.execute('DELETE FROM jsondata WHERE key = %s', (key,))
 
 
+class SupabaseStore:
+    """Supabase REST-based JSON storage."""
+
+    def __init__(self, url=None, key=None):
+        self.url = url or os.environ.get('SUPABASE_URL', '')
+        self.key = key or os.environ.get('SUPABASE_SECRET_KEY', '')
+        self._client = None
+        self._table_ready = False
+
+    def _get_client(self):
+        if self._client is None:
+            from supabase import create_client
+            self._client = create_client(self.url, self.key)
+        return self._client
+
+    def _ensure_table(self):
+        if self._table_ready:
+            return
+        try:
+            client = self._get_client()
+            # Try to query the table - if it fails, create it via SQL
+            client.table('jsondata').select('key').limit(1).execute()
+            self._table_ready = True
+        except Exception:
+            # Create table via Supabase SQL API
+            import httpx
+            sql = """
+                CREATE TABLE IF NOT EXISTS jsondata (
+                    key TEXT PRIMARY KEY,
+                    value JSONB NOT NULL
+                );
+            """
+            headers = {
+                'apikey': os.environ.get('SUPABASE_PUBLISHABLE_KEY', self.key),
+                'Authorization': f'Bearer {self.key}',
+                'Content-Type': 'application/json'
+            }
+            r = httpx.post(
+                f'{self.url}/rest/v1/rpc/',
+                json={'query': sql},
+                headers=headers
+            )
+            # If the above fails, try the SQL endpoint
+            if r.status_code not in (200, 201, 204):
+                httpx.post(
+                    f'{self.url}/sql',
+                    json={'query': sql},
+                    headers=headers
+                )
+            self._table_ready = True
+
+    def get(self, key):
+        client = self._get_client()
+        try:
+            res = client.table('jsondata').select('value').eq('key', key).execute()
+            if res.data and len(res.data) > 0:
+                return res.data[0]['value']
+        except Exception:
+            pass
+        return None
+
+    def set(self, key, data):
+        self._ensure_table()
+        client = self._get_client()
+        existing = self.get(key)
+        if existing is not None:
+            client.table('jsondata').update({'value': data}).eq('key', key).execute()
+        else:
+            client.table('jsondata').insert({'key': key, 'value': data}).execute()
+
+    def exists(self, key):
+        client = self._get_client()
+        try:
+            res = client.table('jsondata').select('key').eq('key', key).execute()
+            return len(res.data) > 0
+        except Exception:
+            return False
+
+    def list_keys(self, prefix=''):
+        client = self._get_client()
+        try:
+            res = client.table('jsondata').select('key').like('key', prefix + '%').execute()
+            return [row['key'] for row in (res.data or [])]
+        except Exception:
+            return []
+
+    def delete_key(self, key):
+        client = self._get_client()
+        try:
+            client.table('jsondata').delete().eq('key', key).execute()
+        except Exception:
+            pass
+
+    def seed_data(self, data_dir):
+        """Migrate local JSON files to Supabase."""
+        for fn in ['platform.json', 'super_admins.json', 'kindergartens.json',
+                    'kindergarten_applications.json', 'platform_announcements.json']:
+            if self.exists(fn):
+                continue
+            fp = os.path.join(data_dir, fn)
+            if os.path.exists(fp):
+                with open(fp, 'r', encoding='utf-8') as f:
+                    self.set(fn, json.load(f))
+        # Tenant data
+        tenants_dir = os.path.join(data_dir, 'tenants')
+        if os.path.isdir(tenants_dir):
+            for kid in os.listdir(tenants_dir):
+                tenant_path = os.path.join(tenants_dir, kid)
+                if not os.path.isdir(tenant_path):
+                    continue
+                for fn in os.listdir(tenant_path):
+                    key = f'tenants/{kid}/{fn}'
+                    if self.exists(key):
+                        continue
+                    fp = os.path.join(tenant_path, fn)
+                    if os.path.exists(fp):
+                        with open(fp, 'r', encoding='utf-8') as f:
+                            try:
+                                self.set(key, json.load(f))
+                            except json.JSONDecodeError:
+                                pass
+
+
 class PlatformCtx:
     def __init__(self, data_dir):
         self.data_dir = data_dir
         self.db = None
+        supabase_url = os.environ.get('SUPABASE_URL')
+        supabase_key = os.environ.get('SUPABASE_SECRET_KEY')
+        if supabase_url and supabase_key:
+            self.db = SupabaseStore(supabase_url, supabase_key)
         db_url = (os.environ.get('DATABASE_URL')
                   or os.environ.get('POSTGRES_URL')
                   or os.environ.get('POSTGRES_URL_NON_POOLING')
                   or os.environ.get('STORAGE_URL')
                   or os.environ.get('STORAGE_URL_NON_POOLING'))
-        if db_url:
+        if not self.db and db_url:
             self.db = PgStore(db_url)
 
     def _path(self, filename, kg_id=None):
