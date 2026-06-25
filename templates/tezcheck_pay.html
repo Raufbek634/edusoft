@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>To'lov — EduSoft</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:linear-gradient(135deg,#0f0518,#1a0a2e,#0f172a,#020617);color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:rgba(30,41,59,.7);backdrop-filter:blur(16px);border:1px solid rgba(99,102,241,.15);border-radius:24px;padding:36px 32px;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.icon-wrap{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px}
+.icon-wrap.bank{background:rgba(99,102,241,.15);color:#6366f1}
+.icon-wrap.ok{background:rgba(34,197,94,.15);color:#22c55e}
+.icon-wrap.fail{background:rgba(239,68,68,.15);color:#ef4444}
+h1{font-size:22px;font-weight:800;margin-bottom:6px;background:linear-gradient(135deg,#a78bfa,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#64748b;font-size:13px;margin-bottom:20px}
+.detail{background:rgba(15,23,42,.5);border-radius:14px;padding:16px;margin-bottom:20px;border:1px solid rgba(51,65,85,.5)}
+.detail-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+.detail-row+.detail-row{border-top:1px solid rgba(51,65,85,.3);margin-top:6px;padding-top:6px}
+.detail-row .label{color:#94a3b8;display:flex;align-items:center;gap:6px}
+.detail-row .label i{width:16px;text-align:center;font-size:12px}
+.detail-row .value{font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;text-decoration:none;transition:all .2s;width:100%}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 4px 20px rgba(99,102,241,.25)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(99,102,241,.35)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:rgba(51,65,85,.5);color:#94a3b8;border:1px solid rgba(51,65,85,.5);margin-top:10px}
+.btn-secondary:hover{background:rgba(51,65,85,.8)}
+.btn-success{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);cursor:default}
+.footer{margin-top:20px;font-size:11px;color:#334155}
+.input-group{text-align:left;margin-bottom:16px}
+.input-group label{display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+.input-group label i{margin-right:4px;width:14px}
+.input-group input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(51,65,85,.5);background:rgba(15,23,42,.5);color:#e2e8f0;font-size:15px;font-weight:600;outline:none;transition:border .2s}
+.input-group input:focus{border-color:#6366f1}
+.input-group input::placeholder{color:#475569;font-weight:400}
+.loading{display:none;margin-top:12px;font-size:12px;color:#64748b}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(99,102,241,.3);border-top-color:#6366f1;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-msg{margin-top:12px;font-size:13px;padding:10px 14px;border-radius:10px}
+.result-msg.success{background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2)}
+.result-msg.error{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.pay-methods{display:flex;gap:8px;justify-content:center;margin:12px 0}
+.pay-methods span{background:rgba(15,23,42,.5);padding:4px 12px;border-radius:8px;font-size:11px;color:#64748b;border:1px solid rgba(51,65,85,.5)}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:10px;font-size:14px;font-weight:700;margin-bottom:16px}
+.status-badge.paid{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.status-badge.pending{background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+.waiting-box{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);border-radius:12px;padding:14px;margin-bottom:16px;font-size:13px;color:#94a3b8}
+</style>
+</head>
+<body>
+{% if not found %}
+<div class="card">
+  <div class="icon-wrap fail"><i class="fas fa-search"></i></div>
+  <h1>Topilmadi</h1>
+  <div class="sub">{{ error }}</div>
+  <a href="/" class="btn btn-secondary" style="width:auto;display:inline-flex"><i class="fas fa-arrow-left"></i> Bosh sahifa</a>
+</div>
+{% else %}
+<div class="card" id="mainCard">
+  <div class="icon-wrap bank"><i class="fas fa-university"></i></div>
+  <h1>To'lov qilish</h1>
+  <div class="sub">{{ settings.get('name', kg.get('name', 'Bog\'cha')) }} — Online to'lov</div>
+
+  <div class="detail">
+    <div class="detail-row"><span class="label"><i class="fas fa-building"></i> O'quv markaz</span><span class="value">{{ settings.get('name', kg.get('name', '')) }}</span></div>
+    <div class="detail-row"><span class="label"><i class="fas fa-coins"></i> Balans</span><span class="value" style="color:#22c55e">{{ "{:,}".format(settings.get('balance', 0)) }} UZS</span></div>
+  </div>
+
+  <div class="pay-methods">
+    <span><i class="fas fa-credit-card"></i> Humo</span>
+    <span><i class="fas fa-credit-card"></i> Uzcard</span>
+  </div>
+
+  <div id="payForm">
+    <div class="input-group">
+      <label><i class="fas fa-coins"></i> To'lov summasi (so'm)</label>
+      <input type="number" id="amountInput" min="100" step="100" value="100000" placeholder="Summani kiriting">
+    </div>
+    <button class="btn btn-primary" id="payBtn" onclick="startPayment()">
+      <i class="fas fa-arrow-right"></i> To'lov qilish
+    </button>
+    <div class="loading" id="loading">
+      <span class="spinner"></span>To'lov tayyorlanmoqda...
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <div id="waitingSection" style="display:none">
+    <div class="status-badge pending"><i class="fas fa-hourglass-half"></i> To'lov kutilmoqda</div>
+    <div class="waiting-box">
+      <i class="fas fa-info-circle" style="color:#eab308;margin-right:4px"></i>
+      To'lov sahifasiga o'tkazilmoqdasiz. To'lovni amalga oshirgandan so'ng, ushbu sahifaga qayting va <strong>"Holatni tekshirish"</strong> tugmasini bosing.
+    </div>
+    <button class="btn btn-primary" id="checkStatusBtn" onclick="checkStatus()" style="margin-bottom:10px">
+      <i class="fas fa-sync"></i> Holatni tekshirish
+    </button>
+    <div id="statusResult"></div>
+  </div>
+
+  <div class="footer">EduSoft — TezCheck</div>
+</div>
+{% endif %}
+
+<script>
+let currentOrderId = null;
+const urlParams = new URLSearchParams(window.location.search);
+const parentName = urlParams.get('name') || '';
+const parentPhone = urlParams.get('phone') || '';
+
+function startPayment() {
+  const amount = parseInt(document.getElementById('amountInput').value);
+  if (!amount || amount < 100) {
+    return showResult('Minimal summa 100 so\'m', 'error');
+  }
+  const btn = document.getElementById('payBtn');
+  const loading = document.getElementById('loading');
+  btn.disabled = true;
+  loading.style.display = 'block';
+  document.getElementById('result').innerHTML = '';
+
+  fetch('/api/tezcheck/create-payment', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      kg_id: '{{ kg["id"] if kg else "" }}',
+      amount: amount,
+      parent_name: parentName,
+      parent_phone: parentPhone
+    })
+  }).then(r => r.json()).then(d => {
+    loading.style.display = 'none';
+    btn.disabled = false;
+    if (d.success) {
+      currentOrderId = d.order_id;
+      document.getElementById('payForm').style.display = 'none';
+      document.getElementById('waitingSection').style.display = 'block';
+      window.open(d.pay_url, '_blank');
+    } else {
+      showResult(d.message || 'Xatolik yuz berdi', 'error');
+    }
+  }).catch(() => {
+    loading.style.display = 'none';
+    btn.disabled = false;
+    showResult('Server bilan bog\'lanib bo\'lmadi', 'error');
+  });
+}
+
+function checkStatus() {
+  if (!currentOrderId) return;
+  const btn = document.getElementById('checkStatusBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Tekshirilmoqda...';
+
+  fetch('/api/tezcheck/check-status/' + currentOrderId)
+    .then(r => r.json()).then(d => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync"></i> Holatni tekshirish';
+      if (d.success && d.payment) {
+        const status = d.payment.status;
+        if (status === 'paid') {
+          document.getElementById('statusResult').innerHTML =
+            '<div class="result-msg success"><i class="fas fa-check-circle"></i> To\'lov qabul qilindi! Rahmat.</div>';
+        } else if (status === 'pending') {
+          document.getElementById('statusResult').innerHTML =
+            '<div class="result-msg pending" style="background:rgba(234,179,8,.1);color:#eab308;border:1px solid rgba(234,179,8,.2);padding:10px 14px;border-radius:10px;margin-top:12px;font-size:13px">' +
+            '<i class="fas fa-hourglass-half"></i> To\'lov hali tasdiqlanmadi. Iltimos, kuting.</div>';
+        } else {
+          document.getElementById('statusResult').innerHTML =
+            '<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> Holat: ' + status + '</div>';
+        }
+      } else {
+        document.getElementById('statusResult').innerHTML =
+          '<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> To\'lov topilmadi</div>';
+      }
+    }).catch(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync"></i> Holatni tekshirish';
+      document.getElementById('statusResult').innerHTML =
+        '<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> Xatolik yuz berdi</div>';
+    });
+}
+
+function showResult(msg, type) {
+  const el = document.getElementById('result');
+  el.innerHTML = '<div class="result-msg ' + type + '"><i class="fas fa-' +
+    (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + msg + '</div>';
+}
+</script>
+</body>
+</html>

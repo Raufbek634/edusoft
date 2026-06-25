@@ -1,0 +1,108 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('kg_list') }}{% endblock %}
+{% block page_title %}{{ _('kg_list') }}{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ _('kg_list') }}</div>
+    <div class="section-sub">{{ kindergartens|length }} ta {{ _('kg_list') }}</div>
+  </div>
+</div>
+<div class="super-kg-grid">
+{% for kg in kindergartens %}
+  {% set sub = kg.subscription or {} %}
+  {% set phase = 'trial' if (sub.trial_start and not sub.paid_until) else ('paid' if sub.paid_until else 'payment_required') %}
+  <div class="super-kg-card border-{% if phase=='trial' %}warning{% elif phase=='paid' %}success{% else %}danger{% endif %} rv">
+    <div class="super-kg-header">
+      <div class="super-kg-avatar">{{ kg.name[0] }}</div>
+      <div style="flex:1;min-width:0">
+        <div class="super-kg-name">{{ kg.name }}</div>
+        <div class="super-kg-id">ID: {{ kg.id[:12] }}..</div>
+      </div>
+      <span class="badge badge-{% if kg.plan=='premium' %}warning{% else %}primary{% endif %}">{{ kg.plan|upper }}</span>
+    </div>
+    <div class="super-kg-info">
+      <span>{{ _('login') }}: <code style="font-size:10px">{{ kg.owner.login }}</code></span>
+      <span>{{ _('admin_name') }}: <b>{{ kg.owner.name }}</b></span>
+      <span>{{ _('plan') }}: <b>${{ sub.monthly_price_usd or 10 }}/{{ _('monthly') }}</b></span>
+      <span>{{ _('status') }}:
+        {% if phase == 'trial' %}<span class="badge badge-warning">{{ _('sub_trial') }}</span>
+        {% elif phase == 'paid' %}<span class="badge badge-success">{{ _('sub_paid') }}</span>
+        {% else %}<span class="badge badge-danger">{{ _('sub_payment_needed') }}</span>{% endif %}
+      </span>
+      <span>{{ _('last_login') }}: {% if kg.get('last_login') %}{{ kg['last_login'][:10] }} {{ kg['last_login'][11:16] }}{% else %}<span style="color:var(--text3)">{{ _('never') }}</span>{% endif %}</span>
+      {% if sub.paid_until %}
+      <span>{{ _('payment_date') }}: {{ sub.paid_until[:10] }}</span>
+      {% endif %}
+      <span>Balans: <b style="color:#22c55e">{{ "{:,}".format(kg._balance) }} UZS</b></span>
+    </div>
+    <div class="super-kg-actions">
+      <button class="btn btn-primary btn-sm" onclick="extendSub('{{ kg.id }}',1)"><i class="fas fa-calendar-days"></i> +1 {{ _('monthly') }}</button>
+      <button class="btn btn-outline btn-sm" onclick="extendSub('{{ kg.id }}',3)">+3 {{ _('monthly') }}</button>
+      <button class="btn btn-outline btn-sm" onclick="extendSub('{{ kg.id }}',6)">+6 {{ _('monthly') }}</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSetPaid('{{ kg.id }}')"><i class="fas fa-calendar-check"></i> {{ _('mark') }}</button>
+      <button class="btn btn-sm" style="background:rgba(99,102,241,.15);color:#6366f1;border:none" onclick="openBalance('{{ kg.id }}')"><i class="fas fa-wallet"></i> Balans</button>
+    </div>
+  </div>
+{% else %}
+  <div class="empty-state" style="grid-column:1/-1;padding:48px">
+    <div class="empty-icon"><i class="fas fa-school"></i></div>
+    <h3>{{ _('no_data') }}</h3>
+    <p>{{ _('no_data_table') }}</p>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function extendSub(kgId, months) {
+  const res = await api(`/api/super/subscription/${kgId}`, 'POST', { extend_months: months });
+  if (res.success) { toast(`+${months} {{ _('monthly') }} <i class="fas fa-check-circle"></i>`, 'success'); location.reload(); }
+  else toast('{{ _("error")|e }}', 'error');
+}
+
+function openSetPaid(kgId) {
+  const date = prompt('YYYY-MM-DD:', new Date().toISOString().split('T')[0]);
+  if (!date) return;
+  confirmAction(`"${kgId}" {{ _('payment_date') }} ${date}?`, async () => {
+    const res = await api(`/api/super/subscription/${kgId}`, 'POST', { paid_until: date });
+    if (res.success) { toast('<i class="fas fa-check-circle"></i> {{ _("success")|e }}', 'success'); location.reload(); }
+    else toast('{{ _("error")|e }}', 'error');
+  });
+}
+
+function openBalance(kgId) {
+  const html = `
+    <div style="padding:16px">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Balansni o'zgartirish (${kgId.slice(0,12)}..)</div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Summa (so'm)</label>
+        <input type="number" id="balAmount" class="modal-input" placeholder="Masalan: 500000" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px">
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px"><i class="fas fa-info-circle"></i> Musbat son — balansga qo'shadi. Manfiy son (masalan: -50000) — balansdan yechadi.</div>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Izoh (ixtiyoriy)</label>
+        <input type="text" id="balNote" class="modal-input" placeholder="Sababini yozing" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px">
+      </div>
+    </div>`;
+  openModal('Balansni o\'zgartirish', html);
+  const body = document.getElementById('modalBody');
+  const btn = document.createElement('div');
+  btn.style.cssText = 'padding:0 16px 16px';
+  btn.innerHTML = '<button class="btn btn-primary" style="width:100%" onclick="saveBalance(\'' + kgId + '\')"><i class="fas fa-check"></i> Saqlash</button>';
+  body.after(btn);
+}
+
+async function saveBalance(kgId) {
+  const amount = parseInt(document.getElementById('balAmount').value);
+  const note = document.getElementById('balNote').value;
+  if (!amount || amount === 0) { toast('Summani kiriting', 'error'); return; }
+  const res = await api('/api/super/kg-balance', 'POST', { kg_id: kgId, amount, note });
+  if (res.success) {
+    toast('<i class="fas fa-check-circle"></i> Balans yangilandi', 'success');
+    closeModal();
+    location.reload();
+  } else toast(res.message || '{{ _("error")|e }}', 'error');
+}
+</script>
+{% endblock %}

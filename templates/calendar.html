@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}{{ _('events') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-days"></i> {{ _('events') }}{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+  <div class="section-title mb-0" style="flex:1">📅 Tadbir taqvimi</div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <button class="btn btn-ghost btn-sm" onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
+    <span id="calMonthLabel" style="font-weight:700;font-size:15px;min-width:120px;text-align:center">Yuklanmoqda...</span>
+    <button class="btn btn-ghost btn-sm" onclick="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+    <button class="btn btn-primary btn-sm" onclick="openEventModal()"><i class="fas fa-plus"></i> {{ _('add') }}</button>
+  </div>
+</div>
+
+<div class="card rv" style="padding:0;overflow:hidden">
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface);border-bottom:1px solid var(--border)">
+    {% for d in ['Du','Se','Ch','Pa','Ju','Sh','Ya'] %}
+    <div style="padding:10px;text-align:center;font-size:11px;font-weight:700;color:var(--text3)">{{ d }}</div>
+    {% endfor %}
+  </div>
+  <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);min-height:400px">
+    <div class="loading" style="grid-column:1/-1"><div class="spinner"></div>{{ _('loading') }}</div>
+  </div>
+</div>
+
+<!-- Event list for selected date -->
+<div class="card rv mt-16" id="eventDetailCard" style="display:none">
+  <div class="card-header">
+    <span class="card-title" id="eventDetailDate">—</span>
+    <button class="btn btn-ghost btn-icon btn-xs" onclick="closeEventDetail()"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div class="card-body" id="eventDetailList"></div>
+</div>
+
+<!-- Event form modal -->
+<div class="modal-backdrop" id="eventModalOverlay" style="display:none;z-index:600">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 id="eventModalTitle">{{ _('add') }}</h3>
+      <button class="modal-close" onclick="closeEventModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input class="form-control" id="ef_title" placeholder="Sarlavha" style="margin-bottom:10px">
+      <input class="form-control" id="ef_date" type="date" style="margin-bottom:10px">
+      <select class="form-control" id="ef_type" style="margin-bottom:10px">
+        <option value="holiday">🎉 Bayram</option>
+        <option value="meeting">📋 Yig'ilish</option>
+        <option value="excursion">🚌 Ekskursiya</option>
+        <option value="other">📌 Boshqa</option>
+      </select>
+      <textarea class="form-control" id="ef_desc" rows="3" placeholder="Tavsif (ixtiyoriy)" style="margin-bottom:10px"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:16px;cursor:pointer">
+        <input type="checkbox" id="ef_notify" checked> Telegram orqali ota-onalarga xabar yuborish
+      </label>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeEventModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-primary" id="eventSaveBtn" onclick="saveEvent()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _calYear, _calMonth, _calEvents = [], _editId = null;
+const TYPE_ICONS = {holiday:'🎉',meeting:'📋',excursion:'🚌',other:'📌'};
+const TYPE_LABELS = {holiday:'Bayram',meeting:'Yig\'ilish',excursion:'Ekskursiya',other:'Boshqa'};
+const TYPE_COLORS = {holiday:'#f59e0b',meeting:'#4f46e5',excursion:'#10b981',other:'#94a3b8'};
+
+function initCalendar() {
+  const d = new Date();
+  _calYear = d.getFullYear();
+  _calMonth = d.getMonth() + 1;
+  renderCalendar();
+}
+
+async function loadEvents() {
+  const d = await api(`/api/events?year=${_calYear}&month=${_calMonth}`);
+  _calEvents = d || [];
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const label = document.getElementById('calMonthLabel');
+  label.textContent = new Date(_calYear, _calMonth - 1).toLocaleString('uz-UZ', {month:'long',year:'numeric'});
+  const grid = document.getElementById('calGrid');
+  const first = new Date(_calYear, _calMonth - 1, 1).getDay();
+  const daysInMonth = new Date(_calYear, _calMonth, 0).getDate();
+  const today = new Date().toISOString().slice(0,10);
+  let html = '';
+  const startPad = first === 0 ? 6 : first - 1;
+  for (let i = 0; i < startPad; i++) html += '<div style="padding:8px;background:var(--bg)"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${_calYear}-${String(_calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEvents = _calEvents.filter(e => e.date === dateStr);
+    const isToday = dateStr === today;
+    html += `<div class="cal-day ${isToday?'cal-today':''}" data-date="${dateStr}" onclick="selectDate('${dateStr}')">
+      <span class="cal-day-num">${d}</span>
+      ${dayEvents.length ? '<div class="cal-dots">'+dayEvents.map(e => `<span class="cal-dot" style="background:${TYPE_COLORS[e.type]||'#94a3b8'}"></span>`).join('')+'</div>' : ''}
+      <div class="cal-day-events">${dayEvents.slice(0,2).map(e => `<span class="cal-evt" style="border-left-color:${TYPE_COLORS[e.type]||'#94a3b8'}">${TYPE_ICONS[e.type]||'📌'} ${escapeHtml(e.title)}</span>`).join('')}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDate(dateStr) {
+  const dayEvents = _calEvents.filter(e => e.date === dateStr);
+  document.getElementById('eventDetailCard').style.display = 'block';
+  document.getElementById('eventDetailDate').textContent = new Date(dateStr).toLocaleDateString('uz-UZ', {year:'numeric',month:'long',day:'numeric'});
+  const list = document.getElementById('eventDetailList');
+  if (!dayEvents.length) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Bu kunda tadbir yo'q <button class="btn btn-primary btn-sm" onclick="openEventModal('${dateStr}')" style="margin-left:8px"><i class="fas fa-plus"></i> Qo'shish</button></div>`;
+    return;
+  }
+  list.innerHTML = dayEvents.map(e => `
+    <div class="rv" style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);margin-bottom:8px;border-left:3px solid ${TYPE_COLORS[e.type]||'#94a3b8'}">
+      <div style="font-size:20px;flex-shrink:0">${TYPE_ICONS[e.type]||'📌'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px">${escapeHtml(e.title)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${TYPE_LABELS[e.type]||e.type}</div>
+        ${e.description ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">${escapeHtml(e.description)}</div>` : ''}
+        ${e.notify ? '<div style="font-size:10px;color:var(--primary);margin-top:4px"><i class="fas fa-telegram"></i> Telegram xabar yuborildi</div>' : ''}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn btn-ghost btn-icon btn-xs" onclick="editEvent('${e.id}')" style="width:28px;height:28px"><i class="fas fa-pen"></i></button>
+        <button class="btn btn-danger btn-icon btn-xs" onclick="deleteEvent('${e.id}')" style="width:28px;height:28px"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function openEventModal(dateStr) {
+  _editId = null;
+  document.getElementById('eventModalTitle').textContent = 'Yangi tadbir';
+  document.getElementById('ef_title').value = '';
+  document.getElementById('ef_date').value = dateStr || new Date().toISOString().slice(0,10);
+  document.getElementById('ef_type').value = 'other';
+  document.getElementById('ef_desc').value = '';
+  document.getElementById('ef_notify').checked = true;
+  document.getElementById('eventSaveBtn').innerHTML = '<i class="fas fa-floppy-disk"></i> Saqlash';
+  document.getElementById('eventModalOverlay').style.display = 'flex';
+}
+
+function editEvent(id) {
+  const e = _calEvents.find(x => x.id === id);
+  if (!e) return;
+  _editId = id;
+  document.getElementById('eventModalTitle').textContent = 'Tahrirlash';
+  document.getElementById('ef_title').value = e.title;
+  document.getElementById('ef_date').value = e.date;
+  document.getElementById('ef_type').value = e.type;
+  document.getElementById('ef_desc').value = e.description || '';
+  document.getElementById('ef_notify').checked = e.notify || false;
+  document.getElementById('eventSaveBtn').innerHTML = '<i class="fas fa-floppy-disk"></i> Yangilash';
+  document.getElementById('eventModalOverlay').style.display = 'flex';
+}
+
+function closeEventModal() {
+  document.getElementById('eventModalOverlay').style.display = 'none';
+}
+
+async function saveEvent() {
+  const title = document.getElementById('ef_title').value.trim();
+  const date = document.getElementById('ef_date').value;
+  if (!title || !date) { toast('Sarlavha va sanani kiriting','warning'); return; }
+  const data = {
+    title,
+    date,
+    type: document.getElementById('ef_type').value,
+    description: document.getElementById('ef_desc').value.trim(),
+    notify: document.getElementById('ef_notify').checked
+  };
+  let res;
+  if (_editId) {
+    res = await api(`/api/events/${_editId}`, 'PUT', data);
+  } else {
+    res = await api('/api/events', 'POST', data);
+  }
+  if (res.success) {
+    toast('Tadbir saqlandi ✅', 'success');
+    closeEventModal();
+    loadEvents();
+    closeEventDetail();
+  } else {
+    toast(res.message || 'Xatolik', 'error');
+  }
+}
+
+function deleteEvent(id) {
+  confirmAction('Tadbirni o\'chirish', async () => {
+    const res = await api(`/api/events/${id}`, 'DELETE');
+    if (res.success) {
+      toast('O\'chirildi', 'info');
+      loadEvents();
+      closeEventDetail();
+    } else toast('Xatolik', 'error');
+  });
+}
+
+function prevMonth() {
+  _calMonth--;
+  if (_calMonth < 1) { _calMonth = 12; _calYear--; }
+  loadEvents();
+}
+
+function nextMonth() {
+  _calMonth++;
+  if (_calMonth > 12) { _calMonth = 1; _calYear++; }
+  loadEvents();
+}
+
+function closeEventDetail() {
+  document.getElementById('eventDetailCard').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initCalendar();
+  setTimeout(loadEvents, 100);
+});
+</script>
+{% endblock %}

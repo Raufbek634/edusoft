@@ -1,0 +1,96 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('platform_settings') }} — Raufbek{% endblock %}
+{% block page_title %}{{ _('platform_settings') }}{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-cog" style="color:var(--primary)"></i> {{ _('platform_settings') }}</span>
+  </div>
+  <div class="super-card-body">
+    <div id="settingsMsg" style="display:none;padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
+
+    <div class="form-group"><label class="form-label"><i class="fas fa-tag"></i> Platforma nomi</label>
+      <input class="form-control" id="s_platform_name" value="{{ settings.platform_name }}" maxlength="100"></div>
+
+    <div class="form-group"><label class="form-label"><i class="fas fa-calendar"></i> Default sinov muddati (kun)</label>
+      <input class="form-control" id="s_default_trial_days" type="number" value="{{ settings.default_trial_days }}" min="0" max="365"></div>
+
+    <div class="form-group"><label class="form-label"><i class="fas fa-box"></i> Default plan ID</label>
+      <select class="form-control" id="s_default_plan">
+        {% for p in plans %}
+        <option value="{{ p.id }}" {% if settings.default_plan == p.id %}selected{% endif %}>{{ p.name }} ({{ p.id }})</option>
+        {% endfor %}
+      </select></div>
+
+    <div class="form-group"><label class="form-label"><i class="fas fa-money-bill"></i> Valyuta</label>
+      <select class="form-control" id="s_currency">
+        <option value="UZS" {% if settings.currency == 'UZS' %}selected{% endif %}>UZS (so'm)</option>
+        <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+      </select></div>
+
+    <div class="form-group"><label class="form-label"><i class="fas fa-image"></i> Platforma logosi (URL)</label>
+      <input class="form-control" id="s_platform_logo" value="{{ settings.platform_logo }}" placeholder="https://example.com/logo.png">
+      <small style="color:var(--text3);font-size:11px">Agar bo'sh bo'lsa, default logo ishlatiladi</small></div>
+
+    <div class="super-toggle-wrap">
+      <label class="switch">
+        <input type="checkbox" id="s_maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %}>
+        <span class="slider"></span>
+      </label>
+      <span class="super-toggle-label">Maintenance mode</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:auto" id="maintStatus">{% if settings.maintenance_mode %}Yoqilgan{% else %}O'chirilgan{% endif %}</span>
+    </div>
+
+    <div class="form-group" id="maintMsgGroup" style="{% if not settings.maintenance_mode %}display:none{% endif %}">
+      <label class="form-label">Maintenance xabari</label>
+      <textarea class="form-control" id="s_maintenance_message" rows="3">{{ settings.maintenance_message }}</textarea></div>
+
+    <button class="btn btn-primary w-full" onclick="saveSettings()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+  </div>
+</div>
+
+<script>
+document.getElementById('s_maintenance_mode').addEventListener('change', function() {
+  document.getElementById('maintMsgGroup').style.display = this.checked ? '' : 'none';
+  document.getElementById('maintStatus').textContent = this.checked ? 'Yoqilgan' : 'O\'chirilgan';
+});
+
+async function saveSettings() {
+  const btn = document.querySelector('button.btn-primary');
+  btn.disabled = true; btn.textContent = '{{ _('saving') }}...';
+  const msgEl = document.getElementById('settingsMsg');
+  try {
+    const res = await fetch('/api/super/platform-settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        platform_name: document.getElementById('s_platform_name').value.trim(),
+        default_trial_days: parseInt(document.getElementById('s_default_trial_days').value) || 30,
+        default_plan: document.getElementById('s_default_plan').value,
+        currency: document.getElementById('s_currency').value,
+        platform_logo: document.getElementById('s_platform_logo').value.trim(),
+        maintenance_mode: document.getElementById('s_maintenance_mode').checked,
+        maintenance_message: document.getElementById('s_maintenance_message').value.trim(),
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      msgEl.textContent = '✅ Saqlandi';
+      msgEl.style.background = 'var(--success-light)';
+      msgEl.style.color = 'var(--success)';
+    } else {
+      msgEl.textContent = '❌ ' + (data.message || 'Xatolik');
+      msgEl.style.background = 'var(--danger-light)';
+      msgEl.style.color = 'var(--danger)';
+    }
+  } catch {
+    msgEl.textContent = '❌ Server xatoligi';
+    msgEl.style.background = 'var(--danger-light)';
+    msgEl.style.color = 'var(--danger)';
+  }
+  msgEl.style.display = 'block';
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-floppy-disk"></i> {{ _('save') }}';
+  setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+}
+</script>
+{% endblock %}

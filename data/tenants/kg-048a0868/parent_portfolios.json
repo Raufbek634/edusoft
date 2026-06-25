@@ -1,0 +1,28 @@
+[
+  {
+    "id": "PAR-B74DDE97",
+    "parent_name": "bekzod samiyev",
+    "phone": "998880334404",
+    "email": "turaqulovraufbek@gmail.com",
+    "notes": "s",
+    "student_ids": [
+      "STU-D34A7E54"
+    ],
+    "active": true,
+    "created_at": "2026-05-24T14:46:00.887506",
+    "created_by": "Otabek samiyev"
+  },
+  {
+    "id": "PAR-4CBB3D3A",
+    "parent_name": "bekzod samiyev",
+    "phone": "99993190712",
+    "email": "turaqulovraufbek@gmail.com",
+    "notes": "",
+    "student_ids": [
+      "STU-48F12FE3"
+    ],
+    "active": true,
+    "created_at": "2026-05-24T21:08:55.782751",
+    "created_by": "Otabek samiyev"
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "052b0303",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: bog'cha\nRahbar: raif\nTel: 998880334404\n📦 Tarif: <b>Premium</b> — 1 oy bepul, keyin <b>$25/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-20T23:10:53.331381"
+  },
+  {
+    "id": "a4298a6e",
+    "title": "Platforma",
+    "message": "[PLATFORM] ✅ Tasdiqlandi: bog'cha (login: 880334404)",
+    "active": true,
+    "created_at": "2026-05-20T23:11:26.634948"
+  },
+  {
+    "id": "038fbb2a",
+    "title": "tulov",
+    "message": "tulov qilamiz",
+    "active": true,
+    "created_at": "2026-05-22T11:27:54.208382"
+  },
+  {
+    "id": "8ea1766e",
+    "title": "salom",
+    "message": "tulov",
+    "active": true,
+    "created_at": "2026-05-23T11:08:27.373745"
+  },
+  {
+    "id": "0e0e1648",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: qaldirgoch\nRahbar: shermuhammad\nTel: 888040227\n📦 Tarif: <b>Standart</b> — 1 oy bepul, keyin <b>$10/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-23T20:59:01.071017"
+  },
+  {
+    "id": "8b689c5a",
+    "title": "Platforma",
+    "message": "[PLATFORM] ✅ Tasdiqlandi: qaldirgoch (login: 888040227)",
+    "active": true,
+    "created_at": "2026-05-23T20:59:52.325864"
+  },
+  {
+    "id": "2acd0d02",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: qaldirgoch\nRahbar: shermuhammad\nTel: 888040727\n📦 Tarif: <b>Standart</b> — 1 oy bepul, keyin <b>$10/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-23T21:16:53.180492"
+  },
+  {
+    "id": "a084d5c4",
+    "title": "Platforma",
+    "message": "[PLATFORM] ✅ Tasdiqlandi: qaldirgoch (login: 888040727)",
+    "active": true,
+    "created_at": "2026-05-23T21:17:13.147246"
+  },
+  {
+    "id": "feb587f7",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: qaldirgoch\nRahbar: shermuhammad\nTel: 888040727\n📦 Tarif: <b>Standart</b> — 1 oy bepul, keyin <b>$10/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-23T21:17:29.781653"
+  },
+  {
+    "id": "f9c1f82f",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: qaldirgoch\nRahbar: shermuhammad\nTel: 888040727\n📦 Tarif: <b>Standart</b> — 1 oy bepul, keyin <b>$10/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-23T21:18:12.605722"
+  },
+  {
+    "id": "f5d7fce6",
+    "title": "Platforma",
+    "message": "[PLATFORM] 🏫 <b>Yangi bog'cha arizasi</b>\nNom: yangi avlod\nRahbar: Otabek samiyev\nTel: 998993190712\n📦 Tarif: <b>Premium</b> — 1 oy bepul, keyin <b>$25/oy</b>\nPremium alohida ko'rib chiqiladi.",
+    "active": true,
+    "created_at": "2026-05-24T12:40:21.997683"
+  },
+  {
+    "id": "5735a0c0",
+    "title": "Platforma",
+    "message": "[PLATFORM] ✅ Tasdiqlandi: yangi avlod (login: 993190712)",
+    "active": true,
+    "created_at": "2026-05-24T12:40:40.710707"
+  }
+]

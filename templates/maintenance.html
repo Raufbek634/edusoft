@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maintenance — Raufbek</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:20px;margin:0}
+.maint-card{background:var(--surface);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;padding:40px;max-width:480px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.maint-icon{font-size:48px;color:var(--warning);margin-bottom:16px}
+.maint-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px}
+.maint-msg{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.maint-footer{font-size:10px;color:var(--text3)}
+</style>
+</head>
+<body>
+<div class="maint-card">
+  <div class="maint-icon"><i class="fas fa-wrench"></i></div>
+  <div class="maint-title">Texnik ishlar</div>
+  <div class="maint-msg">{{ message }}</div>
+  <div class="maint-footer">Iltimos, birozdan so'ng qayta urinib ko'ring</div>
+</div>
+</body>
+</html>

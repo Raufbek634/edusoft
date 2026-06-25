@@ -1,0 +1,131 @@
+{% extends "super_base.html" %}
+{% block title %}Admin faoliyati — Raufbek{% endblock %}
+{% block page_title %}Admin faoliyati monitoringi{% endblock %}
+{% block content %}
+
+<div class="super-card">
+  <div class="super-card-body">
+    <div class="super-card-header">
+      <h3 style="margin:0"><i class="fas fa-user-clock"></i> Admin faoliyati</h3>
+      <button class="btn btn-secondary btn-xs" onclick="loadActivity()"><i class="fas fa-sync"></i> Yangilash</button>
+    </div>
+
+    <div class="super-filter">
+      <i class="fas fa-filter" style="color:var(--text3)"></i>
+      <select id="daysSelect" class="form-control" style="width:auto;padding:6px 10px;font-size:12px" onchange="loadActivity()">
+        <option value="7">7 kun</option>
+        <option value="14" selected>14 kun</option>
+        <option value="30">30 kun</option>
+      </select>
+      <input id="adminFilter" class="form-control" placeholder="👤 Admin nomi" style="padding:6px 10px;font-size:12px;max-width:150px" oninput="loadActivity()">
+      <input id="actionFilter" class="form-control" placeholder="🔍 Harakat turi" style="padding:6px 10px;font-size:12px;max-width:150px" oninput="loadActivity()">
+      <button class="btn btn-secondary btn-xs" onclick="loadActivity()"><i class="fas fa-search"></i></button>
+    </div>
+
+    <h4 style="margin:0 0 12px 0;font-size:14px"><i class="fas fa-users-cog"></i> Adminlar bo'yicha xulosa</h4>
+    <div id="summaryCards" class="aa-summary"></div>
+
+    <h4 style="margin:0 0 12px 0;font-size:14px"><i class="fas fa-list"></i> Barcha harakatlar</h4>
+    <div id="logList" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)">
+      <div style="padding:16px;text-align:center;color:var(--text3)">Yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getBadge(action){
+  if(action.includes('delet')||action.includes('magic')) return 'danger';
+  if(action.includes('create')||action.includes('save')) return 'info';
+  if(action.includes('login')) return 'success';
+  if(action.includes('logout')) return 'secondary';
+  if(action.includes('update')||action.includes('edit')) return 'warning';
+  return 'primary';
+}
+
+function renderDetails(details){
+  if(!details) return '<span style="color:var(--text3);font-style:italic">—</span>';
+  if(details.includes(':')){
+    const parts=details.split(':',1);
+    const label=parts[0];
+    const items=details.substring(parts[0].length+1).split(',').map(s=>s.trim()).filter(Boolean);
+    return `<div class="aa-details">${label}:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+        ${items.map(i=>`<span class="aa-tag">${i}</span>`).join('')}
+      </div>`;
+  }
+  return `<span class="aa-details">${details}</span>`;
+}
+
+function formatTime(ts){
+  if(!ts) return '-';
+  const d=new Date(ts);
+  return d.toLocaleString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+let selectedAdmin=null;
+
+function loadActivity(){
+  const days=document.getElementById('daysSelect').value;
+  const admin=document.getElementById('adminFilter').value;
+  const action=document.getElementById('actionFilter').value;
+  const params=new URLSearchParams({days});
+  if(admin) params.set('admin',admin);
+  if(action) params.set('action',action);
+  fetch('/api/super/admin-activity?'+params.toString())
+    .then(r=>r.json())
+    .then(data=>{
+      // Summary cards
+      const sc=document.getElementById('summaryCards');
+      if(!data.summary||!data.summary.length){
+        sc.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text3)">Ma\'lumot topilmadi</div>';
+      }else{
+        sc.innerHTML=data.summary.map(s=>{
+          const recent=s.recent_actions||[];
+          const isActive=selectedAdmin===s.admin_name;
+          return `<div class="aa-card ${isActive?'active':''}" onclick="filterByAdmin('${s.admin_name}')">
+            <h5><span class="aa-avatar">${(s.admin_name||'A')[0]}</span>${s.admin_name||'Noma\'lum'}</h5>
+            <div class="count">${s.total}</div>
+            <div class="sub">${recent.length?recent.map(a=>`<span class="aa-badge ${getBadge(a)}">${a}</span>`).join(' '):'—'}</div>
+          </div>`;
+        }).join('');
+      }
+      // Log list
+      const ll=document.getElementById('logList');
+      if(!data.logs||!data.logs.length){
+        ll.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)"><i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:8px"></i>Ma\'lumot topilmadi</div>';
+      }else{
+        ll.innerHTML=data.logs.map((log,i)=>{
+          const badge=getBadge(log.action);
+          const initial=(log.admin_name||'A')[0];
+          return `<div class="aa-log-item">
+            <div style="flex-shrink:0;padding-top:2px">
+              <div class="aa-avatar">${initial}</div>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <strong>${log.admin_name||'-'}</strong>
+                <span style="font-size:11px;color:var(--text3)">${formatTime(log.timestamp)}</span>
+                <span class="aa-badge ${badge}">${log.action}</span>
+                <span style="font-family:monospace;font-size:10px;color:var(--text3)">${log.ip||'-'}</span>
+              </div>
+              ${renderDetails(log.details)}
+            </div>
+          </div>`;
+        }).join('');
+      }
+    })
+    .catch(()=>{
+      document.getElementById('summaryCards').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--color-danger)">Xatolik yuz berdi</div>';
+      document.getElementById('logList').innerHTML='<div style="padding:30px;text-align:center;color:var(--color-danger)">Xatolik yuz berdi</div>';
+    });
+}
+
+function filterByAdmin(name){
+  selectedAdmin=selectedAdmin===name?null:name;
+  document.getElementById('adminFilter').value=selectedAdmin||'';
+  loadActivity();
+}
+
+document.addEventListener('DOMContentLoaded',loadActivity);
+</script>
+{% endblock %}

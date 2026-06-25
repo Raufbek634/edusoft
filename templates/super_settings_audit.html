@@ -1,0 +1,66 @@
+{% extends "super_base.html" %}
+{% block title %}Sozlamalar auditi — Raufbek{% endblock %}
+{% block page_title %}Sozlamalar o'zgarishlari tarixi{% endblock %}
+{% block content %}
+
+<div class="super-card">
+  <div class="super-card-body">
+    <div class="super-card-header">
+      <h3><i class="fas fa-history"></i> Sozlamalar auditi</h3>
+      <div class="super-filter">
+        <input id="saFilter" class="form-control" placeholder="Qidirish..." oninput="filterSA()">
+        <span>{{ logs|length }} ta yozuv</span>
+      </div>
+    </div>
+    <div id="saList">
+      {% if logs %}
+      {% for log in logs %}
+      <div class="sa-card sa-item" data-action="{{ log.action }}" data-admin="{{ log.admin or '' }}" data-details="{{ log.details or '' }}">
+        <div class="sa-header">
+          <div class="sa-admin">
+            <div class="sa-avatar">{{ (log.admin or 'S')[0]|upper }}</div>
+            <strong>{{ log.admin or 'Tizim' }}</strong>
+            <span class="sa-time">• {{ log.timestamp[:19] if log.timestamp else '-' }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge badge-{{ 'danger' if 'delet' in log.action else 'warning' if 'update' in log.action or 'save' in log.action else 'info' }}">{{ log.action }}</span>
+            <span class="sa-ip">{{ log.ip or '-' }}</span>
+          </div>
+        </div>
+        {% set details = log.details or '' %}
+        {% if ':' in details %}
+        {% set parts = details.split(':', 1) %}
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">{{ parts[0]|trim }}</div>
+        <div class="sa-tags">
+          {% for item in parts[1].split(',') %}
+          {% set item = item.strip() %}
+          {% if item %}
+          <span class="sa-tag {{ 'plan' if 'plan' in item else 'deleted' if 'delet' in item else '' }}">{{ item }}</span>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="font-size:12px;color:var(--text2)">{{ details }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:40px 20px;color:var(--text3)">
+        <i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:12px"></i>
+        Ma'lumot topilmadi
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function filterSA(){
+  const q=document.getElementById('saFilter').value.toLowerCase();
+  document.querySelectorAll('.sa-item').forEach(el=>{
+    const text=el.textContent.toLowerCase();
+    el.style.display=q&&!text.includes(q)?'none':'block';
+  });
+}
+</script>
+{% endblock %}

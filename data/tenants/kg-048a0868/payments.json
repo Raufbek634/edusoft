@@ -1,0 +1,14 @@
+[
+  {
+    "id": "RCP-D323B28F",
+    "student_id": "STU-48F12FE3",
+    "student_name": "Xushnudbek Turaqulov",
+    "amount": 250000,
+    "date": "2026-05-24",
+    "month": "2026-05",
+    "type": "check",
+    "note": "Chek orqali to'lov (ID: CHK-F793DFA6)",
+    "admin_name": "Otabek samiyev",
+    "created_at": "2026-05-24T21:09:35.583069"
+  }
+]

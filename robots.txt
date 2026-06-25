@@ -1,0 +1,33 @@
+﻿User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /bogcha-register
+Allow: /pricing
+Allow: /privacy
+Allow: /parent
+Allow: /receipt/
+Disallow: /api/
+Disallow: /super/
+Disallow: /admin
+Disallow: /administrator
+Disallow: /wp-admin
+Disallow: /dashboard-old
+Disallow: /dashboard
+Disallow: /students
+Disallow: /attendance
+Disallow: /payments
+Disallow: /notifications
+Disallow: /parents
+Disallow: /settings
+Disallow: /report
+Disallow: /performance
+Disallow: /calendar
+Disallow: /events
+Disallow: /complaints
+Disallow: /logout
+Disallow: /cron/
+
+Sitemap: https://sofgardercrm.vercel.app/sitemap.xml
+
+# Crawl-delay: 2

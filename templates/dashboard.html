@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-chart-simple"></i> Dashboard{% endblock %}
+
+{% block content %}
+<div id="dashboardCheckAlert" style="display:none;margin-bottom:16px"></div>
+
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ _('main_indicators') }}</div>
+    <div class="section-sub" id="dateDisplay"></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="checkAlerts()"><i class="fas fa-bell"></i> {{ _('check') }}</button>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid rv" id="statsGrid">
+  <div class="stat-card"><div class="stat-label">{{ _('total_students') }}</div><div class="stat-value" id="s-total">—</div><span class="stat-icon"><i class="fas fa-user-graduate"></i></span></div>
+  <div class="stat-card"><div class="stat-label">{{ _('active_students') }}</div><div class="stat-value" id="s-active">—</div><span class="stat-icon"><i class="fas fa-check-circle"></i></span></div>
+  <div class="stat-card"><div class="stat-label">{{ _('debtors') }}</div><div class="stat-value" id="s-debtors" style="color:var(--danger)">—</div><span class="stat-icon"><i class="fas fa-triangle-exclamation"></i></span></div>
+  <div class="stat-card"><div class="stat-label">{{ _('monthly_income') }}</div><div class="stat-value" id="s-income" style="font-size:18px;color:var(--success)">—</div><span class="stat-icon"><i class="fas fa-money-bill-wave"></i></span></div>
+  <div class="stat-card"><div class="stat-label">{{ _('unpaid') }}</div><div class="stat-value" id="s-unpaid" style="font-size:18px;color:var(--danger)">—</div><span class="stat-icon"><i class="fas fa-credit-card"></i></span></div>
+  <div class="stat-card"><div class="stat-label">{{ _('today_attendance') }}</div><div class="stat-value" id="s-att">—</div><span class="stat-icon"><i class="fas fa-calendar-days"></i></span></div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+  <div class="card" style="text-align:center;padding:16px">
+    <div class="stat-value" id="dashActive" style="font-size:28px;font-weight:800;color:var(--success)">0</div>
+    <div class="stat-label" style="font-size:11px;color:var(--text3);margin-top:4px">Faol o'quvchilar</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div class="stat-value" id="dashMonthTotal" style="font-size:28px;font-weight:800;color:var(--primary)">0</div>
+    <div class="stat-label" style="font-size:11px;color:var(--text3);margin-top:4px">Oy to'lovlari</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div class="stat-value" id="dashDebtors" style="font-size:28px;font-weight:800;color:var(--color-danger)">0</div>
+    <div class="stat-label" style="font-size:11px;color:var(--text3);margin-top:4px">Qarzdorlar</div>
+  </div>
+  <div class="card" style="text-align:center;padding:16px">
+    <div class="stat-value" id="dashAttendance" style="font-size:28px;font-weight:800;color:var(--color-warning)">0</div>
+    <div class="stat-label" style="font-size:11px;color:var(--text3);margin-top:4px">Hafta davomati</div>
+  </div>
+</div>
+
+<!-- Trend Chart -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header"><span class="card-title"><i class="fas fa-chart-line"></i> To'lov trendi (6 oy)</span></div>
+  <div class="card-body">
+    <canvas id="payTrend" height="200" style="width:100%"></canvas>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+async function loadDashStats(){
+  try{
+    const d=await(await fetch('/api/dashboard/stats')).json()
+    document.getElementById('dashActive').textContent=d.active_students||0
+    document.getElementById('dashMonthTotal').textContent=Number(d.month_total||0).toLocaleString()
+    document.getElementById('dashDebtors').textContent=d.debtors||0
+    const att=d.attendance||{}
+    const attTotal=att.total||1
+    document.getElementById('dashAttendance').textContent=Math.round((att.present||0)/attTotal*100)+'%'
+    // Trend chart
+    const trend=d.trend||[]
+    if(trend.length&&typeof Chart!=='undefined'){
+      const ctx=document.getElementById('payTrend').getContext('2d')
+      new Chart(ctx,{
+        type:'bar',
+        data:{
+          labels:trend.map(t=>t.month),
+          datasets:[{
+            label:'To\'lovlar',
+            data:trend.map(t=>t.total),
+            backgroundColor:'rgba(99,102,241,0.5)',
+            borderColor:'#6366f1',
+            borderWidth:2,
+            borderRadius:6
+          }]
+        },
+        options:{
+          responsive:true,
+          plugins:{legend:{display:false}},
+          scales:{
+            y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()}}
+          }
+        }
+      })
+    }
+  }catch(e){
+    console.error('Dashboard stats xatosi:',e)
+  }
+}
+</script>
+
+<!-- Recent sections -->
+<div class="grid-2">
+  <!-- Recent payments -->
+  <div class="card rv">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-credit-card"></i> {{ _('recent_payments') }}</span>
+      <a href="/payments" class="btn btn-ghost btn-sm">{{ _('all') }} →</a>
+    </div>
+    <div id="recentPayments">
+      <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+    </div>
+  </div>
+
+  <!-- Recent students -->
+  <div class="card rv">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-user-graduate"></i> {{ _('recent_students') }}</span>
+      <a href="/students" class="btn btn-ghost btn-sm">{{ _('all') }} →</a>
+    </div>
+    <div id="recentStudents">
+      <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-16">
+  <div class="card rv">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-calendar-days"></i> {{ _('today_attendance_title') }}</span>
+      <a href="/attendance" class="btn btn-primary btn-sm">{{ _('mark_attendance') }} →</a>
+    </div>
+    <div id="recentAttendance">
+      <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const now = new Date();
+  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('uz-UZ', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const d = await api('/api/dashboard-stats');
+
+  document.getElementById('s-total').textContent = d.total_students;
+  document.getElementById('s-active').textContent = d.active_students;
+  document.getElementById('s-debtors').textContent = d.debtors;
+  document.getElementById('s-income').textContent = Number(d.monthly_income).toLocaleString();
+  document.getElementById('s-unpaid').textContent = Number(d.unpaid).toLocaleString();
+  document.getElementById('s-att').textContent = d.today_attendance;
+
+  // Recent payments
+  const settings = await api('/api/settings');
+  const cur = settings.currency || 'UZS';
+  loadDashStats();
+  loadDashboardChecks();
+
+  const rp = document.getElementById('recentPayments');
+  if (!d.recent_payments?.length) {
+    rp.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-credit-card"></i></div><p>{{ _('no_payments')|e }}</p></div>';
+  } else {
+    rp.innerHTML = `<table class="data-table"><thead><tr><th>{{ _('student') }}</th><th>{{ _('amount') }}</th><th>{{ _('date') }}</th></tr></thead><tbody>
+      ${d.recent_payments.map(p => `<tr>
+        <td><b>${p.student_name}</b></td>
+        <td class="currency">${Number(p.amount).toLocaleString()} ${cur}</td>
+        <td>${fmtDate(p.date)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+
+  // Recent students
+  const rs = document.getElementById('recentStudents');
+  if (!d.recent_students?.length) {
+    rs.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>{{ _('no_students')|e }}</p></div>';
+  } else {
+    rs.innerHTML = `<table class="data-table"><thead><tr><th>{{ _('first_name') }}</th><th>Guruh</th><th>Holat</th></tr></thead><tbody>
+      ${d.recent_students.map(s => `<tr>
+        <td><b>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</b></td>
+        <td><span class="badge badge-primary">${escapeHtml(s.group) || '—'}</span></td>
+        <td>${statusBadge(s.status)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+
+  // Recent attendance
+  const ra = document.getElementById('recentAttendance');
+  if (!d.recent_attendance?.length) {
+    ra.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-calendar-days"></i></div><p>{{ _('no_attendance')|e }}</p></div>';
+  } else {
+    ra.innerHTML = `<table class="data-table"><thead><tr><th>{{ _('student') }}</th><th>{{ _('date') }}</th><th>Holat</th><th>{{ _('note') }}</th></tr></thead><tbody>
+      ${d.recent_attendance.map(a => `<tr>
+        <td><b>${escapeHtml(a.student_name)}</b></td>
+        <td>${fmtDate(a.date)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td style="color:var(--text3);font-size:12px">${escapeHtml(a.note)||'—'}</td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+});
+
+async function checkAlerts() {
+  const alerts = await api('/api/notifications/smart-check');
+  if (!alerts.length) { toast('{{ _('all_good')|e }} <i class="fas fa-check-circle"></i>', 'success'); return; }
+  let html = `<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">`;
+  alerts.forEach(a => {
+    const colors = {birthday:'var(--warning-light)',debt:'var(--danger-light)',absent:'var(--danger-light)'};
+    html += `<div style="padding:10px 14px;border-radius:8px;background:${colors[a.type]||'var(--surface2)'};font-size:13.5px;font-weight:600">${escapeHtml(a.message)}</div>`;
+  });
+  html += '</div>';
+  openModal(`<i class="fas fa-triangle-exclamation"></i> ${alerts.length} ta {{ _('alerts') }}`, html);
+}
+
+async function loadDashboardChecks() {
+  try {
+    const d = await api('/api/payment-checks?status=pending');
+    const el = document.getElementById('dashboardCheckAlert');
+    if (!d.length) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.innerHTML = `
+      <div class="card" style="border-left:4px solid var(--warning);background:var(--warning-light);padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:24px"><i class="fas fa-paper-plane"></i></span>
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:14px">${d.length} ta {{ _('pending_check_title')|e }}</div>
+            <div style="font-size:12px;color:var(--text2)">{{ _('pending_check_desc')|e }}</div>
+          </div>
+          <a href="/payments" class="btn btn-primary btn-sm">{{ _('view')|e }} →</a>
+        </div>
+      </div>`;
+  } catch {}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "super_base.html" %}
+{% block title %}Audit Logs — Raufbek{% endblock %}
+{% block page_title %}{{ _('audit_logs') }}{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-history" style="color:var(--primary)"></i> Audit Logs</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-outline btn-xs" onclick="loadLogs()"><i class="fas fa-sync"></i></button>
+      <button class="btn btn-outline btn-xs" onclick="verifyChain()"><i class="fas fa-shield"></i> Verify Chain</button>
+      <span id="verifyResult" style="font-size:11px;font-weight:500"></span>
+    </div>
+    </div>
+
+    <div class="super-filter">
+      <i class="fas fa-filter" style="color:var(--text3);font-size:12px"></i>
+      <select id="filterAction" class="form-control" onchange="loadLogs()">
+        <option value="">{{ _('all_actions') }}</option>
+        <option value="login">login</option>
+        <option value="logout">logout</option>
+        <option value="payment_created">payment_created</option>
+        <option value="payment_deleted">payment_deleted</option>
+        <option value="student_created">student_created</option>
+        <option value="student_updated">student_updated</option>
+        <option value="student_deleted">student_deleted</option>
+        <option value="attendance_marked">attendance_marked</option>
+        <option value="attendance_bulk_edit">attendance_bulk_edit</option>
+        <option value="settings_updated">settings_updated</option>
+        <option value="password_changed">password_changed</option>
+        <option value="plan_saved">plan_saved</option>
+        <option value="plan_deleted">plan_deleted</option>
+        <option value="kg_block_toggle">kg_block_toggle</option>
+        <option value="kg_password_reset">kg_password_reset</option>
+        <option value="kg_deleted">kg_deleted</option>
+        <option value="subscription_updated">subscription_updated</option>
+        <option value="announcement_created">announcement_created</option>
+        <option value="platform_channels_updated">platform_channels_updated</option>
+        <option value="broadcast">broadcast</option>
+      </select>
+      <input id="filterKg" class="form-control" placeholder="KG ID" oninput="loadLogs()" style="max-width:100px">
+      <select id="filterLimit" class="form-control" onchange="loadLogs()">
+        <option value="50">50</option>
+        <option value="100" selected>100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+      </select>
+      <button class="btn btn-outline btn-xs" onclick="loadLogs()"><i class="fas fa-search"></i></button>
+    </div>
+
+    <div id="logContainer" class="super-table-wrap" style="padding:0">
+      {% for log in logs %}
+      <div class="al-item">
+        <div class="al-avatar">{{ (log.admin or 'S')[0] }}</div>
+        <div class="al-content">
+          <div class="al-top">
+            <span class="al-admin">{{ log.admin or 'Tizim' }}</span>
+            <span class="al-time">{{ log.timestamp[:19] if log.timestamp else '-' }}</span>
+            <span class="al-badge {{ 'danger' if 'delet' in log.action else 'info' if 'create' in log.action or 'save' in log.action else 'warning' if 'update' in log.action else 'success' if 'login' in log.action else 'primary' }}">{{ log.action }}</span>
+            <span class="al-hash" title="{{ log.hash }}">{{ log.hash[:16] if log.hash else '—' }}..</span>
+          </div>
+          <div class="al-details">{{ log.details or '' }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:40px">
+        <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+        <h3>Ma'lumot topilmadi</h3>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+function getBadge(action){
+  if(action.includes('delet')) return 'danger';
+  if(action.includes('create')||action.includes('save')) return 'info';
+  if(action.includes('update')||action.includes('edit')) return 'warning';
+  if(action.includes('login')) return 'success';
+  return 'primary';
+}
+
+function renderDetails(details){
+  if(!details) return '<span style="color:var(--text3);font-style:italic">—</span>';
+  if(details.includes(':')){
+    const idx=details.indexOf(':');
+    const label=details.substring(0,idx);
+    const items=details.substring(idx+1).split(',').map(s=>s.trim()).filter(Boolean);
+    return `${label}: ${items.map(i=>`<span class="al-tag">${i}</span>`).join(' ')}`;
+  }
+  return details;
+}
+
+function formatTime(ts){
+  if(!ts) return '-';
+  try{const d=new Date(ts);return d.toLocaleString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ts.slice(0,19)}
+}
+
+function loadLogs(){
+  const action=document.getElementById('filterAction').value;
+  const kg=document.getElementById('filterKg').value;
+  const limit=document.getElementById('filterLimit').value;
+  fetch(`/api/super/audit-logs?action=${action}&kg_id=${kg}&limit=${limit}`)
+    .then(r=>r.json())
+    .then(data=>{
+      const container=document.getElementById('logContainer');
+      if(!data.logs||!data.logs.length){
+        container.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text3)"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:12px"></i>Ma\'lumot topilmadi</div>';
+      }else{
+        container.innerHTML=data.logs.map(log=>{
+          const badge=getBadge(log.action);
+          const initial=(log.admin||'S')[0];
+          return `<div class="al-item">
+            <div class="al-avatar">${initial}</div>
+            <div class="al-content">
+              <div class="al-top">
+                <span class="al-admin">${log.admin||'Tizim'}</span>
+                <span class="al-time">${formatTime(log.timestamp)}</span>
+                <span class="al-badge ${badge}">${log.action}</span>
+                <span class="al-hash" title="${log.hash}">${(log.hash||'—').slice(0,16)}..</span>
+              </div>
+              <div class="al-details">${renderDetails(log.details)}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    })
+    .catch(()=>{
+      document.getElementById('logContainer').innerHTML='<div style="padding:40px;text-align:center;color:var(--color-danger)">Xatolik yuz berdi</div>';
+    });
+}
+
+function verifyChain(){
+  const el=document.getElementById('verifyResult');
+  el.textContent='⏳ Tekshirilmoqda...';
+  el.style.color='var(--text3)';
+  fetch('/api/super/audit-verify')
+    .then(r=>r.json())
+    .then(d=>{
+      el.innerHTML=d.verified?'✅ Zanjir buzilmagan':'❌ Zanjir buzilgan!';
+      el.style.color=d.verified?'#16a34a':'#dc2626';
+    })
+    .catch(()=>{
+      el.textContent='❌ Xatolik';
+      el.style.color='#dc2626';
+    });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // parse initial server-rendered timestamp display
+  document.querySelectorAll('.al-item').forEach(el=>{});
+});
+</script>
+{% endblock %}

@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}{{ _('attendance') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-days"></i> {{ _('attendance') }}{% endblock %}
+
+{% block content %}
+<div class="section-header rv">
+  <div>
+    <div class="section-title">{{ _('attendance') }}</div>
+    <div class="section-sub" id="attSubtitle">{{ _('loading') }}</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select class="form-control" id="groupFilterAtt" onchange="loadDayAttendance()" style="max-width:160px">
+      <option value="">{{ _('all') }} {{ _('group') }}</option>
+    </select>
+    <input type="date" class="form-control" id="dateInput" style="max-width:160px" onchange="loadDayAttendance()">
+    <button class="btn btn-primary" onclick="saveBulkAttendance()">💾 {{ _('save') }}</button>
+  </div>
+</div>
+
+<div class="tabs rv">
+  <button class="tab-btn active" onclick="switchTab('day',this)"><i class="fas fa-clipboard-list"></i> {{ _('attendance') }}</button>
+  <button class="tab-btn" onclick="switchTab('calendar',this)"><i class="fas fa-calendar-days"></i> {{ _('view') }}</button>
+  <button class="tab-btn" onclick="switchTab('summary',this)"><i class="fas fa-chart-simple"></i> {{ _('monthly') }}</button>
+</div>
+
+<!-- Day tab -->
+<div id="tab-day">
+  <div class="card rv">
+    <div class="card-header">
+      <span class="card-title" id="dayTitle">{{ _('mark') }}</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-success btn-sm" onclick="markAll('present')"><i class="fas fa-check-circle"></i> {{ _('all') }} {{ _('present') }}</button>
+        <button class="btn btn-danger btn-sm" onclick="markAll('absent')"><i class="fas fa-xmark"></i> {{ _('all') }} {{ _('absent') }}</button>
+      </div>
+    </div>
+    <div id="dayAttContent">
+      <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar tab -->
+<div id="tab-calendar" style="display:none">
+  <div class="card rv">
+      <div class="card-header">
+        <span class="card-title">{{ _('student') }}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="form-control" id="calStudentSelect" onchange="loadCalendar()" style="max-width:220px">
+          <option value="">{{ _('student') }}</option>
+        </select>
+        <input type="month" class="form-control" id="calMonth" style="max-width:150px" onchange="loadCalendar()">
+      </div>
+    </div>
+    <div id="calContent" class="card-body">
+      <div class="empty-state"><div class="empty-icon"><i class="fas fa-calendar-days"></i></div><p>{{ _('student') }}</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary tab -->
+<div id="tab-summary" style="display:none">
+  <div class="card rv">
+    <div class="card-header">
+      <span class="card-title">{{ _('monthly') }}</span>
+      <input type="month" class="form-control" id="summaryMonth" style="max-width:150px" onchange="loadSummary()">
+    </div>
+    <div id="summaryContent">
+      <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currency = 'UZS';
+let allStudents = [];
+let dayRecords = {}; // student_id -> status
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const settings = await api('/api/settings');
+  currency = settings.currency || 'UZS';
+
+  // Set today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateInput').value = today;
+  document.getElementById('calMonth').value = today.slice(0,7);
+  document.getElementById('summaryMonth').value = today.slice(0,7);
+
+  allStudents = await api('/api/students?status=active');
+  loadGroups();
+  loadCalStudents();
+  loadDayAttendance();
+  loadSummary();
+
+  document.getElementById('attSubtitle').textContent = `{{ _('active') }}: ${allStudents.length}`;
+});
+
+async function loadGroups() {
+  const groups = await api('/api/groups');
+  const sel = document.getElementById('groupFilterAtt');
+  groups.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g; sel.appendChild(o);
+  });
+}
+
+function loadCalStudents() {
+  const sel = document.getElementById('calStudentSelect');
+  allStudents.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = `${s.first_name} ${s.last_name}`;
+    sel.appendChild(o);
+  });
+}
+
+function switchTab(name, btn) {
+  ['day','calendar','summary'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function loadDayAttendance() {
+  const dateVal = document.getElementById('dateInput').value;
+  const group = document.getElementById('groupFilterAtt').value;
+  if (!dateVal) return;
+
+  const d = new Date(dateVal);
+  const dow = d.getDay(); // 0=Sun, 6=Sat
+  document.getElementById('dayTitle').textContent = `${dateVal} — {{ _('mark') }}`;
+
+  if (dow === 0 || dow === 6) {
+    document.getElementById('dayAttContent').innerHTML = `
+      <div class="empty-state"><div class="empty-icon">🏖️</div><h3>{{ _('inactive') }}</h3><p>{{ _('date') }}</p></div>`;
+    return;
+  }
+
+  // Load existing attendance for this date
+  const existing = await api(`/api/attendance?date=${dateVal}`);
+  dayRecords = {};
+  existing.forEach(a => { dayRecords[a.student_id] = { status: a.status, note: a.note || '' }; });
+
+  let students = allStudents;
+  if (group) students = students.filter(s => s.group === group);
+
+  if (!students.length) {
+    document.getElementById('dayAttContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>{{ _('no_data') }}</p></div>`;
+    return;
+  }
+
+  const html = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>{{ _('student') }}</th><th>{{ _('group') }}</th><th>{{ _('present') }}</th><th>{{ _('absent') }}</th><th>{{ _('excused') }}</th><th>{{ _('note') }}</th></tr></thead>
+      <tbody>
+        ${students.map(s => {
+          const rec = dayRecords[s.id] || { status: '', note: '' };
+          return `<tr id="row-${s.id}">
+            <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s)}<b>${s.first_name} ${s.last_name}</b></div></td>
+            <td><span class="badge badge-primary">${s.group||'—'}</span></td>
+            <td style="text-align:center"><input type="radio" name="att-${s.id}" value="present" ${rec.status==='present'?'checked':''} onchange="setRecord('${s.id}','present')" style="accent-color:var(--success);width:18px;height:18px"></td>
+            <td style="text-align:center"><input type="radio" name="att-${s.id}" value="absent" ${rec.status==='absent'?'checked':''} onchange="setRecord('${s.id}','absent')" style="accent-color:var(--danger);width:18px;height:18px"></td>
+            <td style="text-align:center"><input type="radio" name="att-${s.id}" value="excused" ${rec.status==='excused'?'checked':''} onchange="setRecord('${s.id}','excused')" style="accent-color:var(--warning);width:18px;height:18px"></td>
+            <td><input class="form-control" style="padding:6px;font-size:12px" placeholder="{{ _('note') }}..." value="${rec.note||''}" oninput="setNote('${s.id}',this.value)"></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>`;
+  document.getElementById('dayAttContent').innerHTML = html;
+}
+
+function setRecord(id, status) { dayRecords[id] = dayRecords[id] || {}; dayRecords[id].status = status; }
+function setNote(id, note) { dayRecords[id] = dayRecords[id] || {}; dayRecords[id].note = note; }
+
+function markAll(status) {
+  allStudents.forEach(s => {
+    const radios = document.querySelectorAll(`input[name="att-${s.id}"]`);
+    radios.forEach(r => { r.checked = r.value === status; });
+    dayRecords[s.id] = dayRecords[s.id] || {};
+    dayRecords[s.id].status = status;
+  });
+}
+
+async function saveBulkAttendance() {
+  const dateVal = document.getElementById('dateInput').value;
+  if (!dateVal) { toast('{{ _('date') }}', 'error'); return; }
+
+  const records = [];
+  allStudents.forEach(s => {
+    const rec = dayRecords[s.id];
+    if (rec && rec.status) {
+      records.push({ student_id: s.id, status: rec.status, note: rec.note || '' });
+    }
+  });
+
+  if (!records.length) { toast('{{ _('no_data') }}', 'warning'); return; }
+
+  const res = await api('/api/attendance/bulk', 'POST', { date: dateVal, records });
+  if (res.success) toast(`${records.length} {{ _('save') }} <i class="fas fa-check-circle"></i>`, 'success');
+  else toast('{{ _('error') }}', 'error');
+}
+
+async function loadCalendar() {
+  const studentId = document.getElementById('calStudentSelect').value;
+  const month = document.getElementById('calMonth').value;
+  if (!studentId || !month) return;
+
+  const [y, m] = month.split('-').map(Number);
+  const student = allStudents.find(s => s.id === studentId);
+  const attData = await api(`/api/attendance?student_id=${studentId}&month=${month}`);
+  const attMap = {};
+  attData.forEach(a => { attMap[a.date] = a.status; });
+
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstDay = new Date(y, m - 1, 1).getDay(); // 0=Sun
+  const todayStr = new Date().toISOString().split('T')[0];
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon-based
+
+  const weekDays = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+  let cal = `<div style="margin-bottom:12px"><b>${student?.first_name} ${student?.last_name}</b> — ${monthName(month)}</div>`;
+  cal += `<div class="att-calendar">`;
+  weekDays.forEach(d => { cal += `<div class="att-day header">${d}</div>`; });
+
+  for (let i = 0; i < startOffset; i++) cal += `<div class="att-day empty"></div>`;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow = new Date(y, m - 1, day).getDay(); // 0=Sun
+    const isWeekend = dow === 0 || dow === 6;
+    const isFuture = dateStr > todayStr;
+    const isToday = dateStr === todayStr;
+    const status = attMap[dateStr] || '';
+
+    let cls = 'att-day';
+    if (isWeekend) cls += ' weekend';
+    else if (isFuture) cls += ' future';
+    else if (status) cls += ' ' + status;
+    if (isToday) cls += ' today';
+
+    cal += `<div class="${cls}" title="${dateStr}: ${status||'{{ _('pending') }}'}">${day}`;
+    if (status) cal += `<div class="att-dot"></div>`;
+    cal += `</div>`;
+  }
+  cal += `</div>`;
+
+  // Legend
+  cal += `<div style="display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;font-size:12px;font-weight:600">
+    <span><span class="badge badge-success">{{ _('present') }}</span></span>
+    <span><span class="badge badge-danger">{{ _('absent') }}</span></span>
+    <span><span class="badge badge-warning">{{ _('excused') }}</span></span>
+    <span><span class="badge badge-gray">{{ _('inactive') }}</span></span>
+  </div>`;
+
+  // Stats
+  const present = attData.filter(a => a.status==='present').length;
+  const absent = attData.filter(a => a.status==='absent').length;
+  const excused = attData.filter(a => a.status==='excused').length;
+  cal += `<div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;display:flex;gap:20px;flex-wrap:wrap">
+    <span><i class="fas fa-check-circle"></i> {{ _('present') }}: <b>${present}</b></span>
+    <span><i class="fas fa-xmark"></i> {{ _('absent') }}: <b>${absent}</b></span>
+    <span><i class="fas fa-triangle-exclamation"></i> {{ _('excused') }}: <b>${excused}</b></span>
+  </div>`;
+
+  document.getElementById('calContent').innerHTML = cal;
+}
+
+async function loadSummary() {
+  const month = document.getElementById('summaryMonth').value;
+  if (!month) return;
+  const [y, m] = month.split('-').map(Number);
+  const data = await api(`/api/attendance/month-summary?year=${y}&month=${m}`);
+
+  if (!data.length) {
+    document.getElementById('summaryContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-chart-simple"></i></div><p>{{ _('no_data') }}</p></div>`;
+    return;
+  }
+
+  document.getElementById('summaryContent').innerHTML = `
+    <div style="overflow-x:auto;padding:0 20px 20px">
+    <table class="data-table">
+      <thead><tr>
+        <th>{{ _('student') }}</th><th>{{ _('group') }}</th><th>{{ _('date') }}</th>
+        <th>{{ _('present') }}</th><th>{{ _('absent') }}</th>
+        <th>{{ _('payment_amount') }}</th><th>{{ _('payment_history') }}</th><th>{{ _('total') }}</th>
+      </tr></thead>
+      <tbody>
+        ${data.map(row => `<tr>
+          <td><b>${row.student.first_name} ${row.student.last_name}</b></td>
+          <td><span class="badge badge-primary">${row.student.group||'—'}</span></td>
+          <td style="text-align:center">${row.working_days}</td>
+          <td style="text-align:center;color:var(--success);font-weight:700">${row.attended}</td>
+          <td style="text-align:center;color:var(--danger);font-weight:700">${row.absent}</td>
+          <td class="currency">${Number(row.payable_amount).toLocaleString()} ${currency}</td>
+          <td class="currency" style="color:var(--success)">${Number(row.paid_amount).toLocaleString()} ${currency}</td>
+          <td class="currency" style="color:${row.debt>0?'var(--danger)':'var(--success)'}">${Number(row.debt).toLocaleString()} ${currency}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+</script>
+{% endblock %}

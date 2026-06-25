@@ -1,0 +1,92 @@
+{% extends "super_base.html" %}
+{% block title %}Analytics — Raufbek{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="super-stats-grid rv" id="analyticsStats">
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('kg_list') }}</div><div class="super-stat-value" id="a-kg">—</div><span class="super-stat-icon"><i class="fas fa-school"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('total_students') }}</div><div class="super-stat-value" id="a-stu">—</div><span class="super-stat-icon"><i class="fas fa-user-graduate"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">Jami to'lov</div><div class="super-stat-value" id="a-paid">—</div><span class="super-stat-icon"><i class="fas fa-money-bill-wave"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">Kutilayotgan</div><div class="super-stat-value" id="a-pending">—</div><span class="super-stat-icon"><i class="fas fa-clock"></i></span></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="super-card rv">
+    <div class="super-card-header"><span class="super-card-title"><i class="fas fa-chart-line" style="color:var(--primary)"></i> Sahifa ko'rishlar (30 kun)</span></div>
+    <div class="super-card-body"><canvas id="viewsChart" height="200"></canvas></div>
+  </div>
+  <div class="super-card rv">
+    <div class="super-card-header"><span class="super-card-title"><i class="fas fa-chart-bar" style="color:var(--success)"></i> Daromad dinamikasi</span></div>
+    <div class="super-card-body"><canvas id="revenueChart" height="200"></canvas></div>
+  </div>
+</div>
+
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-trophy" style="color:var(--warning)"></i> Eng faol o'quv markazlar</span>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+      <table class="super-table">
+        <thead><tr><th>#</th><th>{{ _('kg_name') }}</th><th>{{ _('kg_students') }}</th><th>Aktiv</th><th>Oy to'lovi</th></tr></thead>
+        <tbody id="topKgsBody"><tr><td colspan="5" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+let viewsChart = null, revenueChart = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const d = await api('/api/super/chart-stats');
+  document.getElementById('a-kg').textContent = d.total_kgs;
+  document.getElementById('a-stu').textContent = d.total_students;
+  document.getElementById('a-paid').textContent = formatMoney(d.total_paid);
+  document.getElementById('a-pending').textContent = formatMoney(d.total_pending);
+
+  const ctx1 = document.getElementById('viewsChart').getContext('2d');
+  viewsChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: d.labels,
+      datasets: [
+        { label: 'Ko\'rishlar', data: d.page_views, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: true, tension: .3 },
+        { label: 'Unikal IP', data: d.unique_ips, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .3 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.04)' } }, x: { grid: { display: false } } } }
+  });
+
+  const ctx2 = document.getElementById('revenueChart').getContext('2d');
+  revenueChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: d.revenue_labels,
+      datasets: [{ label: 'Daromad (UZS)', data: d.revenue_data, backgroundColor: 'rgba(16,185,129,.6)', borderColor: '#10b981', borderWidth: 1 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.04)' } }, x: { grid: { display: false } } } }
+  });
+
+  const tbody = document.getElementById('topKgsBody');
+  if (d.top_kgs && d.top_kgs.length) {
+    tbody.innerHTML = d.top_kgs.map((kg, i) => `<tr>
+      <td>${i + 1}</td>
+      <td><b>${kg.name}</b><br><small style="color:var(--text3)">${kg.id}</small></td>
+      <td style="font-weight:700">${kg.students}</td>
+      <td><span class="badge badge-success">${kg.active} ta</span></td>
+      <td style="font-weight:700;color:var(--success)">${formatMoney(kg.monthly_paid)}</td>
+    </tr>`).join('');
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>';
+  }
+});
+
+function formatMoney(n) {
+  if (!n) return '0 UZS';
+  return Number(n).toLocaleString() + ' UZS';
+}
+</script>
+{% endblock %}

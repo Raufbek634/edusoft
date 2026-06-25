@@ -1,0 +1,167 @@
+{% extends "super_base.html" %}
+{% block title %}Adminlar — Raufbek{% endblock %}
+{% block page_title %}Adminlarni boshqarish{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-users-cog" style="color:var(--primary)"></i> Super adminlar</span>
+    <button class="btn btn-primary btn-xs" onclick="openCreateModal()"><i class="fas fa-plus"></i> Yangi admin</button>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+      <table class="super-table">
+        <thead><tr>
+          <th>ID</th><th>Ism</th><th>Login</th><th>Roli</th><th>Yaratilgan</th><th></th>
+        </tr></thead>
+        <tbody id="adminsBody">
+          {% for a in admins %}
+          <tr>
+            <td style="font-family:monospace;font-size:10px;color:var(--text3)">{{ a.id }}</td>
+            <td><b>{{ a.name }}</b></td>
+            <td><code>{{ a.login }}</code></td>
+            <td><span class="badge badge-primary">{{ a.role }}</span></td>
+            <td style="font-size:11px;color:var(--text3)">{{ a.created_at[:10] if a.created_at else '—' }}</td>
+            <td>
+              <button class="btn btn-ghost btn-xs" onclick="editAdmin('{{ a.id }}')"><i class="fas fa-pen"></i></button>
+              <button class="btn btn-danger btn-xs" onclick="deleteAdmin('{{ a.id }}','{{ a.name|e }}')"><i class="fas fa-trash-can"></i></button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal-backdrop" id="adminModal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="adminModalTitle">Yangi admin</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Ism</label><input class="form-control" id="a_name"></div>
+      <div class="form-group"><label class="form-label">Login</label><input class="form-control" id="a_login"><span id="loginStatus" style="font-size:11px;color:var(--text3)"></span></div>
+      <div class="form-group"><label class="form-label">Parol</label><input class="form-control" type="password" id="a_password" placeholder="Kamida 6 belgi"><span id="pwHelp" style="font-size:11px;color:var(--text3)">Bo'sh qoldirilsa, parol o'zgarmaydi</span></div>
+      <div class="form-group"><label class="form-label">Huquqlar</label>
+        <div id="permsList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <button class="btn btn-primary" id="saveAdminBtn" onclick="saveAdmin()"><i class="fas fa-check"></i> Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-backdrop" id="deleteModal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>Adminni o'chirish</h3><button class="modal-close" onclick="document.getElementById('deleteModal').style.display='none'"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <p><b id="delName"></b> ni o'chirmoqchimisiz?</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="document.getElementById('deleteModal').style.display='none'">Bekor qilish</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">O'chirish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let editingId = null
+let allPermissions = []
+
+async function loadPermissions(){
+  const r=await(await fetch('/api/super/permissions')).json()
+  allPermissions=r.permissions||[]
+}
+
+function renderPerms(selected=[]){
+  const el=document.getElementById('permsList')
+  el.innerHTML=allPermissions.map(p=>
+    `<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+      <input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}>
+      ${p.label}
+    </label>`
+  ).join('')
+}
+
+function getSelectedPerms(){
+  return [...document.querySelectorAll('#permsList input:checked')].map(c=>c.value)
+}
+
+function openCreateModal(){
+  editingId=null
+  document.getElementById('adminModalTitle').textContent='Yangi admin'
+  document.getElementById('a_name').value=''
+  document.getElementById('a_login').value=''
+  document.getElementById('a_password').value=''
+  document.getElementById('pwHelp').textContent='Kamida 6 belgi'
+  document.getElementById('loginStatus').textContent=''
+  renderPerms()
+  document.getElementById('adminModal').style.display='flex'
+}
+
+async function editAdmin(id){
+  editingId=id
+  document.getElementById('adminModalTitle').textContent='Adminni tahrirlash'
+  document.getElementById('pwHelp').textContent='Bo\'sh qoldirilsa, parol o\'zgarmaydi'
+  const admins=await(await fetch('/api/super/admins')).json()
+  const a=admins.admins.find(x=>x.id===id)
+  if(!a)return
+  document.getElementById('a_name').value=a.name||''
+  document.getElementById('a_login').value=a.login||''
+  document.getElementById('a_password').value=''
+  renderPerms(a.permissions||[])
+  document.getElementById('adminModal').style.display='flex'
+}
+
+async function saveAdmin(){
+  const name=document.getElementById('a_name').value.trim()
+  const login=document.getElementById('a_login').value.trim()
+  const password=document.getElementById('a_password').value
+  const permissions=getSelectedPerms()
+  if(!name||!login){toast('Ism va login kiriting','error');return}
+  if(!editingId&&(!password||password.length<6)){toast('Parol kamida 6 belgi','error');return}
+  const body={name,login,permissions}
+  if(password)body.password=password
+
+  let url='/api/super/admins'
+  let method='POST'
+  if(editingId){url=`/api/super/admins/${editingId}`;method='PUT'}
+  try{
+    const r=await(await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json()
+    if(r.success){toast('Admin saqlandi ✅','success');closeModal();location.reload()}
+    else toast(r.message||'Xatolik','error')
+  }catch(e){toast('Server xatosi','error')}
+}
+
+let deletingId=null
+function deleteAdmin(id,name){
+  deletingId=id
+  document.getElementById('delName').textContent=name
+  document.getElementById('deleteModal').style.display='flex'
+}
+
+async function confirmDelete(){
+  if(!deletingId)return
+  document.getElementById('confirmDeleteBtn').disabled=true
+  try{
+    const r=await(await fetch(`/api/super/admins/${deletingId}`,{method:'DELETE'})).json()
+    if(r.success){toast('Admin o\'chirildi','success');document.getElementById('deleteModal').style.display='none';location.reload()}
+    else toast(r.message||'Xatolik','error')
+  }catch(e){toast('Server xatosi','error')}
+  document.getElementById('confirmDeleteBtn').disabled=false
+}
+
+function closeModal(){
+  document.getElementById('adminModal').style.display='none'
+  document.getElementById('deleteModal').style.display='none'
+}
+
+document.getElementById('adminModal').addEventListener('click',function(e){
+  if(e.target===this)closeModal()
+})
+
+loadPermissions()
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ _('check') }} — {{ payment.id if payment else 'Topilmadi' }}</title>
+<meta name="description" content="To'lov cheki — EduSoft tizimida amalga oshirilgan to'lov haqida batafsil ma'lumot.">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-family:'Nunito',sans-serif}
+</style>
+</head>
+<body>
+{% if payment %}
+<div style="width:100%;max-width:420px">
+  <div class="receipt-box">
+    <div class="receipt-header">
+      <div class="receipt-logo"><i class="fas fa-graduation-cap"></i></div>
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">{{ settings.name }}</h2>
+      <p style="font-size:12px;color:var(--text3)">To'lov cheki</p>
+      {% if payment %}
+      <div style="margin-top:12px;text-align:center">
+        <img src="/api/receipt/{{ payment.id }}/qr" alt="QR" style="width:140px;height:140px;border-radius:8px;background:#fff;padding:6px">
+      </div>
+      {% endif %}
+    </div>
+
+    <hr class="receipt-divider">
+
+    <div class="receipt-row">
+      <span style="color:var(--text3)">{{ _('check') }} ID</span>
+      <span style="font-family:monospace;font-weight:700">{{ payment.id }}</span>
+    </div>
+    <div class="receipt-row">
+      <span style="color:var(--text3)">O'quvchi</span>
+      <span><b>{{ payment.student_name }}</b></span>
+    </div>
+    <div class="receipt-row">
+      <span style="color:var(--text3)">{{ _('date') }}</span>
+      <span>{{ payment.date }}</span>
+    </div>
+    <div class="receipt-row">
+      <span style="color:var(--text3)">Oy</span>
+      <span>{{ payment.month }}</span>
+    </div>
+    {% if payment.note %}
+    <div class="receipt-row">
+      <span style="color:var(--text3)">{{ _('note') }}</span>
+      <span>{{ payment.note }}</span>
+    </div>
+    {% endif %}
+    <div class="receipt-row">
+      <span style="color:var(--text3)">Qabul qildi</span>
+      <span>{{ payment.admin_name }}</span>
+    </div>
+
+    <hr class="receipt-divider">
+
+    <div class="receipt-row total">
+      <span>{{ _('total') }}:</span>
+      <span>{{ "{:,}".format(payment.amount) }} {{ settings.currency }}</span>
+    </div>
+
+    <div class="receipt-stamp"><i class="fas fa-check-circle"></i> TO'LOV QABUL QILINDI</div>
+  </div>
+
+  <div class="no-print" style="display:flex;gap:10px;margin-top:16px;justify-content:center">
+    <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> Chop etish</button>
+    <button onclick="window.close()" class="btn btn-ghost"><i class="fas fa-xmark"></i> Yopish</button>
+  </div>
+</div>
+{% else %}
+<div class="empty-state"><div class="empty-icon"><i class="fas fa-receipt"></i></div><h3>{{ _('check') }} topilmadi</h3></div>
+{% endif %}
+</body>
+</html>
+

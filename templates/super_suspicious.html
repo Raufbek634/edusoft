@@ -1,0 +1,61 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('suspicious') }} — Raufbek{% endblock %}
+{% block page_title %}{{ _('suspicious') }}{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> {{ _('suspicious') }}</span>
+    <button class="btn btn-outline btn-xs" onclick="loadSuspicious()"><i class="fas fa-sync"></i> {{ _('refresh') }}</button>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+      <table class="super-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{{ _('time') }}</th>
+            <th>{{ _('action') }}</th>
+            <th>{{ _('admin') }}</th>
+            <th>{{ _('details') }}</th>
+          </tr>
+        </thead>
+        <tbody id="suspiciousBody">
+          <tr><td colspan="5" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function loadSuspicious() {
+  const tbody = document.getElementById('suspiciousBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr>';
+  fetch('/api/super/suspicious')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.logs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.logs.map((log, i) => {
+        let badge = 'warning';
+        if (log.action.includes('magic')) badge = 'danger';
+        if (log.action.includes('honeypot')) badge = 'dark';
+        if (log.action.includes('duplicate')) badge = 'info';
+        return `<tr>
+          <td>${data.count - i}</td>
+          <td style="white-space:nowrap">${log.timestamp.slice(0,19)}</td>
+          <td><span class="badge badge-${badge}">${log.action}</span></td>
+          <td>${log.admin_name || '-'}</td>
+          <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">${log.details || ''}</td>
+        </tr>`;
+      }).join('');
+    })
+    .catch(() => {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-danger)">{{ _('error') }}</td></tr>';
+    });
+}
+document.addEventListener('DOMContentLoaded', loadSuspicious);
+</script>
+{% endblock %}

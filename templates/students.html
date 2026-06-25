@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% block title %}{{ _('students') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-user-graduate"></i> {{ _('students') }}{% endblock %}
+
+{% block content %}
+<div id="pendingRegs" style="display:none;margin-bottom:20px"></div>
+<div class="section-header rv">
+  <div>
+    <div class="section-title">{{ _('student_list') }}</div>
+    <div class="section-sub" id="studentCount">{{ _('loading') }}</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openAddStudent()"><i class="fas fa-plus"></i> {{ _('add_student') }}</button>
+    <button class="btn btn-secondary btn-xs" onclick="openBulkImport()"><i class="fas fa-file-excel"></i> Bulk import</button>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar rv">
+  <div class="search-wrap">
+    <span class="search-icon"><i class="fas fa-search"></i></span>
+    <input class="form-control" id="searchInput" placeholder="{{ _('search_placeholder') }}" oninput="filterStudents()">
+  </div>
+  <select class="form-control" id="groupFilter" onchange="filterStudents()" style="max-width:160px">
+    <option value="">{{ _('all') }} {{ _('group') }}</option>
+  </select>
+  <select class="form-control" id="statusFilter" onchange="filterStudents()" style="max-width:130px">
+    <option value="">{{ _('all') }} {{ _('status') }}</option>
+    <option value="active">{{ _('active') }}</option>
+    <option value="inactive">{{ _('inactive') }}</option>
+  </select>
+  <div class="tabs" style="margin-bottom:0">
+    <button class="tab-btn active" id="viewCards" onclick="setView('cards')">⊞ {{ _('view') }}</button>
+    <button class="tab-btn" id="viewTable" onclick="setView('table')">☰ {{ _('student_list') }}</button>
+  </div>
+</div>
+
+<!-- Cards view -->
+<div id="cardsView">
+  <div class="students-grid rv" id="studentsGrid"></div>
+</div>
+
+<!-- Table view -->
+<div id="tableView" style="display:none">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>{{ _('first_name') }} {{ _('last_name') }}</th><th>{{ _('group') }}</th>
+          <th>{{ _('parent') }}</th><th>{{ _('phone') }}</th><th>{{ _('monthly') }} {{ _('payment_amount') }}</th>
+          <th>{{ _('join_date') }}</th><th>{{ _('status') }}</th><th>{{ _('actions') }}</th>
+        </tr>
+      </thead>
+      <tbody id="studentsTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="emptyState" class="empty-state" style="display:none">
+  <div class="empty-icon"><i class="fas fa-user-graduate"></i></div>
+  <h3>{{ _('no_data') }}</h3>
+  <p>{{ _('search') }} {{ _('add_student') }}</p>
+</div>
+<!-- Bulk Import Modal -->
+<div class="modal-backdrop" id="bulkImportModal" style="display:none">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3><i class="fas fa-file-excel"></i> O'quvchilarni bulk import qilish</h3>
+      <button class="modal-close" onclick="closeBulkImport()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.6">
+        <b>Excel fayl formati:</b><br>
+        <code>A</code> — Ism (majburiy)<br>
+        <code>B</code> — Familiya (majburiy)<br>
+        <code>C</code> — Telefon<br>
+        <code>D</code> — Ota-ona ismi<br>
+        <code>E</code> — Guruh<br>
+        <code>F</code> — Oylik to'lov<br>
+        Birinchi qator — sarlavha, ma'lumot 2-qatordan boshlanadi.
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer" onclick="document.getElementById('bulkFileInput').click()" id="bulkDropZone">
+        <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:var(--primary);opacity:.5"></i>
+        <p style="margin:8px 0 0;font-weight:600">Excel faylni tanlang</p>
+        <p style="font-size:11px;color:var(--text3);margin:4px 0 0">.xlsx yoki .xls</p>
+        <input type="file" accept=".xlsx,.xls" style="display:none" id="bulkFileInput" onchange="uploadBulkFile(this)">
+      </div>
+      <div id="bulkResult" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allStudents = [];
+let currentView = 'cards';
+let currency = 'UZS';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const settings = await api('/api/settings');
+  currency = settings.currency || 'UZS';
+  await loadPendingRegistrations();
+  await loadStudents();
+  await loadGroups();
+});
+
+async function loadPendingRegistrations() {
+  const regs = await api('/api/registrations');
+  const box = document.getElementById('pendingRegs');
+  if (!regs.length) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="card" style="border-left:4px solid var(--warning)">
+      <div class="card-header"><span class="card-title"><i class="fas fa-pen-to-square"></i> {{ _('pending') }} (${regs.length})</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="data-table"><thead><tr>
+          <th>{{ _('student') }}</th><th>{{ _('parent') }}</th><th>{{ _('phone') }}</th><th>{{ _('date') }}</th><th></th>
+        </tr></thead><tbody>
+        ${regs.map(r => `<tr>
+          <td><b>${r.child_first_name} ${r.child_last_name}</b></td>
+          <td>${r.parent_name}</td>
+          <td>${phoneLink(r.parent_phone)}</td>
+          <td>${fmtDate(r.created_at?.slice(0,10))}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="approveReg('${r.id}')"><i class="fas fa-check-circle"></i> {{ _('confirm') }}</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectReg('${r.id}')"><i class="fas fa-xmark"></i></button>
+          </td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+}
+
+async function approveReg(id) {
+  const group = prompt('{{ _('group_name') }}:', '{{ _('group') }}');
+  if (!group) return;
+  const fee = prompt('{{ _('monthly') }} (UZS):', '500000');
+  const res = await api(`/api/registrations/${id}/approve`, 'POST', {
+    group, monthly_fee: parseInt(fee, 10) || 0, payment_due_day: 1
+  });
+  if (res.success) { toast('{{ _('student') }} {{ _('add') }} <i class="fas fa-check-circle"></i>', 'success'); loadPendingRegistrations(); loadStudents(); }
+  else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+async function rejectReg(id) {
+  if (!confirm('{{ _('delete_confirm') }}')) return;
+  await api(`/api/registrations/${id}/reject`, 'POST');
+  toast('{{ _('delete') }}', 'info');
+  loadPendingRegistrations();
+}
+
+async function loadStudents() {
+  const search = document.getElementById('searchInput').value;
+  const group = document.getElementById('groupFilter').value;
+  const status = document.getElementById('statusFilter').value;
+
+  let url = '/api/students?';
+  if (search) url += `search=${encodeURIComponent(search)}&`;
+  if (group) url += `group=${encodeURIComponent(group)}&`;
+  if (status) url += `status=${status}`;
+
+  allStudents = await api(url);
+  document.getElementById('studentCount').textContent = `{{ _('total') }}: ${allStudents.length} {{ _('student') }}`;
+  renderStudents();
+}
+
+function filterStudents() { loadStudents(); }
+
+async function loadGroups() {
+  const groups = await api('/api/groups');
+  const sel = document.getElementById('groupFilter');
+  groups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g; opt.textContent = g;
+    sel.appendChild(opt);
+  });
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('cardsView').style.display = v === 'cards' ? '' : 'none';
+  document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
+  document.getElementById('viewCards').classList.toggle('active', v === 'cards');
+  document.getElementById('viewTable').classList.toggle('active', v === 'table');
+  renderStudents();
+}
+
+function renderStudents() {
+  const empty = document.getElementById('emptyState');
+  if (!allStudents.length) {
+    empty.style.display = '';
+    document.getElementById('studentsGrid').innerHTML = '';
+    document.getElementById('studentsTableBody').innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if (currentView === 'cards') {
+    document.getElementById('studentsGrid').innerHTML = allStudents.map(s => `
+      <div class="student-card">
+        <div class="student-card-header">
+          ${avatarHtml(s)}
+          <div class="student-info">
+            <h4>${s.first_name} ${s.last_name}</h4>
+            <p>${s.group || '{{ _('group') }}'} · <span class="badge ${s.status==='active'?'badge-success':'badge-gray'}" style="font-size:10px">${s.status==='active'?'{{ _('active') }}':'{{ _('inactive') }}'}</span></p>
+          </div>
+        </div>
+        <div class="student-card-body">
+          <span><i class="fas fa-user"></i> ${s.parent_name || '—'}</span>
+          <span><i class="fas fa-phone"></i> <a class="phone-link" href="tel:${s.parent_phone}">${s.parent_phone || '—'}</a></span>
+          <span><i class="fas fa-credit-card"></i> <b class="currency">${Number(s.monthly_fee).toLocaleString()} ${currency}</b>/oy ${s.discount_percent > 0 ? `<span class="badge badge-warning">-${s.discount_percent}%</span>` : ''}${s.subsidy_amount > 0 ? ` <span class="badge badge-primary">-${Number(s.subsidy_amount).toLocaleString()}</span>` : ''}</span>
+          <span><i class="fas fa-calendar-days"></i> {{ _('join_date') }}: ${fmtDate(s.join_date)}</span>
+          <span style="font-family:monospace;font-size:11px;color:var(--text3)">ID: ${s.id}</span>
+        </div>
+        <div class="student-card-footer">
+          <button class="btn btn-ghost btn-sm" onclick="viewBalance('${s.id}')"><i class="fas fa-chart-simple"></i> {{ _('view') }}</button>
+          <div class="student-actions">
+            <button class="btn btn-outline btn-sm" onclick="openEditStudent('${s.id}')"><i class="fas fa-pencil"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')"><i class="fas fa-trash-can"></i></button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('studentsTableBody').innerHTML = allStudents.map(s => `
+      <tr>
+        <td style="font-family:monospace;font-size:11px;color:var(--text3)">${s.id}</td>
+        <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s)}<b>${s.first_name} ${s.last_name}</b></div></td>
+        <td><span class="badge badge-primary">${s.group || '—'}</span></td>
+        <td>${s.parent_name || '—'}</td>
+        <td>${phoneLink(s.parent_phone)}</td>
+        <td class="currency">${Number(s.monthly_fee).toLocaleString()} ${currency}</td>
+        <td>${fmtDate(s.join_date)}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="viewBalance('${s.id}')" title="{{ _('view') }}"><i class="fas fa-chart-simple"></i></button>
+            <button class="btn btn-outline btn-sm btn-icon" onclick="openEditStudent('${s.id}')" title="{{ _('edit') }}"><i class="fas fa-pencil"></i></button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteStudent('${s.id}')" title="{{ _('delete') }}"><i class="fas fa-trash-can"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function studentForm(s = {}) {
+  return `
+    <form onsubmit="return false">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('first_name') }} *</label>
+          <input class="form-control" id="f_first_name" value="${s.first_name||''}" placeholder="{{ _('first_name') }}" required></div>
+        <div class="form-group"><label class="form-label">{{ _('last_name') }} *</label>
+          <input class="form-control" id="f_last_name" value="${s.last_name||''}" placeholder="{{ _('last_name') }}" required></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('birth_date') }}</label>
+          <input class="form-control" type="date" id="f_birth_date" value="${s.birth_date||''}"></div>
+        <div class="form-group"><label class="form-label">{{ _('group') }} *</label>
+          <input class="form-control" id="f_group" value="${s.group||''}" placeholder="{{ _('group_name') }}" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">{{ _('parent_name') }}</label>
+        <input class="form-control" id="f_parent_name" value="${s.parent_name||''}" placeholder="{{ _('parent_name') }}"></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('phone') }}</label>
+          <input class="form-control" id="f_parent_phone" value="${s.parent_phone||''}" placeholder="998901234567"></div>
+        <div class="form-group"><label class="form-label">{{ _('telegram_bot') }} ({{ _('settings') }})</label>
+          <input class="form-control" id="f_telegram_chat_id" value="${s.telegram_chat_id||''}" placeholder="{{ _('contact') }}" readonly style="background:var(--surface2)">
+          <small style="color:var(--text3);font-size:11px">{{ _('parent') }} — ID {{ _('settings') }}</small></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('monthly') }} ${currency}</label>
+          <input class="form-control" type="number" id="f_monthly_fee" value="${s.monthly_fee||0}" placeholder="500000" required></div>
+        <div class="form-group"><label class="form-label">{{ _('payment_date') }}</label>
+          <input class="form-control" type="number" id="f_payment_due_day" value="${s.payment_due_day||1}" min="1" max="28"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Chegirma %</label>
+          <input class="form-control" type="number" id="f_discount_percent" value="${s.discount_percent||0}" min="0" max="100" placeholder="0">
+          <small style="color:var(--text3);font-size:11px">Masalan: ko'p farzandli oilalar uchun 10%</small></div>
+        <div class="form-group"><label class="form-label">Subsidiy ${currency}</label>
+          <input class="form-control" type="number" id="f_subsidy_amount" value="${s.subsidy_amount||0}" min="0" placeholder="0">
+          <small style="color:var(--text3);font-size:11px">Oyiga belgilangan subsidiy miqdori</small></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('join_date') }}</label>
+          <input class="form-control" type="date" id="f_join_date" value="${s.join_date||new Date().toISOString().split('T')[0]}"></div>
+        <div class="form-group"><label class="form-label">{{ _('status') }}</label>
+          <select class="form-control" id="f_status">
+            <option value="active" ${s.status==='active'?'selected':''}>{{ _('active') }}</option>
+            <option value="inactive" ${s.status==='inactive'?'selected':''}>{{ _('inactive') }}</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">{{ _('check_photo') }} ({{ _('settings') }})</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" id="f_image" value="${s.image||''}" placeholder="{{ _('name') }}">
+          <label class="btn btn-ghost" style="white-space:nowrap;cursor:pointer"><i class="fas fa-paperclip"></i> {{ _('add') }}<input type="file" accept="image/*" style="display:none" onchange="handleImgUpload(this)"></label>
+        </div></div>
+      <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+        <textarea class="form-control" id="f_notes" rows="2" placeholder="{{ _('note') }}...">${s.notes||''}</textarea></div>
+    </form>`;
+}
+
+async function handleImgUpload(input) {
+  if (!input.files[0]) return;
+  toast('{{ _('check_photo') }}', 'info');
+  const res = await uploadImage(input.files[0]);
+  if (res.success) {
+    document.getElementById('f_image').value = res.url;
+    toast('{{ _('check_photo') }} <i class="fas fa-check-circle"></i>', 'success');
+  } else {
+    toast(res.message || '{{ _('error') }}', 'error');
+  }
+}
+
+function getFormData() {
+  return {
+    first_name: document.getElementById('f_first_name').value.trim(),
+    last_name: document.getElementById('f_last_name').value.trim(),
+    birth_date: document.getElementById('f_birth_date').value,
+    group: document.getElementById('f_group').value.trim(),
+    parent_name: document.getElementById('f_parent_name').value.trim(),
+    parent_phone: document.getElementById('f_parent_phone').value.trim(),
+    telegram_chat_id: document.getElementById('f_telegram_chat_id').value.trim(),
+    monthly_fee: parseInt(document.getElementById('f_monthly_fee').value) || 0,
+    payment_due_day: parseInt(document.getElementById('f_payment_due_day').value) || 1,
+    discount_percent: parseInt(document.getElementById('f_discount_percent').value) || 0,
+    subsidy_amount: parseInt(document.getElementById('f_subsidy_amount').value) || 0,
+    join_date: document.getElementById('f_join_date').value,
+    status: document.getElementById('f_status').value,
+    image: document.getElementById('f_image').value.trim(),
+    notes: document.getElementById('f_notes').value.trim()
+  };
+}
+
+function openAddStudent() {
+  openModal("<i class='fas fa-plus'></i> {{ _('add_student') }}", studentForm() + `
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="saveNewStudent()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+    </div>`, 'modal-lg');
+}
+
+async function saveNewStudent() {
+  const data = getFormData();
+  if (!data.first_name || !data.last_name || !data.group) {
+    toast('{{ _('error') }}', 'error'); return;
+  }
+  const res = await api('/api/students', 'POST', data);
+  if (res.success) {
+    toast('{{ _('student') }} {{ _('add') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal(); loadStudents(); loadGroups();
+  } else { toast(res.message || '{{ _('error') }}', 'error'); }
+}
+
+async function openEditStudent(id) {
+  const s = await api(`/api/students/${id}`);
+  openModal("<i class='fas fa-pencil'></i> {{ _('edit') }}", studentForm(s) + `
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="saveEditStudent('${id}')"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+    </div>`, 'modal-lg');
+}
+
+async function saveEditStudent(id) {
+  const data = getFormData();
+  const res = await api(`/api/students/${id}`, 'PUT', data);
+  if (res.success) {
+    toast('{{ _('student') }} {{ _('edit') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal(); loadStudents();
+  } else { toast(res.message || '{{ _('error') }}', 'error'); }
+}
+
+function deleteStudent(id) {
+  const s = allStudents.find(x => x.id === id);
+  const name = s ? `${s.first_name} ${s.last_name}` : id;
+  confirmAction(`"${name}" {{ _('delete_confirm') }}`, async () => {
+    const res = await api(`/api/students/${encodeURIComponent(id)}`, 'DELETE');
+    if (res.success) {
+      toast('{{ _('student') }} {{ _('delete') }}', 'success');
+      loadStudents();
+      loadGroups();
+      loadPendingRegistrations();
+    } else {
+      toast(res.message || '{{ _('delete') }}', 'error');
+    }
+  });
+}
+
+async function viewBalance(id) {
+  const d = await api(`/api/student-balance/${id}`);
+  const s = d.student;
+  const cur = currency;
+  openModal(`<i class="fas fa-chart-simple"></i> ${s.first_name} ${s.last_name} — {{ _('student_card') }}`, `
+    <div class="payment-summary">
+      <div class="pay-box payable"><div class="pay-box-val">${Number(d.payable_amount).toLocaleString()} ${cur}</div><div class="pay-box-label">{{ _('payment_amount') }}</div></div>
+      <div class="pay-box paid"><div class="pay-box-val">${Number(d.paid_amount).toLocaleString()} ${cur}</div><div class="pay-box-label">{{ _('payment_history') }}</div></div>
+      <div class="pay-box debt"><div class="pay-box-val">${Number(d.debt).toLocaleString()} ${cur}</div><div class="pay-box-label">{{ _('total') }}</div></div>
+    </div>
+    <table class="info-table">
+      <tr><td>{{ _('attendance') }}</td><td><b>${d.working_days} {{ _('date') }}</b></td></tr>
+      <tr><td>{{ _('present') }}</td><td><b style="color:var(--success)">${d.attended_days} {{ _('date') }}</b></td></tr>
+      <tr><td>{{ _('absent') }}</td><td><b style="color:var(--danger)">${d.absent_days} {{ _('date') }}</b></td></tr>
+      <tr><td>{{ _('monthly') }}</td><td><b>${Number(s.monthly_fee).toLocaleString()} ${cur}</b></td></tr>
+    </table>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <a href="/payments" class="btn btn-primary w-full" style="text-align:center"><i class="fas fa-credit-card"></i> {{ _('payments') }}</a>
+      <a href="/attendance" class="btn btn-outline w-full" style="text-align:center"><i class="fas fa-calendar-days"></i> {{ _('attendance') }}</a>
+    </div>
+  `);
+}
+// ─── Bulk Import ────────────────────────────────────────
+function openBulkImport(){
+  document.getElementById('bulkImportModal').style.display='flex'
+  document.getElementById('bulkResult').style.display='none'
+}
+function closeBulkImport(){
+  document.getElementById('bulkImportModal').style.display='none'
+}
+async function uploadBulkFile(input){
+  const file=input.files[0]
+  if(!file)return
+  const zone=document.getElementById('bulkDropZone')
+  zone.innerHTML='<i class="fas fa-spinner fa-spin" style="font-size:40px;color:var(--primary)"></i><p style="margin:8px 0 0">Yuklanmoqda...</p>'
+  const fd=new FormData()
+  fd.append('file',file)
+  try{
+    const r=await(await fetch('/api/students/bulk-import',{method:'POST',body:fd})).json()
+    const el=document.getElementById('bulkResult')
+    if(r.success){
+      let html=`<div style="padding:12px;background:var(--success-light);border-radius:8px;color:var(--success);font-weight:600">
+        <i class="fas fa-check-circle"></i> ${r.added} ta o'quvchi qo'shildi</div>`
+      if(r.errors&&r.errors.length){
+        html+=`<div style="margin-top:8px;padding:12px;background:var(--warning-light);border-radius:8px;font-size:12px">
+          <b>${r.errors.length} ta xatolik:</b><br>${r.errors.join('<br>')}</div>`
+      }
+      el.innerHTML=html
+      el.style.display='block'
+      loadStudents()
+      closeBulkImport()
+    }else{
+      el.innerHTML=`<div style="padding:12px;background:var(--danger-light);border-radius:8px;color:var(--color-danger)">${r.message||'Xatolik'}</div>`
+      el.style.display='block'
+    }
+  }catch(e){
+    document.getElementById('bulkResult').innerHTML=`<div style="padding:12px;background:var(--danger-light);border-radius:8px;color:var(--color-danger)">Server xatosi</div>`
+    document.getElementById('bulkResult').style.display='block'
+  }
+  input.value=''
+  zone.innerHTML=`<i class="fas fa-cloud-upload-alt" style="font-size:40px;color:var(--primary);opacity:.5"></i>
+    <p style="margin:8px 0 0;font-weight:600">Excel faylni tanlang</p>
+    <p style="font-size:11px;color:var(--text3);margin:4px 0 0">.xlsx yoki .xls</p>`
+}
+document.getElementById('bulkImportModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBulkImport()})
+</script>
+{% endblock %}

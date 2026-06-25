@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ota-ona kabineti — O'quv markazni tanlang</title>
+<meta name="description" content="Ota-ona kabineti — farzandingiz o'quv markazini tanlang va uning davomati, to'lovlari hamda boshqa ma'lumotlarini ko'ring.">
+<meta name="keywords" content="EduSoft, ota-ona kabineti, o'quv markaz portali, farzand davomati, o'quv markaz to'lovlari, o'quv markaz">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  .sel-page{
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px 16px;
+    background: linear-gradient(135deg, var(--bg) 0%, color-mix(in srgb, var(--primary) 5%, var(--bg)) 100%);
+    position:relative;
+  }
+  .sel-orb{
+    position:absolute;border-radius:50%;filter:blur(100px);opacity:.15;
+    pointer-events:none;
+  }
+  .sel-orb-1{width:400px;height:400px;background:var(--primary);top:-120px;left:-160px}
+  .sel-orb-2{width:350px;height:350px;background:var(--primary);bottom:-100px;right:-140px}
+  .sel-card{
+    width:100%;max-width:520px;position:relative;z-index:1;
+    background:var(--surface);
+    -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:32px 28px;
+    box-shadow:0 8px 32px rgba(0,0,0,.06);
+    animation:cardIn .5s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cardIn {
+    0% { opacity:0; transform:translateY(20px) scale(.97) }
+    100% { opacity:1; transform:translateY(0) scale(1) }
+  }
+  .sel-header{text-align:center;margin-bottom:24px}
+  .sel-logo{
+    width:56px;height:56px;border-radius:16px;
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:24px;margin:0 auto 14px;
+    box-shadow:0 8px 20px var(--primary-glow);
+  }
+  .sel-header h1{font-size:20px;font-weight:800;margin-bottom:4px}
+  .sel-header p{font-size:13px;color:var(--text2)}
+  .kg-grid{display:flex;flex-direction:column;gap:12px}
+  .kg-card{
+    display:flex;align-items:center;gap:14px;
+    padding:16px 18px;
+    border-radius:14px;
+    background:var(--surface2);
+    border:2px solid var(--border);
+    cursor:pointer;
+    transition:all .2s;
+    text-decoration:none;
+    color:var(--text);
+  }
+  .kg-card:hover{
+    border-color:var(--primary);
+    background:var(--primary-light);
+    transform:translateY(-2px);
+    box-shadow:0 4px 16px var(--primary-glow);
+  }
+  .kg-card:active{transform:translateY(0)}
+  .kg-icon{
+    width:44px;height:44px;border-radius:12px;
+    background:linear-gradient(135deg,var(--primary),#7c5cfc);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:18px;flex-shrink:0;
+  }
+  .kg-info{flex:1}
+  .kg-name{font-weight:700;font-size:15px}
+  .kg-meta{font-size:12px;color:var(--text3);margin-top:2px}
+  .kg-arrow{color:var(--text3);font-size:14px}
+  .sel-footer{text-align:center;margin-top:20px;font-size:12px;color:var(--text3)}
+  .sel-footer a{color:var(--primary);font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="sel-page">
+  <div class="sel-orb sel-orb-1"></div>
+  <div class="sel-orb sel-orb-2"></div>
+  <div class="sel-card">
+    <div class="sel-header">
+      <div class="sel-logo"><i class="fas fa-school"></i></div>
+      <h1>Ota-ona kabineti</h1>
+      <p>Farzandingiz o'quv markazini tanlang</p>
+    </div>
+    {% if kindergartens %}
+    <div class="kg-grid">
+      {% for kg in kindergartens %}
+      <a class="kg-card" href="/parent/{{ kg.id }}">
+        <div class="kg-icon"><i class="fas fa-child"></i></div>
+        <div class="kg-info">
+          <div class="kg-name">{{ kg.name }}</div>
+          <div class="kg-meta">Farzandingiz o'quv markazi</div>
+        </div>
+        <div class="kg-arrow"><i class="fas fa-chevron-right"></i></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align:center;padding:32px 0">
+      <div class="empty-icon"><i class="fas fa-triangle-exclamation"></i></div>
+      <p>Hozircha faol o'quv markazlar mavjud emas</p>
+    </div>
+    {% endif %}
+    <div class="sel-footer">
+      <a href="/register"><i class="fas fa-pen-to-square"></i> Ro'yxatdan o'tish</a>
+      <span style="margin:0 8px">·</span>
+      <a href="/pricing">Narxlar va to'lov</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

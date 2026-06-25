@@ -1,0 +1,18 @@
+[
+  {
+    "id": "STU-930B67B9",
+    "first_name": "Ali",
+    "last_name": "Karimov",
+    "birth_date": "",
+    "parent_name": "nima",
+    "parent_phone": "99993190712",
+    "group": "Kichik",
+    "monthly_fee": 250000,
+    "payment_due_day": 1,
+    "join_date": "2026-05-20",
+    "status": "active",
+    "image": "/static/uploads/9e0ee6d9-f75a-43.png",
+    "telegram_chat_id": "6439945348",
+    "notes": ""
+  }
+]

@@ -1,0 +1,153 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('kg_applications') }}{% endblock %}
+{% block page_title %}{{ _('kg_applications') }}{% endblock %}
+{% block content %}
+<div class="super-filter">
+  <button class="btn btn-outline btn-sm" onclick="showTab('pending')" id="tabPending" style="background:var(--surface2)">Kutilayotgan</button>
+  <button class="btn btn-ghost btn-sm" onclick="showTab('history')" id="tabHistory">Tarix</button>
+  <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="appCount"></span>
+</div>
+
+<div id="pendingView">
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-school" style="color:var(--warning)"></i> {{ _('kg_applications') }}</span>
+    <span class="badge badge-warning" id="pendingCount">{{ applications|length }} ta</span>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    {% if not applications %}
+    <div class="empty-state" style="padding:40px">
+      <div class="empty-icon"><i class="fas fa-envelope-open-text"></i></div>
+      <h3>{{ _('no_data') }}</h3>
+      <p>{{ _('no_data_table') }}</p>
+    </div>
+    {% else %}
+    <div class="super-table-wrap">
+    <table class="super-table">
+      <thead><tr><th>{{ _('kg_name') }}</th><th>{{ _('admin_name') }}</th><th>{{ _('plan') }}</th><th>{{ _('plan_price') }}</th><th>{{ _('phone') }}</th><th>{{ _('password') }}</th><th>Telegram</th><th></th></tr></thead>
+      <tbody>
+      {% for a in applications %}
+      <tr>
+        <td><b>{{ a.kindergarten_name }}</b><br><small style="color:var(--text3)">{{ a.city or '—' }}{% if a.address %}, {{ a.address }}{% endif %}</small></td>
+        <td>{{ a.director_name }}</td>
+        <td><span class="badge {% if a.plan=='premium' %}badge-warning{% else %}badge-primary{% endif %}">{{ a.plan_name or 'Standart' }}</span></td>
+        <td><b>${{ a.price_usd or 10 }}/{{ _('monthly') }}</b><br><small style="color:var(--success)"><i class="fas fa-gift"></i> 1 {{ _('monthly') }} {{ _('free_trial') }}</small></td>
+        <td>{{ a.phone }}</td>
+        <td><code style="font-size:12px">{{ a.temp_password or '12345678' }}</code></td>
+        <td>{% if a.owner_telegram %}<code style="font-size:11px">{{ a.owner_telegram }}</code>{% else %}—{% endif %}</td>
+        <td>
+          <button class="btn btn-primary btn-sm" onclick="approveApp('{{ a.id }}')"><i class="fas fa-check"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="openRejectModal('{{ a.id }}','{{ a.kindergarten_name|e }}')"><i class="fas fa-xmark"></i></button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div>
+
+<div id="historyView" style="display:none">
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-clock-rotate" style="color:var(--primary)"></i> Arizalar tarixi</span>
+    <span class="badge badge-primary" id="historyCount">0</span>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+      <table class="super-table">
+        <thead><tr><th>{{ _('kg_name') }}</th><th>Holat</th><th>Sabab</th><th>Vaqt</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="4" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-backdrop" id="rejectModal" style="display:none" onclick="if(event.target===this)closeRejectModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3><i class="fas fa-xmark" style="color:var(--danger)"></i> Arizani rad etish</h3>
+      <button class="modal-close" onclick="closeRejectModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;margin-bottom:12px"><b id="rejectKgName"></b> — rad etish sababi:</p>
+      <div class="form-group">
+        <textarea class="form-control" id="rejectReason" rows="3" placeholder="Sababni kiriting..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-ghost" onclick="closeRejectModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-danger" onclick="confirmReject()"><i class="fas fa-xmark"></i> Rad etish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+let rejectAppId = null;
+let currentTab = 'pending';
+
+function showTab(tab) {
+  currentTab = tab;
+  document.getElementById('pendingView').style.display = tab === 'pending' ? '' : 'none';
+  document.getElementById('historyView').style.display = tab === 'history' ? '' : 'none';
+  document.getElementById('tabPending').className = tab === 'pending' ? 'btn btn-outline btn-sm' : 'btn btn-ghost btn-sm';
+  document.getElementById('tabHistory').className = tab === 'history' ? 'btn btn-outline btn-sm' : 'btn btn-ghost btn-sm';
+  if (tab === 'history') loadHistory();
+}
+
+async function loadHistory() {
+  const tbody = document.getElementById('historyBody');
+  const data = await api('/api/super/all-applications');
+  const processed = data.applications.filter(a => a.status !== 'pending');
+  document.getElementById('historyCount').textContent = processed.length + ' ta';
+  if (!processed.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>';
+    return;
+  }
+  tbody.innerHTML = processed.map(a => `<tr>
+    <td><b>${a.kindergarten_name}</b></td>
+    <td><span class="badge ${a.status === 'approved' ? 'badge-success' : 'badge-danger'}">${a.status === 'approved' ? 'Tasdiqlangan' : 'Rad etilgan'}</span></td>
+    <td style="color:var(--text2)">${a.rejection_reason || '—'}</td>
+    <td style="font-size:10px;color:var(--text3)">${a.created_at ? a.created_at.slice(0,19) : '—'}</td>
+  </tr>`).join('');
+}
+
+async function approveApp(id) {
+  if (!confirm('{{ _("confirm")|e }}?')) return;
+  const res = await api(`/api/kindergarten-applications/${id}/status`, 'POST', { status: 'approved' });
+  if (res.success) {
+    const kg = res.kindergarten;
+    toast(`<i class="fas fa-check-circle"></i> {{ _("success")|e }}! Login: ${kg?.owner?.login} / Parol: ${kg?.owner?._temp}`, 'success');
+    location.reload();
+  } else toast(res.message || '{{ _("error")|e }}', 'error');
+}
+
+function openRejectModal(id, name) {
+  rejectAppId = id;
+  document.getElementById('rejectKgName').textContent = name;
+  document.getElementById('rejectReason').value = '';
+  document.getElementById('rejectModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('rejectReason').focus(), 100);
+}
+
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+  rejectAppId = null;
+}
+
+async function confirmReject() {
+  if (!rejectAppId) return;
+  const reason = document.getElementById('rejectReason').value.trim();
+  if (!reason) { toast('Rad etish sababini kiriting', 'error'); return; }
+  const res = await api(`/api/kindergarten-applications/${rejectAppId}/status`, 'POST', { status: 'rejected', reason });
+  if (res.success) { toast('Rad etildi', 'info'); closeRejectModal(); location.reload(); }
+  else toast(res.message || '{{ _("error")|e }}', 'error');
+}
+</script>
+{% endblock %}

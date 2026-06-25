@@ -1,0 +1,105 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('daily_stats') }} — Raufbek{% endblock %}
+{% block page_title %}{{ _('daily_stats') }}{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-chart-bar" style="color:var(--primary)"></i> <span id="statDate">{{ _('today') }}</span></span>
+    <button class="btn btn-outline btn-xs" onclick="loadStats()"><i class="fas fa-sync"></i> {{ _('refresh') }}</button>
+  </div>
+  <div class="super-card-body">
+    <div class="super-stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:24px">
+      <div class="super-stat-card" style="text-align:center;padding:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--success)" id="statViews">0</div>
+        <div class="super-stat-label">{{ _('page_views') }}</div>
+      </div>
+      <div class="super-stat-card" style="text-align:center;padding:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--primary)" id="statUnique">0</div>
+        <div class="super-stat-label">{{ _('unique_visitors') }}</div>
+      </div>
+      <div class="super-stat-card" style="text-align:center;padding:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--primary)" id="statLogins">0</div>
+        <div class="super-stat-label">{{ _('logins') }}</div>
+      </div>
+      <div class="super-stat-card" style="text-align:center;padding:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--danger)" id="statFailed">0</div>
+        <div class="super-stat-label">{{ _('failed_logins') }}</div>
+      </div>
+      <div class="super-stat-card" style="text-align:center;padding:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--warning)" id="statActions">0</div>
+        <div class="super-stat-label">{{ _('total_actions') }}</div>
+      </div>
+    </div>
+
+    <div class="stats-two-col">
+      <div>
+        <h4 style="margin:0 0 8px 0;font-size:13px;color:var(--text2)"><i class="fas fa-clock"></i> {{ _('hourly_views') }}</h4>
+        <div class="stats-scroll-wrap">
+          <table>
+            <thead><tr><th>{{ _('hour') }}</th><th>{{ _('views') }}</th><th>{{ _('unique') }}</th></tr></thead>
+            <tbody id="hourlyBody"><tr><td colspan="3" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px 0;font-size:13px;color:var(--text2)"><i class="fas fa-list"></i> {{ _('action_counts') }}</h4>
+        <div class="stats-scroll-wrap">
+          <table>
+            <thead><tr><th>{{ _('action') }}</th><th>{{ _('count') }}</th></tr></thead>
+            <tbody id="actionsBody"><tr><td colspan="2" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin:16px 0 8px 0;font-size:13px;color:var(--text2)"><i class="fas fa-globe"></i> {{ _('top_ips') }}</h4>
+    <div class="stats-scroll-wrap">
+      <table>
+        <thead><tr><th>IP</th><th>{{ _('count') }}</th></tr></thead>
+        <tbody id="ipsBody"><tr><td colspan="2" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadStats(){
+  try{
+    const d=await(await fetch('/api/super/daily-stats')).json()
+    document.getElementById('statViews').textContent=d.page_views||0
+    document.getElementById('statUnique').textContent=d.unique_ips||0
+    document.getElementById('statLogins').textContent=d.login_count||0
+    document.getElementById('statFailed').textContent=d.failed_login_count||0
+    document.getElementById('statActions').textContent=d.total_actions||0
+    document.getElementById('statDate').textContent = d.date || '{{ _('today') }}'
+
+    const hBody=document.getElementById('hourlyBody')
+    if(d.hours && d.hours.length){
+      hBody.innerHTML=d.hours.map(h=>`<tr><td>${h.hour}:00</td><td>${h.views}</td><td>${h.unique_ips}</td></tr>`).join('')
+    } else {
+      hBody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>'
+    }
+
+    const aBody=document.getElementById('actionsBody')
+    const acts=d.action_counts||{}
+    const keys=Object.keys(acts).sort((a,b)=>acts[b]-acts[a])
+    if(keys.length){
+      aBody.innerHTML=keys.map(k=>`<tr><td>${k}</td><td>${acts[k]}</td></tr>`).join('')
+    } else {
+      aBody.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>'
+    }
+
+    const iBody=document.getElementById('ipsBody')
+    if(d.ip_breakdown && d.ip_breakdown.length){
+      iBody.innerHTML=d.ip_breakdown.map(ip=>`<tr><td><code>${ip.ip}</code></td><td>${ip.count}</td></tr>`).join('')
+    } else {
+      iBody.innerHTML='<tr><td colspan="2" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>'
+    }
+  }catch(e){
+    console.error('Stats xatosi:',e)
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadStats)
+</script>
+{% endblock %}

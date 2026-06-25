@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>404 — Sahifa topilmadi | EduSoft</title>
+<meta name="description" content="Kechirasiz, qidirilayotgan sahifa topilmadi. EduSoft — o'quv markaz boshqaruv tizimining asosiy sahifasiga qayting.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="{{ url_for('login_page', _external=True) }}">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;background:#050508;color:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.container{text-align:center;max-width:500px}
+.code{font-size:120px;font-weight:800;line-height:1;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px}
+h1{font-size:24px;font-weight:700;margin-bottom:12px}
+p{color:#94a3b8;margin-bottom:24px;line-height:1.6}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:rgba(255,255,255,.04);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#f1f5f9;font-size:14px;font-weight:700;text-decoration:none;transition:all .3s}
+.btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);transform:translateY(-2px)}
+.links{margin-top:32px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.links a{color:#64748b;font-size:13px;font-weight:600;text-decoration:none;transition:color .3s}
+.links a:hover{color:#f1f5f9}
+@media(max-width:480px){.code{font-size:80px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="code">404</div>
+  <h1>Sahifa topilmadi</h1>
+  <p>Kechirasiz, qidirilayotgan sahifa mavjud emas yoki ko'chirilgan. Iltimos, manzilni tekshiring yoki asosiy sahifaga qayting.</p>
+  <a href="/" class="btn"><i class="fas fa-arrow-left"></i> Bosh sahifaga qaytish</a>
+  <div class="links">
+    <a href="/login">Kirish</a>
+    <a href="/register">Ro'yxatdan o'tish</a>
+    <a href="/bogcha-register">O'quv markaz qo'shish</a>
+    <a href="/pricing">Narxlar</a>
+    <a href="/parent">Ota-ona portali</a>
+  </div>
+</div>
+</body>
+</html>

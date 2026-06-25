@@ -1,0 +1,29 @@
+body.login-body{font-family:'Nunito',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;background:#fff}
+.login-wrap{width:100%;max-width:440px}
+.login-glass{background:#fff;border:1px solid #ddd;border-radius:12px;overflow:hidden}
+.login-hero{text-align:center;padding:28px 24px 16px}
+.login-icon-ring{width:56px;height:56px;margin:0 auto 12px;border-radius:12px;background:#111;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff}
+.login-hero h1{font-size:1.3rem;font-weight:900;color:#111;margin-bottom:4px}
+.login-hero p{font-size:12px;color:#555;line-height:1.5}
+.login-form{padding:8px 24px 20px}
+.login-form h2{font-size:10px;font-weight:800;color:#999;text-align:center;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.form-control{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:14px;color:#111;background:#fafafa;outline:none}
+.form-control:focus{border-color:#111;background:#fff}
+.pw-row{position:relative}
+.pw-row .form-control{padding-right:44px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:16px;cursor:pointer;color:#999}
+.remember-row{display:flex;align-items:center;gap:6px;margin-bottom:16px}
+.remember-row label{font-size:12px;color:#666;cursor:pointer}
+.btn-kirish{width:100%;padding:12px;border:none;border-radius:6px;font-family:inherit;font-size:14px;font-weight:800;color:#fff;cursor:pointer;background:#111}
+.btn-kirish:hover{background:#333}
+.btn-kirish:disabled{opacity:.4;cursor:not-allowed}
+.error-msg{display:none;background:#f5f5f5;color:#111;padding:10px;border-radius:6px;font-size:12px;font-weight:700;text-align:center;margin-bottom:12px}
+.login-links{display:flex;flex-direction:column;gap:6px;padding:0 24px 20px}
+.login-links a{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;color:#111;background:#f5f5f5;border:1px solid #ddd}
+.login-links a:hover{background:#eee;border-color:#bbb}
+.login-credit{position:relative;z-index:2;margin-top:16px;font-size:11px;color:#999;text-align:center}
+.login-kids{display:none}
+.login-bg{display:none}
+@media(max-width:400px){.login-form,.login-links{padding-left:16px;padding-right:16px}}

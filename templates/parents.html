@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}{{ _('parents') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-users"></i> {{ _('parent_list') }}{% endblock %}
+{% block content %}
+<div class="section-header rv">
+  <div>
+    <div class="section-title">{{ _('parent_list') }}</div>
+    <div class="section-sub">{{ _('admin_login') }} — {{ _('phone') }} {{ _('parent') }}</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openCreatePortfolio()"><i class="fas fa-plus"></i> {{ _('add') }}</button>
+    <button class="btn btn-outline" onclick="openTelegramModal()"><i class="fas fa-mobile-screen"></i> Telegram</button>
+  </div>
+</div>
+
+<div class="parents-grid rv" id="parentsGrid">
+  <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let portfolios = [];
+let allStudents = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  allStudents = await api('/api/students');
+  await loadPortfolios();
+});
+
+async function loadPortfolios() {
+  portfolios = await api('/api/parent-portfolios');
+  renderPortfolios();
+}
+
+function renderPortfolios() {
+  const grid = document.getElementById('parentsGrid');
+  if (!portfolios.length) {
+    grid.innerHTML = `<div class="empty-state card" style="grid-column:1/-1;padding:48px">
+      <div class="empty-icon"><i class="fas fa-users"></i></div>
+      <h3>{{ _('no_parents') }}</h3>
+      <p>{{ _('parent_list') }}</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="openCreatePortfolio()"><i class="fas fa-plus"></i> {{ _('add') }}</button>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = portfolios.map(p => `
+    <div class="parent-portfolio-card">
+      <div class="ppc-header">
+        <div class="ppc-avatar">${(p.parent_name||'?')[0]}</div>
+        <div class="ppc-info">
+          <h3>${escapeHtml(p.parent_name)}</h3>
+          <div class="ppc-phone">${phoneLink(p.phone)}</div>
+        </div>
+        <span class="badge ${p.active!==false?'badge-success':'badge-gray'}">${p.active!==false?'{{ _('active') }}':'{{ _('inactive') }}'}</span>
+      </div>
+      <div class="ppc-children">
+        <div class="ppc-label">{{ _('student') }}</div>
+        ${p.children.length ? p.children.map(c=>
+          `<span class="badge badge-primary">${escapeHtml(c.name)} · ${c.group||'—'}</span>`
+        ).join(' ') : '<span style="color:var(--text3);font-size:12px">{{ _('no_data') }}</span>'}
+      </div>
+      ${p.notes ? `<p class="ppc-notes">${escapeHtml(p.notes)}</p>` : ''}
+      <div class="ppc-actions">
+        <a href="/parent?phone=${encodeURIComponent(p.phone)}" target="_blank" class="btn btn-primary btn-sm">🌐 Portal</a>
+        <button class="btn btn-outline btn-sm" onclick="openEditPortfolio('${p.id}')"><i class="fas fa-pencil"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deletePortfolio('${p.id}')"><i class="fas fa-trash-can"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function studentCheckboxes(selected=[]) {
+  const active = allStudents.filter(s => s.status === 'active');
+  if (!active.length) return '<p style="color:var(--text3);font-size:13px">{{ _('add_student') }}</p>';
+  return `<div class="student-pick-list">${active.map(s => `
+    <label class="student-pick-item">
+      <input type="checkbox" value="${s.id}" ${selected.includes(s.id)?'checked':''}>
+      <span>${escapeHtml(s.first_name+' '+s.last_name)} <small>(${s.group||'—'})</small></span>
+    </label>`).join('')}</div>`;
+}
+
+function getSelectedStudents() {
+  return [...document.querySelectorAll('.student-pick-item input:checked')].map(el => el.value);
+}
+
+function openCreatePortfolio() {
+  openModal('<i class="fas fa-plus"></i> {{ _('parent') }}', `
+    <div class="form-group"><label class="form-label">{{ _('parent_name') }} *</label>
+      <input class="form-control" id="pf_name" placeholder="{{ _('parent_name') }}"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('phone') }} *</label>
+        <input class="form-control" id="pf_phone" placeholder="998901234567"></div>
+      <div class="form-group"><label class="form-label">Email</label>
+        <input class="form-control" id="pf_email" type="email"></div>
+    </div>
+    <div class="form-group"><label class="form-label">{{ _('student') }}</label>
+      ${studentCheckboxes()}</div>
+    <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+      <textarea class="form-control" id="pf_notes" rows="2"></textarea></div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="savePortfolio()">💾 {{ _('save') }}</button>
+    </div>`, 'modal-lg');
+}
+
+async function openEditPortfolio(id) {
+  const p = portfolios.find(x => x.id === id);
+  if (!p) return;
+  openModal('<i class="fas fa-pencil"></i> {{ _('edit') }}', `
+    <div class="form-group"><label class="form-label">{{ _('parent_name') }} *</label>
+      <input class="form-control" id="pf_name" value="${escapeHtml(p.parent_name)}"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('phone') }} *</label>
+        <input class="form-control" id="pf_phone" value="${escapeHtml(p.phone)}"></div>
+      <div class="form-group"><label class="form-label">Email</label>
+        <input class="form-control" id="pf_email" value="${escapeHtml(p.email||'')}" type="email"></div>
+    </div>
+    <div class="form-group"><label class="form-label">{{ _('student') }}</label>
+      ${studentCheckboxes(p.student_ids||[])}</div>
+    <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+      <textarea class="form-control" id="pf_notes" rows="2">${escapeHtml(p.notes||'')}</textarea></div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="savePortfolio('${id}')">💾 {{ _('edit') }}</button>
+    </div>`, 'modal-lg');
+}
+
+async function savePortfolio(editId) {
+  const data = {
+    parent_name: document.getElementById('pf_name').value.trim(),
+    phone: document.getElementById('pf_phone').value.trim(),
+    email: document.getElementById('pf_email').value.trim(),
+    notes: document.getElementById('pf_notes').value.trim(),
+    student_ids: getSelectedStudents()
+  };
+  if (!data.parent_name || !data.phone) { toast('{{ _('error') }}', 'error'); return; }
+  const url = editId ? `/api/parent-portfolios/${editId}` : '/api/parent-portfolios';
+  const method = editId ? 'PUT' : 'POST';
+  const res = await api(url, method, data);
+  if (res.success) {
+    toast(editId ? '{{ _('edit') }} <i class="fas fa-check-circle"></i>' : '{{ _('add') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal();
+    loadPortfolios();
+  } else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+function deletePortfolio(id) {
+  const p = portfolios.find(x => x.id === id);
+  confirmAction(`"${p?.parent_name||id}" {{ _('delete_confirm') }}`, async () => {
+    const res = await api(`/api/parent-portfolios/${id}`, 'DELETE');
+    if (res.success) { toast('{{ _('delete') }}', 'success'); loadPortfolios(); }
+    else toast('{{ _('error') }}', 'error');
+  });
+}
+
+async function openTelegramModal() {
+  const settings = await api('/api/settings');
+  const groups = await api('/api/groups');
+  const groupOptions = groups.map(g=>`<option value="group:${g}">${g} guruhi</option>`).join('');
+  openModal('<i class="fas fa-mobile-screen"></i> {{ _('telegram_bot') }}', `
+    ${!settings.bot_token ? '<div style="padding:10px;background:var(--warning-light);border-radius:8px;margin-bottom:14px;color:#d97706;font-size:13px;font-weight:600"><i class="fas fa-triangle-exclamation"></i> {{ _('error') }}</div>' : ''}
+    <div class="form-group"><label class="form-label">{{ _('send_to') }}</label>
+      <select class="form-control" id="tg_target"><option value="all">{{ _('all') }}</option>${groupOptions}</select></div>
+    <div class="form-group"><label class="form-label">{{ _('notif_message') }}</label>
+      <textarea class="form-control" id="tg_msg" rows="5"></textarea></div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="sendTelegram()"><i class="fas fa-upload"></i> {{ _('send') }}</button>
+    </div>`);
+}
+async function sendTelegram() {
+  const res = await api('/api/telegram/send', 'POST', {
+    target: document.getElementById('tg_target').value,
+    message: document.getElementById('tg_msg').value.trim()
+  });
+  if (res.success) { toast(`{{ _('success') }}: ${res.sent}`, 'success'); closeModal(); }
+  else toast(res.message || '{{ _('error') }}', 'error');
+}
+</script>
+{% endblock %}

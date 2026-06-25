@@ -1,0 +1,115 @@
+{% extends "super_base.html" %}
+{% block title %}Login History — Raufbek{% endblock %}
+{% block page_title %}{{ _('login_history') }}{% endblock %}
+{% block content %}
+
+<div class="super-card">
+  <div class="super-card-body">
+    <div class="super-card-header">
+      <h3><i class="fas fa-sign-in-alt"></i> Kirish tarixi</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="daysFilter" class="form-control" onchange="loadHistory()">
+          <option value="7">7 kun</option>
+          <option value="30" selected>30 kun</option>
+          <option value="90">90 kun</option>
+        </select>
+        <button class="btn btn-secondary btn-xs" onclick="loadHistory()"><i class="fas fa-sync"></i></button>
+      </div>
+    </div>
+
+    <div id="statsRow" class="lh-stat">
+      <div class="lh-stat-item"><div class="lh-stat-value" id="statTotal">—</div><div class="lh-stat-label">Jami kirish</div></div>
+      <div class="lh-stat-item"><div class="lh-stat-value" id="statUnique">—</div><div class="lh-stat-label">Unikal IP</div></div>
+      <div class="lh-stat-item"><div class="lh-stat-value" id="statFailed">—</div><div class="lh-stat-label">Muvaffaqiyatsiz</div></div>
+      <div class="lh-stat-item"><div class="lh-stat-value" id="statBlocked">—</div><div class="lh-stat-label">Bloklangan IP</div></div>
+    </div>
+
+    <div class="super-filter">
+      <i class="fas fa-filter" style="color:var(--text3)"></i>
+      <select id="actionFilter" class="form-control" onchange="loadHistory()">
+        <option value="">Barcha amallar</option>
+        <option value="login">✅ login</option>
+        <option value="logout">🚪 logout</option>
+        <option value="failed_login">❌ failed_login</option>
+        <option value="super_admin_blocked_ip">🚫 blocked_ip</option>
+      </select>
+      <input id="ipFilter" class="form-control" placeholder="🌐 IP manzil" oninput="loadHistory()">
+      <span id="resultCount" style="font-size:11px;color:var(--text3);margin-left:auto">0 ta yozuv</span>
+    </div>
+
+    <div id="logContainer" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)">
+      <div style="padding:30px;text-align:center;color:var(--text3)">Yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatTime(ts){
+  if(!ts) return '-';
+  try{const d=new Date(ts);return d.toLocaleString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ts.slice(0,19)}
+}
+
+function loadHistory(){
+  const days=document.getElementById('daysFilter').value;
+  const actionFilter=document.getElementById('actionFilter').value;
+  const ipFilter=document.getElementById('ipFilter').value.toLowerCase().trim();
+  const container=document.getElementById('logContainer');
+  container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)">⏳ Yuklanmoqda...</div>';
+  fetch(`/api/super/login-history?days=${days}`)
+    .then(r=>r.json())
+    .then(data=>{
+      let logs=data.logs||[];
+      if(actionFilter) logs=logs.filter(l=>l.action===actionFilter);
+      if(ipFilter) logs=logs.filter(l=>(l.ip||'').toLowerCase().includes(ipFilter));
+      const total=logs.length;
+      const uniqueIps=new Set(logs.map(l=>l.ip).filter(Boolean)).size;
+      const failed=logs.filter(l=>l.action==='failed_login').length;
+      const blocked=logs.filter(l=>l.action==='super_admin_blocked_ip').length;
+      document.getElementById('statTotal').textContent=total;
+      document.getElementById('statUnique').textContent=uniqueIps;
+      document.getElementById('statFailed').textContent=failed;
+      document.getElementById('statBlocked').textContent=blocked;
+      document.getElementById('resultCount').textContent=total+' ta yozuv';
+      if(!logs.length){
+        container.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text3)"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:12px"></i>Ma\'lumot topilmadi</div>';
+        return;
+      }
+      container.innerHTML=logs.map((log,i)=>{
+        const isLogin=log.action==='login';
+        const isLogout=log.action==='logout';
+        const isFail=log.action==='failed_login';
+        const isBlock=log.action==='super_admin_blocked_ip';
+        let badgeCls, icon, avatarCls;
+        if(isLogout){badgeCls='secondary';icon='fa-sign-out-alt';avatarCls='secondary'}
+        else if(isFail){badgeCls='danger';icon='fa-exclamation-triangle';avatarCls='danger'}
+        else if(isBlock){badgeCls='dark';icon='fa-ban';avatarCls='dark'}
+        else{badgeCls='success';icon='fa-check-circle';avatarCls='success'}
+        let locHtml='<span class="lh-loc">—</span>';
+        if(log.lat&&log.lng){
+          locHtml=`<span class="lh-loc">${log.lat}, ${log.lng}</span>
+            <a class="lh-map" href="https://www.google.com/maps?q=${log.lat},${log.lng}" target="_blank" rel="noopener">
+              <i class="fas fa-external-link-alt"></i> Xarita</a>`;
+        }
+        return `<div class="lh-item">
+          <div class="lh-avatar ${avatarCls}"><i class="fas ${icon}"></i></div>
+          <div class="lh-content">
+            <div class="lh-top">
+              <span class="lh-time">${formatTime(log.timestamp)}</span>
+              <span class="lh-badge ${badgeCls}"><i class="fas ${icon}"></i> ${log.action}</span>
+              <span class="lh-ip">${log.ip||'-'}</span>
+              ${locHtml}
+            </div>
+            <div class="lh-details">
+              ${log.details ? log.details.split('loc:')[0].trim() : '—'}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    })
+    .catch(()=>{
+      container.innerHTML='<div style="padding:40px;text-align:center;color:var(--color-danger)">Xatolik yuz berdi</div>';
+    });
+}
+document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

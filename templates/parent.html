@@ -1,0 +1,650 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ _('parent_portal') }} — {{ settings.name }}</title>
+<meta name="description" content="Ota-ona portali — farzandingizning o'quv markazdagi davomati, to'lov holati va boshqa muhim ma'lumotlarini kuzatib boring.">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+.parent-page{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px 16px;
+  background: linear-gradient(135deg, var(--bg) 0%, color-mix(in srgb, var(--primary) 5%, var(--bg)) 100%);
+  position:relative;
+}
+.parent-orb{
+  position:absolute;border-radius:50%;filter:blur(100px);opacity:.18;
+  pointer-events:none;
+}
+.parent-orb-1{width:400px;height:400px;background:var(--primary);top:-120px;left:-160px}
+.parent-orb-2{width:350px;height:350px;background:var(--primary);bottom:-100px;right:-140px}
+.parent-card{
+  width:100%;max-width:420px;position:relative;z-index:1;
+  background:var(--surface);
+  -webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:32px 28px;
+  box-shadow:0 8px 32px rgba(0,0,0,.06);
+}
+.parent-header{text-align:center;margin-bottom:20px}
+.parent-logo{
+  width:56px;height:56px;border-radius:16px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:24px;margin:0 auto 14px;
+  box-shadow:0 8px 20px var(--primary-glow);
+}
+.parent-header h1{font-size:20px;font-weight:800;margin-bottom:4px}
+.parent-header p{font-size:13px;color:var(--text2)}
+.parent-card .tab-btn{padding:10px 16px;font-size:12.5px}
+.pay-btn-large{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:16px;border-radius:14px;
+  background:linear-gradient(135deg,#5b6ef7,#7c5cfc);
+  color:#fff;font-size:16px;font-weight:800;border:none;cursor:pointer;
+  box-shadow:0 8px 24px rgba(91,110,247,.4);
+  transition:all .25s;margin-bottom:16px;
+}
+.pay-btn-large:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(91,110,247,.5)}
+.pay-btn-large:active{transform:translateY(0)}
+.card-info{background:linear-gradient(135deg,#edf0ff,#e8f5e9);border-radius:12px;padding:16px;margin-bottom:16px}
+.card-info .label{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase}
+.card-info .value{font-size:16px;font-weight:800;color:var(--text);font-family:var(--mono);margin-top:4px}
+@keyframes cardIn {
+  0% { opacity:0; transform:translateY(20px) scale(.97) }
+  100% { opacity:1; transform:translateY(0) scale(1) }
+}
+.parent-card { animation:cardIn .5s cubic-bezier(.22,1,.36,1) both }
+.portal-header{
+  background:linear-gradient(135deg, var(--surface), var(--surface-hover));
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-radius:16px;padding:20px;margin-bottom:16px;border:1px solid var(--border);
+  box-shadow:0 8px 32px rgba(0,0,0,.06);
+}
+.pay-steps{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.pay-step{flex:1;min-width:120px;padding:14px;background:var(--surface2);border-radius:12px;text-align:center;border:2px solid var(--border)}
+.pay-step.active{border-color:var(--primary);background:var(--primary-light)}
+.pay-step-num{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.pay-step-label{font-size:11px;font-weight:600;color:var(--text2)}
+.pay-card-box{
+  background:linear-gradient(135deg,#0b1e3a,#1a3366);border-radius:16px;
+  padding:24px;color:#fff;position:relative;overflow:hidden;margin-bottom:20px;
+}
+.pay-card-box::before{content:'\f09d';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;right:20px;top:20px;font-size:32px;opacity:.3}
+.pay-card-box .bank{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.pay-card-box .number{font-size:22px;font-weight:800;font-family:var(--mono);letter-spacing:2px;margin-bottom:8px}
+.pay-card-box .name{font-size:12px;opacity:.7}
+</style>
+</head>
+<body>
+<div class="parent-page" id="loginSection">
+  <div class="parent-orb parent-orb-1"></div>
+  <div class="parent-orb parent-orb-2"></div>
+  <div class="parent-card">
+    <div class="parent-header">
+      <div class="parent-logo"><i class="fas fa-graduation-cap"></i></div>
+      <h1>{{ settings.name }}</h1>
+      <p>Farzandingiz ma'lumotlarini ko'rish uchun kiring</p>
+    </div>
+    <div id="loginError" style="display:none;padding:10px 14px;background:var(--danger-light);color:#dc2626;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;text-align:center"></div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchLoginTab('phone',this)"><i class="fas fa-phone"></i> {{ _('phone') }}</button>
+      <button class="tab-btn" onclick="switchLoginTab('id',this)"><i class="fas fa-id-card"></i> {{ _('student_id') }}</button>
+    </div>
+    <div id="phoneLogin">
+      <div class="form-group"><label class="form-label">{{ _('phone') }} raqam</label>
+        <input class="form-control" id="phoneInput" type="tel" placeholder="998901234567" style="font-size:16px"></div>
+    </div>
+    <div id="idLogin" style="display:none">
+      <div class="form-group"><label class="form-label">{{ _('student_id') }}</label>
+        <input class="form-control" id="idInput" placeholder="STU-XXXXXXXX" style="font-size:16px"></div>
+    </div>
+    <button class="btn btn-primary w-full" style="padding:14px;font-size:15px" onclick="doLookup()">{{ _('login') }} →</button>
+    <p style="text-align:center;margin-top:14px;font-size:13px">
+      <a href="/register" style="color:var(--primary);font-weight:700"><i class="fas fa-pen-to-square"></i> Hali ro'yxatdan o'tmaganmisiz?</a>
+    </p>
+    <p style="text-align:center;margin-top:8px;font-size:12px">
+      <a href="/pricing" style="color:var(--text3);font-weight:600"><i class="fas fa-tag"></i> Narxlar va to'lov</a>
+      <span style="color:var(--text3);margin:0 6px">·</span>
+      <a href="/privacy" style="color:var(--text3);font-weight:600"><i class="fas fa-shield"></i> {{ _('privacy_title') }}</a>
+    </p>
+    <div id="botLinkSection" style="margin-top:16px;display:none">
+      <a id="botLinkBtn" href="#" target="_blank" class="btn w-full" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:10px;background:#0088cc;color:#fff;font-weight:700;font-size:14px;text-decoration:none">
+        <i class="fas fa-robot"></i> Telegram botga o'tish
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="portalSection" style="display:none;min-height:100vh;background:var(--bg);padding:16px">
+  <div style="max-width:600px;margin:0 auto">
+    <div class="portal-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:22px"><i class="fas fa-graduation-cap"></i></div>
+        <div>
+          <div style="font-size:15px;font-weight:800">{{ settings.name }}</div>
+          <div style="font-size:12px;color:var(--text3)">{{ _('parent_portal') }}</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">← {{ _('logout') }}</button>
+    </div>
+    <a id="portalBotLink" href="#" target="_blank" class="btn w-full" style="display:none;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:10px;background:#0088cc;color:#fff;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:12px">
+      <i class="fas fa-robot"></i> {{ _('telegram_bot') }}
+    </a>
+
+    <!-- Student Info Card -->
+    <div class="card" style="overflow:hidden">
+      <div class="card-body" style="padding:0">
+        <div style="display:flex;align-items:center;gap:16px;padding:20px;background:linear-gradient(135deg,var(--primary-light),#e8eaff)">
+          <div id="p_avatar" style="width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0">?</div>
+          <div style="flex:1"><div style="font-size:18px;font-weight:800" id="p_name">—</div><div style="font-size:13px;color:var(--text2)" id="p_group">—</div></div>
+          <div id="p_status">—</div>
+        </div>
+        <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+          <div><span style="color:var(--text3)"><i class="fas fa-id-card"></i> ID</span><br><span id="p_id">—</span></div>
+          <div><span style="color:var(--text3)"><i class="fas fa-cake-candles"></i> {{ _('birth_date') }}</span><br><span id="p_birth">—</span></div>
+          <div><span style="color:var(--text3)"><i class="fas fa-calendar-days"></i> {{ _('join_date') }}</span><br><span id="p_join">—</span></div>
+          <div><span style="color:var(--text3)"><i class="fas fa-users"></i> Ota-ona</span><br><span id="p_parent">—</span></div>
+          <div style="grid-column:1/3"><span style="color:var(--text3)"><i class="fas fa-phone"></i> {{ _('phone') }}</span><br><span id="p_phone">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div class="card">
+      <div class="card-body">
+        <div id="p_discount_info" style="display:none;padding:10px 14px;background:var(--warning-light);border-radius:8px;font-size:12px;color:var(--warning);font-weight:600;margin-bottom:12px"></div>
+        <div id="p_subsidy_info" style="display:none;padding:10px 14px;background:var(--primary-light);border-radius:8px;font-size:12px;color:var(--primary);font-weight:600;margin-bottom:12px"></div>
+        <div class="payment-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:12px"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase">To'lanadigan</div><div style="font-size:20px;font-weight:800;color:var(--text);margin-top:4px" id="p_payable">—</div></div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:12px"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase">{{ _('paid') }}</div><div style="font-size:20px;font-weight:800;color:var(--success);margin-top:4px" id="p_paid">—</div></div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:12px"><div style="font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase">{{ _('debt') }}</div><div style="font-size:20px;font-weight:800;color:var(--danger);margin-top:4px" id="p_debt">—</div></div>
+        </div>
+        <button class="pay-btn-large" onclick="startPayment()"><i class="fas fa-credit-card"></i> To'lov qilish</button>
+        <a href="/pricing" style="display:block;text-align:center;font-size:12px;color:var(--text3);font-weight:600;padding:8px;border-radius:8px;transition:all .2s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'"><i class="fas fa-tag"></i> Narxlar va tariflar</a>
+      </div>
+    </div>
+
+    <!-- Payment Modal (hidden by default) -->
+    <div id="payModal" style="display:none" class="card mb-16">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-credit-card"></i> To'lov qilish</span>
+        <button class="btn btn-ghost btn-sm" onclick="closePayModal()"><i class="fas fa-xmark"></i> Yopish</button>
+      </div>
+      <div class="card-body">
+        <div class="pay-steps">
+          <div class="pay-step active" id="step1"><div class="pay-step-num">1</div><div class="pay-step-label">{{ _('card') }}</div></div>
+          <div class="pay-step" id="step2"><div class="pay-step-num">2</div><div class="pay-step-label">Miqdor</div></div>
+          <div class="pay-step" id="step3"><div class="pay-step-num">3</div><div class="pay-step-label">{{ _('check') }}</div></div>
+        </div>
+
+        <div id="payCardInfo" style="display:none">
+          <div class="pay-card-box">
+            <div class="bank"><i class="fas fa-building-columns"></i> O'quv markaz kartasi</div>
+            <div class="number" id="payCardNumber">9860 **** **** ****</div>
+            <div class="name">{{ settings.name }}</div>
+          </div>
+        </div>
+
+        <div id="payAmountSection">
+          <div class="form-group">
+            <label class="form-label">To'lov miqdori (UZS)</label>
+            <input class="form-control" id="payAmount" type="number" placeholder="500000" style="font-size:18px;font-weight:800;padding:14px">
+          </div>
+          <div id="payDebtInfo" style="padding:10px 14px;background:var(--warning-light);border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;color:#d97706;display:none"></div>
+          <button class="btn btn-primary w-full" style="padding:14px;font-size:15px" onclick="confirmPaymentAmount()">Keyingi qadam →</button>
+        </div>
+
+        <div id="payConfirmSection" style="display:none">
+          <div class="card-info" style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+              <span class="label">{{ _('payment_amount') }}</span>
+              <span class="value" id="payConfirmAmount">0 UZS</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+              <span class="label">Karta raqami</span>
+              <span class="value" id="payConfirmCard" style="font-size:14px">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span class="label">{{ _('my_child') }}</span>
+              <span class="value" id="payConfirmChild" style="font-size:14px">—</span>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;text-align:center">
+            <i class="fas fa-camera"></i> Pulni yuqoridagi kartaga o'tkazing va <b>chek rasmini yuboring</b>
+          </p>
+          <div style="border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;margin-bottom:16px;background:var(--surface2)">
+            <div style="font-size:40px;margin-bottom:8px"><i class="fas fa-camera"></i></div>
+            <p style="font-size:13px;color:var(--text2);margin-bottom:12px">To'lov chek rasmini yuklang</p>
+            <label class="btn btn-primary" style="cursor:pointer">
+              <i class="fas fa-upload"></i> Chekni yuklash
+              <input type="file" accept="image/*" style="display:none" id="checkUpload" onchange="uploadCheck(this)">
+            </label>
+          </div>
+          <div id="uploadResult" style="display:none;padding:12px;border-radius:8px;font-size:13px;font-weight:600;text-align:center"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchPortalTab('payments',this)"><i class="fas fa-credit-card"></i> {{ _('payment_history') }}</button>
+      <button class="tab-btn" onclick="switchPortalTab('attendance',this)"><i class="fas fa-calendar-days"></i> {{ _('attendance_log') }}</button>
+      <button class="tab-btn" onclick="switchPortalTab('events',this)"><i class="fas fa-star"></i> Tadbirlar</button>
+      <button class="tab-btn" onclick="switchPortalTab('notifs',this)"><i class="fas fa-bell"></i> Xabarlar</button>
+      <button class="tab-btn" onclick="switchPortalTab('feedback',this)"><i class="fas fa-paper-plane"></i> {{ _('complaint') }}</button>
+    </div>
+
+    <div id="ptab-payments" class="card">
+      <div class="card-body" style="padding:0" id="p_payments_content">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+    </div>
+    <div id="ptab-attendance" class="card" style="display:none">
+      <div class="card-body" style="padding:0" id="p_att_content">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+    </div>
+    <div id="ptab-notifs" class="card" style="display:none">
+      <div class="card-body" style="padding:0" id="p_notif_content">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+    </div>
+    <div id="ptab-events" class="card" style="display:none">
+      <div class="card-body" style="padding:0" id="p_events_content">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+    </div>
+    <div id="ptab-feedback" class="card" style="display:none">
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Shikoyat, taklif yoki noroziligingizni adminga yuboring.</p>
+        <div class="form-group">
+          <label class="form-label">Tur</label>
+          <select class="form-control" id="fb_category">
+            <option value="shikoyat">{{ _('complaint') }}</option>
+            <option value="taklif">Taklif</option>
+            <option value="norozilik">Norozilik</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Xabar *</label>
+          <textarea class="form-control" id="fb_message" rows="4" placeholder="Xabaringizni yozing..."></textarea>
+        </div>
+        <button class="btn btn-primary w-full" onclick="sendFeedback()"><i class="fas fa-paper-plane"></i> {{ _('send') }}</button>
+        <div id="fb_result" style="display:none;margin-top:12px;padding:10px;border-radius:8px;font-size:13px;font-weight:600"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="/static/js/main.js"></script>
+<script>
+let currency = 'UZS';
+let portalData = null;
+let settings = null;
+let payAmount = 0;
+let kg_id = '{{ kg_id|e }}';
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type || 'info');
+  el.textContent = msg;
+  Object.assign(el.style, { position:'fixed', bottom:'24px', right:'24px', zIndex:9999, padding:'12px 20px', borderRadius:'10px', color:'#fff', fontWeight:600, fontSize:'14px', boxShadow:'0 4px 16px rgba(0,0,0,.25)', transform:'translateY(20px)', opacity:0, transition:'all .3s ease' });
+  if (type === 'success') el.style.background = '#059669';
+  else if (type === 'error') el.style.background = '#dc2626';
+  else el.style.background = '#2563eb';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.transform = 'translateY(0)'; el.style.opacity = '1'; });
+  setTimeout(() => { el.style.transform = 'translateY(20px)'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('phone')) {
+  document.getElementById('phoneInput').value = urlParams.get('phone');
+}
+
+
+// Show bot link on page load (before login)
+(async function loadBotLink() {
+  try {
+    const pub = await api('/api/settings/public');
+    if (pub.bot_username) {
+      const username = pub.bot_username.replace('@','');
+      const btn = document.getElementById('botLinkBtn');
+      const section = document.getElementById('botLinkSection');
+      if (btn) btn.href = `https://t.me/${username}`;
+      if (section) section.style.display = '';
+    }
+  } catch(e) {}
+})();
+
+function switchLoginTab(tab, btn) {
+  document.getElementById('phoneLogin').style.display = tab==='phone' ? '' : 'none';
+  document.getElementById('idLogin').style.display = tab==='id' ? '' : 'none';
+  document.querySelectorAll('.tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function switchPortalTab(tab, btn) {
+  ['payments','attendance','notifs','events','feedback'].forEach(t => {
+    document.getElementById('ptab-'+t).style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('#portalSection .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'events') loadEventsPortal();
+}
+
+async function doLookup() {
+  const phone = document.getElementById('phoneInput').value.trim();
+  const sid = document.getElementById('idInput').value.trim();
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  let url = '/api/parent/lookup?';
+  if (kg_id) url += `kg_id=${encodeURIComponent(kg_id)}&`;
+  if (phone) url += `phone=${encodeURIComponent(phone)}`;
+  else if (sid) url += `student_id=${encodeURIComponent(sid)}`;
+  else { err.textContent = 'Telefon yoki ID kiriting'; err.style.display = ''; return; }
+  const data = await api(url);
+  if (!data.success) { err.textContent = data.message || 'Topilmadi'; err.style.display = ''; return; }
+  const pub = await api('/api/settings/public');
+  currency = pub.currency || 'UZS';
+  portalData = data;
+  settings = pub;
+  renderPortal(data);
+  // Show bot link if available
+  const botLink = document.getElementById('botLinkSection');
+  const botBtn = document.getElementById('botLinkBtn');
+  if (pub.bot_username) {
+    const username = pub.bot_username.replace('@','');
+    if (botBtn) botBtn.href = `https://t.me/${username}`;
+    if (botLink) botLink.style.display = '';
+  }
+}
+
+function renderPortal(data) {
+  const s = data.student;
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('portalSection').style.display = '';
+  document.getElementById('p_avatar').textContent = s.first_name[0] || '?';
+  document.getElementById('p_name').textContent = `${s.first_name} ${s.last_name}`;
+  document.getElementById('p_group').textContent = s.group || 'Guruh belgilanmagan';
+  document.getElementById('p_status').innerHTML = statusBadge(s.status);
+  document.getElementById('p_id').innerHTML = `<b style="font-family:monospace">${s.id}</b>`;
+  document.getElementById('p_birth').textContent = fmtDate(s.birth_date) || '—';
+  document.getElementById('p_join').textContent = fmtDate(s.join_date) || '—';
+  document.getElementById('p_parent').textContent = s.parent_name || '—';
+  document.getElementById('p_phone').innerHTML = phoneLink(s.parent_phone);
+  // Show portal bot link
+  const portalBot = document.getElementById('portalBotLink');
+  if (settings && settings.bot_username) {
+    portalBot.href = `https://t.me/${settings.bot_username.replace('@','')}`;
+    portalBot.style.display = 'flex';
+  }
+
+  const m = data.current_month;
+  document.getElementById('p_payable').textContent = `${Number(m.payable).toLocaleString()} ${currency}`;
+  document.getElementById('p_paid').textContent = `${Number(m.paid).toLocaleString()} ${currency}`;
+  document.getElementById('p_debt').textContent = `${Number(m.debt).toLocaleString()} ${currency}`;
+  const discEl = document.getElementById('p_discount_info');
+  const subEl = document.getElementById('p_subsidy_info');
+  if (m.discount_percent > 0) { discEl.style.display = 'block'; discEl.innerHTML = `<i class="fas fa-percent"></i> Chegirma: <strong>${m.discount_percent}%</strong>`; } else discEl.style.display = 'none';
+  if (m.subsidy_amount > 0) { subEl.style.display = 'block'; subEl.innerHTML = `<i class="fas fa-hand-holding-dollar"></i> Subsidiya: <strong>${Number(m.subsidy_amount).toLocaleString()} ${currency}</strong>`; } else subEl.style.display = 'none';
+
+  // Set payment provider info
+  if (settings) {
+    const cardEl = document.getElementById('payCardNumber');
+    const provider = settings.payment_provider || 'manual_card';
+    const labels = { 'manual_card': '<i class="fas fa-credit-card"></i> Bank kartasi', 'click': 'CLICK', 'uzum': 'Uzum', 'payme': 'Payme' };
+    const label = labels[provider] || '<i class="fas fa-credit-card"></i> Karta';
+    cardEl.innerHTML = label;
+    if (settings.payment_card) {
+      cardEl.innerHTML += ' — ' + settings.payment_card;
+    }
+    if (settings.payment_merchant_id && provider !== 'manual_card') {
+      cardEl.innerHTML += '<br><small style="font-size:11px;opacity:.7">ID: ' + settings.payment_merchant_id + '</small>';
+    }
+  }
+
+  // Payments
+  const payments = data.payments;
+  if (!payments.length) {
+    document.getElementById('p_payments_content').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-credit-card"></i></div><p>{{ _("payment_history")|e }} yo\'q</p></div>';
+  } else {
+    document.getElementById('p_payments_content').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>{{ _('date')|e }}</th><th>{{ _('amount')|e }}</th><th>Oy</th><th>Tur</th><th></th></tr></thead>
+        <tbody>${payments.map(p=>`<tr>
+          <td>${fmtDate(p.date)}</td>
+          <td class="currency" style="color:var(--success);font-weight:800">${Number(p.amount).toLocaleString()} ${currency}</td>
+          <td style="font-size:12px">${p.month||'—'}</td>
+          <td>${statusBadge(p.type)}</td>
+          <td><button onclick="copyReceipt('${p.id}')" class="btn btn-ghost btn-sm" title="Chekni ulashish"><i class="fas fa-share-nodes"></i></button></td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+
+  // Attendance
+  const att = data.attendance.slice().reverse();
+  if (!att.length) {
+    document.getElementById('p_att_content').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-calendar-days"></i></div><p>Davomat ma\'lumoti yo\'q</p></div>';
+  } else {
+    document.getElementById('p_att_content').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>{{ _('date')|e }}</th><th>{{ _('status')|e }}</th><th>{{ _('note')|e }}</th></tr></thead>
+        <tbody>${att.map(a=>`<tr>
+          <td>${fmtDate(a.date)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td style="font-size:12px;color:var(--text3)">${a.note||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+
+  // Notifications
+  const notifs = data.notifications.slice().reverse();
+  if (!notifs.length) {
+    document.getElementById('p_notif_content').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-bell"></i></div><p>Xabar yo\'q</p></div>';
+  } else {
+    document.getElementById('p_notif_content').innerHTML = notifs.map(n=>`
+      <div class="notif-item">
+        <div class="notif-icon"><i class="fas fa-bell"></i></div>
+        <div class="notif-content">
+          <div class="notif-msg">${n.message}</div>
+          <div class="notif-time">${fmtDateTime(n.created_at)}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function doLogout() {
+  portalData = null;
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('portalSection').style.display = 'none';
+  document.getElementById('phoneInput').value = '';
+  document.getElementById('idInput').value = '';
+}
+
+const TYPE_ICONS = {holiday:'🎉',meeting:'📋',excursion:'🚌',other:'📌'};
+const TYPE_LABELS = {holiday:'Bayram',meeting:'Yig\'ilish',excursion:'Ekskursiya',other:'Boshqa'};
+
+async function loadEventsPortal() {
+  const el = document.getElementById('p_events_content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>';
+  try {
+    const d = await api('/api/events/public');
+    if (!d || !d.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Kelgusi tadbirlar yo\'q</p></div>';
+      return;
+    }
+    el.innerHTML = d.map(e => `
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);border-left:3px solid ${e.type==='holiday'?'#f59e0b':e.type==='meeting'?'#4f46e5':e.type==='excursion'?'#10b981':'#94a3b8'}">
+        <div style="font-size:22px;flex-shrink:0">${TYPE_ICONS[e.type]||'📌'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${escapeHtml(e.title)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${TYPE_LABELS[e.type]||e.type} · ${fmtDate(e.date)}</div>
+          ${e.description ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">${escapeHtml(e.description)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  } catch (er) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-triangle-exclamation"></i></div><p>Xatolik yuz berdi</p></div>';
+  }
+}
+
+function startPayment() {
+  const payModal = document.getElementById('payModal');
+  payModal.style.display = '';
+  payModal.scrollIntoView({behavior:'smooth'});
+
+  // Show payment provider info
+  if (settings) {
+    document.getElementById('payCardInfo').style.display = '';
+    const cardEl = document.getElementById('payCardNumber');
+    const provider = settings.payment_provider || 'manual_card';
+    const labels = { 'manual_card': '<i class="fas fa-credit-card"></i> Bank kartasi', 'click': 'CLICK', 'uzum': 'Uzum', 'payme': 'Payme' };
+    cardEl.innerHTML = labels[provider] || '<i class="fas fa-credit-card"></i> Karta';
+    if (settings.payment_card) {
+      cardEl.innerHTML += ' — ' + settings.payment_card;
+    }
+    if (settings.payment_merchant_id && provider !== 'manual_card') {
+      cardEl.innerHTML += '<br><small style="font-size:11px;opacity:.7">ID: ' + settings.payment_merchant_id + '</small>';
+    }
+  }
+
+  // Show debt info
+  if (portalData && portalData.current_month && portalData.current_month.debt > 0) {
+    document.getElementById('payDebtInfo').style.display = '';
+    document.getElementById('payDebtInfo').innerHTML = `<i class="fas fa-triangle-exclamation"></i> Joriy qarzingiz: ${Number(portalData.current_month.debt).toLocaleString()} UZS`;
+    document.getElementById('payAmount').value = portalData.current_month.debt;
+  }
+}
+
+function closePayModal() {
+  document.getElementById('payModal').style.display = 'none';
+  document.getElementById('payConfirmSection').style.display = 'none';
+  document.getElementById('payAmountSection').style.display = '';
+  document.getElementById('uploadResult').style.display = 'none';
+  document.querySelectorAll('.pay-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step1').classList.add('active');
+}
+
+function confirmPaymentAmount() {
+  const amount = parseInt(document.getElementById('payAmount').value);
+  if (!amount || amount <= 0) { toast('To\'lov miqdorini kiriting', 'error'); return; }
+  payAmount = amount;
+
+  document.getElementById('payAmountSection').style.display = 'none';
+  document.getElementById('payConfirmSection').style.display = '';
+  document.querySelectorAll('.pay-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step1').classList.add('active');
+  document.getElementById('step2').classList.add('active');
+  document.getElementById('step3').classList.add('active');
+
+  document.getElementById('payConfirmAmount').textContent = Number(amount).toLocaleString() + ' UZS';
+  const prov = settings?.payment_provider || 'manual_card';
+  const plabels = { 'manual_card': '<i class="fas fa-credit-card"></i> Bank kartasi', 'click': 'CLICK', 'uzum': 'Uzum', 'payme': 'Payme' };
+  document.getElementById('payConfirmCard').innerHTML = (plabels[prov] || '<i class="fas fa-credit-card"></i>') + ': ' + (settings?.payment_card || '—');
+  if (portalData) {
+    document.getElementById('payConfirmChild').textContent = `${portalData.student.first_name} ${portalData.student.last_name}`;
+  }
+}
+
+async function uploadCheck(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!payAmount) { toast('Avval to\'lov miqdorini kiriting', 'error'); return; }
+
+  const result = document.getElementById('uploadResult');
+  result.style.display = '';
+
+  // Upload image
+  const fd = new FormData();
+  fd.append('image', file);
+  toast('Chek yuklanmoqda...', 'info');
+
+  try {
+    const imgRes = await fetch('/api/upload-image', { method: 'POST', body: fd });
+    let imgData;
+    try { imgData = await imgRes.json(); } catch { throw new Error('Server javob bermadi (' + imgRes.status + ')'); }
+    if (!imgData.success) { throw new Error(imgData.message); }
+
+    const photoUrl = imgData.url;
+    const student = portalData.student;
+    const phone = student.parent_phone;
+
+    // Submit check
+    const res = await api('/api/payment-checks/submit', 'POST', {
+      student_id: student.id,
+      student_name: `${student.first_name} ${student.last_name}`,
+      parent_phone: phone,
+      amount: payAmount,
+      photo_url: photoUrl
+    });
+
+    if (res.success) {
+      result.style.background = 'var(--success-light)';
+      result.style.color = '#059669';
+      result.innerHTML = `<i class="fas fa-check-circle"></i> <b>Chek qabul qilindi!</b><br>ID: ${res.check_id}<br>Admin tasdiqlashini kuting.`;
+      setTimeout(() => { closePayModal(); }, 3000);
+    } else {
+      throw new Error(res.message || '{{ _("error")|e }}');
+    }
+  } catch (e) {
+    result.style.background = 'var(--danger-light)';
+    result.style.color = '#dc2626';
+    result.innerHTML = '<i class="fas fa-xmark"></i> ' + (e.message || 'Chek yuklashda xatolik');
+  }
+}
+
+async function sendFeedback() {
+  if (!portalData || !portalData.student) return;
+  const msg = document.getElementById('fb_message').value.trim();
+  const cat = document.getElementById('fb_category').value;
+  const resEl = document.getElementById('fb_result');
+  if (msg.length < 5) { toast('Xabar kamida 5 belgi bo\'lsin', 'error'); return; }
+  const res = await api('/api/parent/complaint', 'POST', {
+    student_id: portalData.student.id,
+    phone: portalData.student.parent_phone,
+    message: msg,
+    category: cat
+  });
+  resEl.style.display = 'block';
+  if (res.success) {
+    resEl.style.background = 'var(--success-light)';
+    resEl.style.color = '#166534';
+    resEl.textContent = res.message;
+    document.getElementById('fb_message').value = '';
+  } else {
+    resEl.style.background = 'var(--danger-light)';
+    resEl.style.color = '#dc2626';
+    resEl.textContent = res.message || '{{ _("error")|e }}';
+  }
+}
+
+function copyReceipt(paymentId) {
+  const url = window.location.origin + '/receipt/' + paymentId;
+  if (navigator.share) {
+    navigator.share({ title: 'To\'lov cheki', url: url }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('🔗 Chek linki nusxalandi', 'success')).catch(() => {});
+  } else {
+    const inp = document.createElement('input');
+    inp.value = url;
+    document.body.appendChild(inp);
+    inp.select();
+    document.execCommand('copy');
+    document.body.removeChild(inp);
+    toast('🔗 Chek linki nusxalandi', 'success');
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('loginSection').style.display !== 'none') doLookup(); });
+</script>
+</body>
+</html>
+

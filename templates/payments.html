@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+{% block title %}{{ _('payments') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-credit-card"></i> {{ _('payments') }}{% endblock %}
+
+{% block content %}
+<div class="section-header rv">
+  <div>
+    <div class="section-title">{{ _('payment_list') }}</div>
+    <div class="section-sub" id="paySubtitle">{{ _('loading') }}</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openAddPayment()"><i class="fas fa-plus"></i> {{ _('add_payment') }}</button>
+    <button class="btn btn-secondary btn-xs" onclick="openBulkPayment()"><i class="fas fa-layer-group"></i> Bulk to'lov</button>
+  </div>
+</div>
+
+<div id="pendingCheckAlert" style="display:none;margin-bottom:16px"></div>
+
+<div class="tabs rv">
+  <button class="tab-btn active" onclick="switchTab('history',this)"><i class="fas fa-clipboard-list"></i> {{ _('payment_history') }}</button>
+  <button class="tab-btn" onclick="switchTab('debtors',this)"><i class="fas fa-triangle-exclamation"></i> {{ _('total') }}</button>
+  <button class="tab-btn" onclick="switchTab('checks',this)"><i class="fas fa-paper-plane"></i> {{ _('check') }}</button>
+</div>
+
+<!-- History tab -->
+<div id="tab-history">
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="form-control" id="paySearch" placeholder="{{ _('search_placeholder') }}">
+    </div>
+    <input type="month" class="form-control" id="payMonth" style="max-width:160px" onchange="loadPayments()">
+    <select class="form-control" id="payCategoryFilter" style="max-width:150px" onchange="loadPayments()">
+      <option value="">{{ _('category') }}: {{ _('all') }}</option>
+      <option value="tuition">{{ _('category_tuition') }}</option>
+      <option value="meals">{{ _('category_meals') }}</option>
+      <option value="materials">{{ _('category_materials') }}</option>
+      <option value="event">{{ _('category_event') }}</option>
+      <option value="uniform">{{ _('category_uniform') }}</option>
+      <option value="other">{{ _('other') }}</option>
+    </select>
+    <select class="form-control" id="payStatusFilter" style="max-width:140px" onchange="loadPayments()">
+      <option value="">{{ _('status') }}: {{ _('all') }}</option>
+      <option value="paid">{{ _('paid') }}</option>
+      <option value="pending">{{ _('pending') }}</option>
+      <option value="cancelled">{{ _('cancelled') }}</option>
+      <option value="refunded">{{ _('refunded') }}</option>
+    </select>
+  </div>
+  <div class="card rv">
+    <div class="card-body" style="padding:0">
+      <div id="paymentsContent">
+        <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Debtors tab -->
+<div id="tab-debtors" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <input type="month" class="form-control" id="debtMonth" style="max-width:160px" onchange="loadDebtors()">
+    <button class="btn btn-warning" onclick="sendDebtReminders()"><i class="fas fa-upload"></i> {{ _('telegram_bot') }}</button>
+    <button class="btn btn-primary btn-xs" onclick="sendPaymentRequest()"><i class="fas fa-paper-plane"></i> To'lov so'rash</button>
+  </div>
+  <div class="card rv">
+    <div id="debtorsContent">
+      <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Checks tab -->
+<div id="tab-checks" style="display:none">
+  <div class="section-header" style="margin-bottom:16px">
+    <div>
+      <div class="section-sub" id="checkSubtitle">Yuklanmoqda...</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="loadChecks()"><i class="fas fa-rotate"></i> {{ _('view') }}</button>
+  </div>
+  <div id="checksContent">
+    <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+  </div>
+</div>
+<!-- Bulk Payment Modal -->
+<div class="modal-backdrop" id="bulkPaymentModal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3><i class="fas fa-layer-group"></i> Bulk to'lov</h3>
+      <button class="modal-close" onclick="document.getElementById('bulkPaymentModal').style.display='none'"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">O'quvchilarni tanlang</label>
+        <div id="bulkStudentList" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Summa</label><input class="form-control" type="number" id="bp_amount"></div>
+      <div class="form-group"><label class="form-label">Oy</label><input class="form-control" type="month" id="bp_month"></div>
+      <div class="form-group"><label class="form-label">Kategoriya</label>
+        <select class="form-control" id="bp_category">
+          <option value="tuition">O'quv</option><option value="meals">Ovqat</option>
+          <option value="materials">Material</option><option value="event">Tadbir</option><option value="uniform">Forma</option><option value="other">Boshqa</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Izoh</label><input class="form-control" id="bp_note"></div>
+      <button class="btn btn-primary w-full" onclick="saveBulkPayment()"><i class="fas fa-check"></i> Saqlash</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currency = 'UZS';
+let allStudents = [];
+let paySearchTimer = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const settings = await api('/api/settings');
+    currency = settings.currency || 'UZS';
+    const now = new Date();
+    document.getElementById('payMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    document.getElementById('debtMonth').value = document.getElementById('payMonth').value;
+    allStudents = await api('/api/students');
+  } catch (e) {
+    console.error('Init xatosi:', e);
+  }
+  loadPayments();
+  loadDebtors();
+  loadChecks();
+  loadPendingCheckAlert();
+  document.getElementById('paySearch').addEventListener('input', function() {
+    clearTimeout(paySearchTimer);
+    paySearchTimer = setTimeout(loadPayments, 300);
+  });
+});
+
+function switchTab(name, btn) {
+  ['history','debtors','checks'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'checks') loadChecks();
+}
+
+async function loadPendingCheckAlert() {
+  const d = await api('/api/payment-checks?status=pending');
+  const el = document.getElementById('pendingCheckAlert');
+  if (!d.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = d.map(c => `
+    <div class="check-card" style="border-left:4px solid var(--warning);background:var(--warning-light)">
+      <img class="check-img" src="${c.photo_url}" alt="" onerror="this.style.display='none'">
+      <div class="check-info">
+        <h4>${c.student_name}</h4>
+        <p>${Number(c.amount).toLocaleString()} UZS · <span class="badge badge-warning">{{ _('pending') }}</span></p>
+        <p style="font-size:11px;color:var(--text3)">${c.id}</p>
+      </div>
+      <div class="check-actions">
+        <button class="btn btn-success btn-sm" onclick="approveCheck('${c.id}')"><i class="fas fa-check-circle"></i> {{ _('confirm') }}</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectCheck('${c.id}')"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+async function approveCheck(id) {
+  confirmAction('{{ _('confirm') }}', async () => {
+    const res = await api(`/api/payment-checks/${id}/status`, 'POST', {status: 'approved'});
+    if (res.success) { toast('<i class="fas fa-check-circle"></i> {{ _('confirm') }}', 'success'); loadChecks(); loadPayments(); loadPendingCheckAlert(); }
+    else toast(res.message || '{{ _('error') }}', 'error');
+  });
+}
+
+async function rejectCheck(id) {
+  confirmAction('{{ _('delete') }}', async () => {
+    const res = await api(`/api/payment-checks/${id}/status`, 'POST', {status: 'rejected'});
+    if (res.success) { toast('{{ _('delete') }}', 'info'); loadChecks(); loadPendingCheckAlert(); }
+    else toast(res.message || '{{ _('error') }}', 'error');
+  });
+}
+
+async function loadChecks() {
+  const [pending, approved, rejected] = await Promise.all([
+    api('/api/payment-checks?status=pending'),
+    api('/api/payment-checks?status=approved'),
+    api('/api/payment-checks?status=rejected')
+  ]);
+  document.getElementById('checkSubtitle').textContent = `<i class="fas fa-paper-plane"></i> ${pending.length} {{ _('pending') }}, ${approved.length} {{ _('active') }}, ${rejected.length} {{ _('delete') }}`;
+  let html = '';
+  if (pending.length) {
+    html += `<h4 style="padding:0 0 12px;font-size:14px;color:var(--warning)"><i class="fas fa-hourglass-half"></i> {{ _('pending') }} (${pending.length})</h4>`;
+    html += pending.map(c => checkCardHtml(c, 'warning')).join('');
+  }
+  if (approved.length) {
+    html += `<h4 style="padding:16px 0 12px;font-size:14px;color:var(--success)"><i class="fas fa-check-circle"></i> {{ _('active') }} (${approved.length})</h4>`;
+    html += approved.slice(0, 10).map(c => checkCardHtml(c, 'success')).join('');
+  }
+  if (rejected.length) {
+    html += `<h4 style="padding:16px 0 12px;font-size:14px;color:var(--danger)"><i class="fas fa-xmark"></i> {{ _('delete') }} (${rejected.length})</h4>`;
+    html += rejected.slice(0, 10).map(c => checkCardHtml(c, 'danger')).join('');
+  }
+  if (!html) {
+    html = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-paper-plane"></i></div><h3>{{ _('check') }}</h3><p>{{ _('parent') }} {{ _('check_photo') }}</p></div>';
+  }
+  document.getElementById('checksContent').innerHTML = html;
+}
+
+function checkCardHtml(c, type) {
+  const colors = {warning: 'var(--warning-light)', success: 'var(--success-light)', danger: 'var(--danger-light)'};
+  const borders = {warning: 'var(--warning)', success: 'var(--success)', danger: 'var(--danger)'};
+  return `
+    <div class="check-card" style="border-left:4px solid ${borders[type]};background:${colors[type]}">
+      <img class="check-img" src="${c.photo_url}" alt="" onerror="this.style.display='none'">
+      <div class="check-info">
+        <h4>${c.student_name}</h4>
+        <p>${Number(c.amount).toLocaleString()} UZS</p>
+        <p style="font-size:11px;color:var(--text3)">${c.id} · ${c.created_at ? fmtDate(c.created_at) : ''}</p>
+      </div>
+      <div class="check-actions">
+        ${type === 'warning' ? `
+          <button class="btn btn-success btn-sm" onclick="approveCheck('${c.id}')"><i class="fas fa-check-circle"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="rejectCheck('${c.id}')"><i class="fas fa-xmark"></i></button>
+        ` : ''}
+        <a href="${c.photo_url}" target="_blank" class="btn btn-ghost btn-sm"><i class="fas fa-image"></i></a>
+      </div>
+    </div>`;
+}
+
+async function loadPayments() {
+  const month = document.getElementById('payMonth').value;
+  const search = document.getElementById('paySearch').value.toLowerCase();
+  const category = document.getElementById('payCategoryFilter').value;
+  const statusFilter = document.getElementById('payStatusFilter').value;
+  let url = '/api/payments?';
+  const params = [];
+  if (month) params.push('month='+month);
+  if (category) params.push('category='+category);
+  if (statusFilter) params.push('status='+statusFilter);
+  if (search) params.push('search='+encodeURIComponent(search));
+  try {
+    const raw = await api(url + params.join('&'));
+    if (!Array.isArray(raw)) {
+      document.getElementById('paySubtitle').textContent = '{{ _('error') }}';
+      document.getElementById('paymentsContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><h3>{{ _('error') }}</h3><p>${raw.message || 'Server xatosi'}</p></div>`;
+      return;
+    }
+    const payments = raw;
+    const total = payments.reduce((s, p) => s + p.amount, 0);
+    document.getElementById('paySubtitle').textContent = `${month ? monthName(month) + ' — ' : ''}${payments.length} {{ _('payments') }} · {{ _('total') }}: ${Number(total).toLocaleString()} ${currency}`;
+    if (!payments.length) {
+      document.getElementById('paymentsContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-credit-card"></i></div><h3>{{ _('no_data') }}</h3><p>{{ _('payments') }}</p></div>`;
+      return;
+    }
+    document.getElementById('paymentsContent').innerHTML = `
+      <table class="data-table">
+        <thead><tr>
+          <th>ID</th><th>{{ _('student') }}</th><th>{{ _('amount') }}</th><th>{{ _('date') }}</th><th>{{ _('payment_date') }}</th><th>{{ _('category') }}</th><th>{{ _('status') }}</th><th>{{ _('note') }}</th><th>{{ _('admin_login') }}</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${payments.map(p => {
+            const catClass = p.category === 'meals' ? 'badge-info' : p.category === 'event' ? 'badge-warning' : p.category === 'materials' ? 'badge-secondary' : p.category === 'uniform' ? 'badge-primary' : 'badge-success';
+            const stClass = p.status === 'cancelled' ? 'badge-danger' : p.status === 'pending' ? 'badge-warning' : p.status === 'refunded' ? 'badge-info' : 'badge-success';
+            return `<tr>
+              <td style="font-family:monospace;font-size:11px;color:var(--text3)">${p.id}</td>
+              <td><b>${p.student_name}</b></td>
+              <td class="currency" style="color:var(--success);font-weight:800">${Number(p.amount).toLocaleString()} ${currency}</td>
+              <td>${fmtDate(p.date)}</td>
+              <td style="font-size:12px">${p.month ? monthName(p.month) : '—'}</td>
+              <td><span class="badge ${catClass}">${p.category || 'tuition'}</span></td>
+              <td><span class="badge ${stClass}">${p.status || 'paid'}</span></td>
+              <td style="color:var(--text3);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis">${p.note||'—'}</td>
+              <td style="font-size:12px;color:var(--text3)">${p.admin_name||'—'}</td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="editPayment('${p.id}')" title="{{ _('edit') }}"><i class="fas fa-pen"></i></button>
+                  <a href="/receipt/${p.id}" target="_blank" class="btn btn-ghost btn-sm btn-icon" title="{{ _('check') }}"><i class="fas fa-receipt"></i></a>
+                  <button class="btn btn-ghost btn-sm btn-icon" onclick="showQr('${p.id}')" title="QR"><i class="fas fa-qrcode"></i></button>
+                  <button class="btn btn-danger btn-sm btn-icon" onclick="deletePayment('${p.id}')" title="{{ _('delete') }}"><i class="fas fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot><tr style="background:var(--surface2)">
+          <td colspan="2" style="font-weight:800;padding:12px 14px">{{ _('total') }}:</td>
+          <td class="currency" style="font-weight:800;color:var(--success);padding:12px 14px">${Number(total).toLocaleString()} ${currency}</td>
+          <td colspan="7"></td>
+        </tr></tfoot>
+      </table>
+    `;
+  } catch (e) {
+    console.error('loadPayments xatosi:', e);
+    document.getElementById('paySubtitle').textContent = '{{ _('error') }}';
+  }
+}
+
+async function loadDebtors() {
+  const month = document.getElementById('debtMonth').value;
+  if (!month) return;
+  const [y, m] = month.split('-').map(Number);
+  const data = await api(`/api/attendance/month-summary?year=${y}&month=${m}`);
+  const debtors = data.filter(r => r.debt > 0);
+  if (!debtors.length) {
+    document.getElementById('debtorsContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-check-circle"></i></div><h3>{{ _('success') }}</h3><p>{{ _('no_data') }}</p></div>`;
+    return;
+  }
+  const totalDebt = debtors.reduce((s, r) => s + r.debt, 0);
+  document.getElementById('debtorsContent').innerHTML = `
+    <div style="padding:14px 16px;background:var(--danger-light);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="color:#dc2626;font-weight:700"><i class="fas fa-triangle-exclamation"></i> ${debtors.length} {{ _('student') }}</span>
+      <span class="currency" style="color:#dc2626;font-weight:800">{{ _('total') }}: ${Number(totalDebt).toLocaleString()} ${currency}</span>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>{{ _('student') }}</th><th>{{ _('group') }}</th><th>{{ _('payment_amount') }}</th><th>{{ _('payment_history') }}</th><th>{{ _('total') }}</th><th>{{ _('phone') }}</th><th>{{ _('actions') }}</th></tr></thead>
+      <tbody>
+        ${debtors.map(row => {
+          const s = row.student;
+          return `<tr>
+            <td><b>${s.first_name} ${s.last_name}</b></td>
+            <td><span class="badge badge-primary">${s.group||'—'}</span></td>
+            <td class="currency">${Number(row.payable_amount).toLocaleString()} ${currency}</td>
+            <td class="currency" style="color:var(--success)">${Number(row.paid_amount).toLocaleString()} ${currency}</td>
+            <td class="currency" style="color:var(--danger);font-weight:800">${Number(row.debt).toLocaleString()} ${currency}</td>
+            <td>${phoneLink(s.parent_phone)}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="quickPayment('${s.id}','${s.first_name} ${s.last_name}',${row.debt})"><i class="fas fa-credit-card"></i> {{ _('payments') }}</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function openAddPayment() {
+  const studentOptions = allStudents.filter(s=>s.status==='active').map(s =>
+    `<option value="${s.id}">${s.first_name} ${s.last_name} (${s.group||'—'})</option>`
+  ).join('');
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  openModal('<i class="fas fa-plus"></i> {{ _('add_payment') }}', `
+    <div class="form-group"><label class="form-label">{{ _('student') }} *</label>
+      <select class="form-control" id="pay_student" onchange="loadStudentBalance()">
+        <option value="">{{ _('search') }}...</option>${studentOptions}
+      </select></div>
+    <div id="balanceInfo" style="display:none;padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:13px"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('amount') }} (${currency}) *</label>
+        <input class="form-control" type="number" id="pay_amount" placeholder="500000"></div>
+      <div class="form-group"><label class="form-label">{{ _('date') }}</label>
+        <input class="form-control" type="date" id="pay_date" value="${new Date().toISOString().split('T')[0]}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('payment_date') }}</label>
+        <input class="form-control" type="month" id="pay_month" value="${curMonth}"></div>
+      <div class="form-group"><label class="form-label">{{ _('category') }}</label>
+        <select class="form-control" id="pay_category">
+          <option value="tuition">{{ _('category_tuition') }}</option>
+          <option value="meals">{{ _('category_meals') }}</option>
+          <option value="materials">{{ _('category_materials') }}</option>
+          <option value="event">{{ _('category_event') }}</option>
+          <option value="uniform">{{ _('category_uniform') }}</option>
+          <option value="other">{{ _('other') }}</option>
+        </select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('payment_type') }}</label>
+        <select class="form-control" id="pay_type">
+          <option value="full">{{ _('active') }}</option>
+          <option value="partial">{{ _('pending') }}</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">{{ _('status') }}</label>
+        <select class="form-control" id="pay_status">
+          <option value="paid">{{ _('paid') }}</option>
+          <option value="pending">{{ _('pending') }}</option>
+          <option value="cancelled">{{ _('cancelled') }}</option>
+          <option value="refunded">{{ _('refunded') }}</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+      <input class="form-control" id="pay_note" placeholder="{{ _('note') }}..."></div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-success" onclick="savePayment()"><i class="fas fa-money-bill-wave"></i> {{ _('save') }}</button>
+    </div>`);
+}
+
+async function loadStudentBalance() {
+  const id = document.getElementById('pay_student').value;
+  if (!id) return;
+  const d = await api(`/api/student-balance/${id}`);
+  const info = document.getElementById('balanceInfo');
+  info.style.display = '';
+  info.innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <span><i class="fas fa-credit-card"></i> {{ _('payment_amount') }}: <b>${Number(d.payable_amount).toLocaleString()} ${currency}</b></span>
+      <span style="color:var(--success)"><i class="fas fa-check-circle"></i> {{ _('payment_history') }}: <b>${Number(d.paid_amount).toLocaleString()} ${currency}</b></span>
+      <span style="color:var(--danger)"><i class="fas fa-triangle-exclamation"></i> {{ _('total') }}: <b>${Number(d.debt).toLocaleString()} ${currency}</b></span>
+    </div>`;
+  if (d.debt > 0) document.getElementById('pay_amount').value = d.debt;
+}
+
+async function savePayment() {
+  const student_id = document.getElementById('pay_student').value;
+  const amount = parseInt(document.getElementById('pay_amount').value);
+  const date = document.getElementById('pay_date').value;
+  const month = document.getElementById('pay_month').value;
+  const category = document.getElementById('pay_category').value;
+  const type = document.getElementById('pay_type').value;
+  const status_s = document.getElementById('pay_status').value;
+  const note = document.getElementById('pay_note').value;
+  if (!student_id || !amount || amount <= 0) { toast('{{ _('error') }}', 'error'); return; }
+  const res = await api('/api/payments', 'POST', { student_id, amount, date, month, category, type, status: status_s, note });
+  if (res.success) {
+    toast('{{ _('payments') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal(); loadPayments(); loadDebtors();
+    if (confirm('{{ _('check') }}')) window.open(`/receipt/${res.receipt_id}`, '_blank');
+  } else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+function editPayment(id) {
+  // Fetch payment details then open edit modal
+  api('/api/payments').then(all => {
+    const p = all.find(x => x.id === id);
+    if (!p) { toast('{{ _('error') }}', 'error'); return; }
+    const now = new Date();
+    openModal('<i class="fas fa-pen"></i> {{ _('edit') }} — ' + p.id, `
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('amount') }} (${currency})</label>
+          <input class="form-control" type="number" id="ep_amount" value="${p.amount}"></div>
+        <div class="form-group"><label class="form-label">{{ _('date') }}</label>
+          <input class="form-control" type="date" id="ep_date" value="${p.date}"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('payment_date') }}</label>
+          <input class="form-control" type="month" id="ep_month" value="${p.month || ''}"></div>
+        <div class="form-group"><label class="form-label">{{ _('category') }}</label>
+          <select class="form-control" id="ep_category">
+            <option value="tuition" ${p.category === 'tuition' ? 'selected' : ''}>{{ _('category_tuition') }}</option>
+            <option value="meals" ${p.category === 'meals' ? 'selected' : ''}>{{ _('category_meals') }}</option>
+            <option value="materials" ${p.category === 'materials' ? 'selected' : ''}>{{ _('category_materials') }}</option>
+            <option value="event" ${p.category === 'event' ? 'selected' : ''}>{{ _('category_event') }}</option>
+            <option value="uniform" ${p.category === 'uniform' ? 'selected' : ''}>{{ _('category_uniform') }}</option>
+            <option value="other" ${p.category === 'other' ? 'selected' : ''}>{{ _('other') }}</option>
+          </select></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">{{ _('payment_type') }}</label>
+          <select class="form-control" id="ep_type">
+            <option value="full" ${p.type === 'full' ? 'selected' : ''}>{{ _('active') }}</option>
+            <option value="partial" ${p.type === 'partial' ? 'selected' : ''}>{{ _('pending') }}</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">{{ _('status') }}</label>
+          <select class="form-control" id="ep_status">
+            <option value="paid" ${(p.status||'paid') === 'paid' ? 'selected' : ''}>{{ _('paid') }}</option>
+            <option value="pending" ${p.status === 'pending' ? 'selected' : ''}>{{ _('pending') }}</option>
+            <option value="cancelled" ${p.status === 'cancelled' ? 'selected' : ''}>{{ _('cancelled') }}</option>
+            <option value="refunded" ${p.status === 'refunded' ? 'selected' : ''}>{{ _('refunded') }}</option>
+          </select></div>
+      </div>
+      <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+        <input class="form-control" id="ep_note" value="${(p.note||'').replace(/"/g,'&quot;')}"></div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-primary" onclick="saveEditPayment('${p.id}')"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+      </div>`);
+  });
+}
+
+async function saveEditPayment(id) {
+  const data = {};
+  const amount = parseInt(document.getElementById('ep_amount').value);
+  const date = document.getElementById('ep_date').value;
+  const month = document.getElementById('ep_month').value;
+  const category = document.getElementById('ep_category').value;
+  const type = document.getElementById('ep_type').value;
+  const status_s = document.getElementById('ep_status').value;
+  const note = document.getElementById('ep_note').value;
+  if (amount > 0) data.amount = amount;
+  data.date = date; data.month = month; data.category = category;
+  data.type = type; data.status = status_s; data.note = note;
+  const res = await api(`/api/payments/${id}`, 'PUT', data);
+  if (res.success) {
+    toast('{{ _('edit') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal(); loadPayments();
+  } else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+function quickPayment(id, name, debt) {
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  openModal(`<i class="fas fa-credit-card"></i> {{ _('payments') }} — ${name}`, `
+    <div style="padding:12px;background:var(--danger-light);border-radius:8px;margin-bottom:14px;color:#dc2626;font-weight:700">
+      <i class="fas fa-triangle-exclamation"></i> {{ _('total') }}: ${Number(debt).toLocaleString()} ${currency}
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('amount') }}</label>
+        <input class="form-control" type="number" id="qp_amount" value="${debt}"></div>
+      <div class="form-group"><label class="form-label">{{ _('date') }}</label>
+        <input class="form-control" type="date" id="qp_date" value="${now.toISOString().split('T')[0]}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">{{ _('category') }}</label>
+        <select class="form-control" id="qp_category">
+          <option value="tuition">{{ _('category_tuition') }}</option>
+          <option value="meals">{{ _('category_meals') }}</option>
+          <option value="materials">{{ _('category_materials') }}</option>
+          <option value="event">{{ _('category_event') }}</option>
+          <option value="uniform">{{ _('category_uniform') }}</option>
+          <option value="other">{{ _('other') }}</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">{{ _('payment_type') }}</label>
+        <select class="form-control" id="qp_type">
+          <option value="full">{{ _('active') }}</option>
+          <option value="partial">{{ _('pending') }}</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+      <input class="form-control" id="qp_note" placeholder="{{ _('note') }}..."></div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-success" onclick="saveQuickPayment('${id}','${curMonth}')"><i class="fas fa-money-bill-wave"></i> {{ _('save') }}</button>
+    </div>`);
+}
+
+async function saveQuickPayment(studentId, month) {
+  const amount = parseInt(document.getElementById('qp_amount').value);
+  const date = document.getElementById('qp_date').value;
+  const category = document.getElementById('qp_category') ? document.getElementById('qp_category').value : 'tuition';
+  const type = document.getElementById('qp_type').value;
+  const note = document.getElementById('qp_note').value;
+  if (!amount || amount <= 0) { toast('{{ _('error') }}', 'error'); return; }
+  const res = await api('/api/payments', 'POST', { student_id: studentId, amount, date, month, category, type, status: 'paid', note });
+  if (res.success) {
+    toast('{{ _('payments') }} <i class="fas fa-check-circle"></i>', 'success');
+    closeModal(); loadPayments(); loadDebtors();
+    if (confirm('{{ _('check') }}')) window.open(`/receipt/${res.receipt_id}`, '_blank');
+  } else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+function deletePayment(id) {
+  confirmAction('{{ _('delete_confirm') }}', async () => {
+    const res = await api(`/api/payments/${id}`, 'DELETE');
+    if (res.success) { toast('{{ _('delete') }}', 'warning'); loadPayments(); loadDebtors(); }
+    else toast('{{ _('error') }}', 'error');
+  });
+}
+
+function showQr(id) {
+  openModal(`<i class="fas fa-qrcode"></i> QR — ${id}`, `
+    <div style="text-align:center;padding:16px">
+      <img src="/api/receipt/${id}/qr" alt="QR" style="width:220px;height:220px;border-radius:12px;background:#fff;padding:8px">
+      <p style="margin-top:12px;color:var(--text3);font-size:12px">
+        <a href="/receipt/${id}" target="_blank" style="color:var(--accent)"><i class="fas fa-external-link"></i> {{ _('check') }}</a>
+      </p>
+    </div>
+    <div class="modal-footer" style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+    </div>`);
+}
+
+async function sendDebtReminders() {
+  const settings = await api('/api/settings');
+  if (!settings.bot_token) { toast('{{ _('telegram_bot') }}', 'error'); return; }
+  toast('{{ _('notifications') }}', 'info');
+  const res = await api('/api/telegram/send', 'POST', {
+    target: 'all',
+    message: "{{ _('payments') }}"
+  });
+  toast(`<i class="fas fa-check-circle"></i> {{ _('success') }}: ${res.sent} · <i class="fas fa-xmark"></i> {{ _('error') }}: ${res.failed}`, 'success');
+}
+
+async function sendPaymentRequest() {
+  const month = document.getElementById('debtMonth').value;
+  if (!month) { toast('Oy tanlang', 'error'); return; }
+  if (!confirm(`Barcha qarzdor o\'quvchilarga ${month} oyi uchun to\'lov so\'rovi yuborilsinmi?`)) return;
+  toast('Yuborilmoqda...', 'info');
+  const res = await api('/api/payments/send-payment-request', 'POST', { month });
+  const msg = `✅ Yuborildi: ${res.sent} ta\n⏭ O'tkazib yuborildi (to'langan): ${res.skipped_paid} ta\n❌ Chat ID yo'q: ${res.no_chat} ta`;
+  toast(msg, res.sent > 0 ? 'success' : 'error');
+}
+// ─── Bulk Payment ────────────────────────────────────────
+function openBulkPayment(){
+  const all=allStudents||[]
+  const el=document.getElementById('bulkStudentList')
+  el.innerHTML=all.map(s=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px">
+      <input type="checkbox" class="bp-check" value="${s.id}"> ${s.first_name} ${s.last_name}
+    </label>
+  `).join('')
+  document.getElementById('bp_amount').value=''
+  const now=new Date()
+  document.getElementById('bp_month').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')
+  document.getElementById('bp_note').value=''
+  document.getElementById('bulkPaymentModal').style.display='flex'
+}
+async function saveBulkPayment(){
+  const ids=[...document.querySelectorAll('.bp-check:checked')].map(c=>c.value)
+  const amount=parseInt(document.getElementById('bp_amount').value)
+  const month=document.getElementById('bp_month').value
+  const category=document.getElementById('bp_category').value
+  const note=document.getElementById('bp_note').value.trim()
+  if(!ids.length||!amount){toast('O\'quvchi va summa kiriting','error');return}
+  const r=await api('/api/payments/bulk','POST',{student_ids:ids,amount,month,category,note})
+  if(r.success){
+    toast(`${r.count} ta to'lov yaratildi ✅`,'success')
+    document.getElementById('bulkPaymentModal').style.display='none'
+    loadPayments()
+  }else toast(r.message||'Xatolik','error')
+}
+document.getElementById('bulkPaymentModal').addEventListener('click',function(e){if(e.target===this)this.style.display='none'})
+</script>
+{% endblock %}

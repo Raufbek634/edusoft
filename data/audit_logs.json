@@ -1,0 +1,32 @@
+[
+  {
+    "timestamp": "2026-06-19T06:58:10.980128Z",
+    "action": "login",
+    "details": "Admin: Otabek samiyev (bog'cha: kg-048a0868)",
+    "admin_id": "kg-048a0868",
+    "admin_name": "Otabek samiyev",
+    "kg_id": "kg-048a0868",
+    "ip": "127.0.0.1",
+    "hash": "985e92a1ac9b070c3cdcc8062d24f19fca69d77b8588d13bd63d887a1c2784dc"
+  },
+  {
+    "timestamp": "2026-06-25T05:42:35.079921Z",
+    "action": "login",
+    "details": "Super admin code-login: Raufbek Turaqulov",
+    "admin_id": "super",
+    "admin_name": "Raufbek Turaqulov",
+    "kg_id": "",
+    "ip": "127.0.0.1",
+    "hash": "0525e2e5f59fcda5615e8b85c11dd724de705320dce3fad92491bcbca1de5e6e"
+  },
+  {
+    "timestamp": "2026-06-25T05:44:22.604849Z",
+    "action": "logout",
+    "details": "Chiqish: Raufbek Turaqulov",
+    "admin_id": "super",
+    "admin_name": "Raufbek Turaqulov",
+    "kg_id": "",
+    "ip": "127.0.0.1",
+    "hash": "9df5f3855fe8b7491ad4005e61357f5d66e81b46d7e1ba85e6cb5c2457ce13be"
+  }
+]

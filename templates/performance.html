@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Samaradorlik — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-chart-line"></i> Samaradorlik{% endblock %}
+{% block content %}
+
+<div class="section-title mb-20">📈 O'quv markaz samaradorlik ko'rsatkichlari</div>
+
+<!-- Stat cards -->
+<div class="stats-grid" id="perfStats">
+  <div class="stat-card rv"><div class="stat-label">Faol bolalar</div><div class="stat-value" id="p_total">—</div></div>
+  <div class="stat-card rv"><div class="stat-label">Sig'im bandligi</div><div class="stat-value" id="p_capacity">—</div></div>
+  <div class="stat-card rv"><div class="stat-label">O'qituvchi/bola nisbati</div><div class="stat-value" id="p_ratio">—</div></div>
+  <div class="stat-card rv"><div class="stat-label">Davomat darajasi</div><div class="stat-value" id="p_attendance">—</div></div>
+</div>
+
+<!-- Settings card -->
+<div class="card rv mt-16">
+  <div class="card-header"><span class="card-title"><i class="fas fa-gear"></i> Sozlamalar</span></div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label class="form-label">Maksimal sig'im (bola soni)</label>
+        <input class="form-control" id="p_max_cap" type="number" value="{{ settings.max_capacity or 100 }}" placeholder="100"></div>
+      <div class="form-group"><label class="form-label">O'qituvchilar soni</label>
+        <input class="form-control" id="p_teachers" type="number" value="{{ settings.teachers or '' }}" placeholder="Avtomatik"></div>
+    </div>
+    <button class="btn btn-primary" onclick="savePerfSettings()"><i class="fas fa-floppy-disk"></i> Saqlash</button>
+  </div>
+</div>
+
+<!-- Monthly Attendance Trend -->
+<div class="card rv mt-16">
+  <div class="card-header"><span class="card-title"><i class="fas fa-chart-simple"></i> Davomat trendi (oylik)</span></div>
+  <div class="card-body" id="p_trend_chart">
+    <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+  </div>
+</div>
+
+<!-- Group Ranking -->
+<div class="card rv mt-16">
+  <div class="card-header"><span class="card-title"><i class="fas fa-ranking-star"></i> Guruhlar bo'yicha davomat</span></div>
+  <div class="card-body" id="p_group_table">
+    <div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadPerformance() {
+  const d = await api('/api/performance/stats');
+  if (!d) return;
+
+  document.getElementById('p_total').innerHTML = `${d.total_active} <span style="font-size:14px;color:var(--text3)">/ ${d.max_capacity}</span>`;
+  document.getElementById('p_capacity').innerHTML = `${d.capacity_pct}%`;
+  document.getElementById('p_ratio').innerHTML = `1:${d.student_teacher_ratio}`;
+  document.getElementById('p_attendance').innerHTML = `${d.overall_attendance_rate}%`;
+
+  // Trend chart
+  const trend = d.monthly_trend || [];
+  const maxRate = Math.max(...trend.map(m => m.rate), 100);
+  const chartEl = document.getElementById('p_trend_chart');
+  if (!trend.length) {
+    chartEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Davomat ma\'lumoti yo\'q</div>';
+  } else {
+    chartEl.innerHTML = `
+      <div style="display:flex;align-items:flex-end;gap:12px;height:160px;padding:10px 0;border-bottom:1px solid var(--border)">
+        ${trend.map(m => {
+          const h = Math.max(m.rate / maxRate * 140, 4);
+          const color = m.rate >= 80 ? 'var(--success)' : m.rate >= 60 ? 'var(--warning)' : 'var(--danger)';
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end">
+            <div style="font-size:10px;font-weight:700;margin-bottom:4px;color:var(--text3)">${m.rate}%</div>
+            <div style="width:100%;max-width:40px;height:${h}px;background:${color};border-radius:4px 4px 0 0;transition:height .5s var(--smooth);min-height:4px"></div>
+            <div style="font-size:9px;color:var(--text3);margin-top:6px;font-weight:600">${m.month.slice(5)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--text3);flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--success);margin-right:4px"></span> 80%+ yaxshi</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--warning);margin-right:4px"></span> 60-80% o'rtacha</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--danger);margin-right:4px"></span> <60% muammoli</span>
+      </div>`;
+  }
+
+  // Group table
+  const groups = d.group_stats || [];
+  const tblEl = document.getElementById('p_group_table');
+  if (!groups.length) {
+    tblEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Guruhlar bo\'yicha ma\'lumot yo\'q</div>';
+  } else {
+    tblEl.innerHTML = `<table class="data-table">
+      <thead><tr><th>Guruh</th><th>Bolalar</th><th>Davomat</th><th>Daraja</th><th>Holat</th></tr></thead>
+      <tbody>${groups.map(g => {
+        const barColor = g.rate >= 80 ? 'var(--success)' : g.rate >= 60 ? 'var(--warning)' : 'var(--danger)';
+        const badgeCls = g.rate >= 80 ? 'badge-success' : g.rate >= 60 ? 'badge-warning' : 'badge-danger';
+        const badgeLabel = g.rate >= 80 ? 'Yaxshi' : g.rate >= 60 ? "O'rtacha" : 'Muammoli';
+        return `<tr>
+          <td><b>${escapeHtml(g.group)}</b></td>
+          <td>${g.students}</td>
+          <td>${g.present}/${g.total}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:6px;background:var(--border);border-radius:4px;overflow:hidden;min-width:60px">
+                <div style="height:100%;width:${g.rate}%;background:${barColor};border-radius:4px;transition:width .5s var(--smooth)"></div>
+              </div>
+              <span style="font-size:12px;font-weight:700;min-width:40px;text-align:right">${g.rate}%</span>
+            </div>
+          </td>
+          <td><span class="badge ${badgeCls}">${badgeLabel}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
+async function savePerfSettings() {
+  const max_capacity = parseInt(document.getElementById('p_max_cap').value) || 0;
+  const teachers = parseInt(document.getElementById('p_teachers').value) || 0;
+  const res = await api('/api/settings', 'POST', { max_capacity, teachers });
+  if (res.success) {
+    toast('✅ Sozlamalar saqlandi', 'success');
+    loadPerformance();
+  } else toast('Xatolik', 'error');
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(loadPerformance, 100));
+</script>
+{% endblock %}

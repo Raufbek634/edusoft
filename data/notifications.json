@@ -1,0 +1,162 @@
+[
+  {
+    "id": "180c867a",
+    "message": "Yangi o'quvchi qo'shildi: Ali Karimov",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T02:36:54.636590"
+  },
+  {
+    "id": "bb46fc52",
+    "message": "To'lov qabul qilindi: Ali Karimov - 25,000 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T07:48:54.552753"
+  },
+  {
+    "id": "f963bf55",
+    "message": "Yangi o'quvchi qo'shildi: Raufbek Turaqulov",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T07:54:49.167598"
+  },
+  {
+    "id": "8dd92a4c",
+    "message": "To'lov qabul qilindi: Raufbek Turaqulov - 250,000 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T07:57:28.783569"
+  },
+  {
+    "id": "0b4a719c",
+    "message": "To'lov qabul qilindi: Ali Karimov - 225,000 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T08:11:44.674045"
+  },
+  {
+    "id": "7f33ac4c",
+    "message": "To'lov qabul qilindi: Raufbek Turaqulov - 200 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T08:38:47.100234"
+  },
+  {
+    "id": "a2b3d1f2",
+    "message": "O'quvchi o'chirildi: STU-FF724E76",
+    "type": "warning",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:08:56.104127"
+  },
+  {
+    "id": "ea51dbe6",
+    "message": "📱 Noma'lum telefon: 998880334404 (chat_id: 6439945348)",
+    "type": "warning",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:18:46.129131"
+  },
+  {
+    "id": "6b9d48f2",
+    "message": "📱 Telegram ulandi: Ali Karimov (Bobur, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:19:35.046450"
+  },
+  {
+    "id": "ddbc72bc",
+    "message": "To'lov qabul qilindi: Ali Karimov - 238,095 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:20:00.344201"
+  },
+  {
+    "id": "1bd76e5b",
+    "message": "📱 Telegram ulandi: Ali Karimov (Bobur, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:28:05.711750"
+  },
+  {
+    "id": "fb260b23",
+    "message": "Ota-ona portfeli yaratildi: nima (998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:28:57.770475"
+  },
+  {
+    "id": "363ecb11",
+    "message": "📱 Telegram ulandi: Ali Karimov (nima, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:29:16.922733"
+  },
+  {
+    "id": "e640f4b0",
+    "message": "Yangi o'quvchi qo'shildi: Raufbek Turaqulov",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:30:43.501071"
+  },
+  {
+    "id": "17e67db1",
+    "message": "To'lov qabul qilindi: Raufbek Turaqulov - 250,000 UZS",
+    "type": "payment",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:31:02.722125"
+  },
+  {
+    "id": "60826afc",
+    "message": "📱 Telegram ulandi: Ali Karimov (nima, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:31:28.699481"
+  },
+  {
+    "id": "529dc1e0",
+    "message": "Ota-ona portfeli yaratildi: nima (998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:31:39.636049"
+  },
+  {
+    "id": "cc9649ac",
+    "message": "📱 Telegram ulandi: Ali Karimov (nima, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:31:49.478118"
+  },
+  {
+    "id": "b3055b0c",
+    "message": "📱 Telegram ulandi: Raufbek Turaqulov (nima, 998880334404)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:32:16.745405"
+  },
+  {
+    "id": "375254fb",
+    "message": "🏫 Yangi bog'cha arizasi: bog'cha — raif (998996272562)",
+    "type": "info",
+    "target": "all",
+    "read": true,
+    "created_at": "2026-05-20T22:33:24.317329"
+  }
+]

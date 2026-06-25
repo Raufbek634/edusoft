@@ -1,0 +1,59 @@
+{% extends "super_base.html" %}
+{% block title %}System Health — Raufbek{% endblock %}
+{% block page_title %}System Health{% endblock %}
+{% block content %}
+<div class="super-filter">
+  <button class="btn btn-primary btn-sm" onclick="loadHealth()"><i class="fas fa-sync"></i> Yangilash</button>
+  <span style="font-size:11px;color:var(--text3)" id="healthTime"></span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px" id="healthGrid"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', loadHealth);
+
+async function loadHealth() {
+  const grid = document.getElementById('healthGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">{{ _('loading') }}</div>';
+  const h = await api('/api/super/system-health');
+  document.getElementById('healthTime').textContent = 'Oxirgi tekshirish: ' + new Date().toLocaleTimeString();
+
+  const checks = [];
+
+  // Data dir
+  checks.push({ icon: h.data_dir.ok ? 'fa-check-circle' : 'fa-times-circle', color: h.data_dir.ok ? 'var(--success)' : 'var(--danger)', title: 'Data Directory', status: h.data_dir.ok ? 'OK' : 'XATO', detail: h.data_dir.path });
+
+  // Platform config
+  checks.push({ icon: h.platform_config.ok ? 'fa-check-circle' : 'fa-times-circle', color: h.platform_config.ok ? 'var(--success)' : 'var(--danger)', title: 'Platforma config', status: h.platform_config.ok ? `${h.platform_config.plans} ta plan` : 'XATO', detail: h.platform_config.error || 'OK' });
+
+  // Kindergartens
+  checks.push({ icon: h.kindergartens.ok ? 'fa-check-circle' : 'fa-times-circle', color: h.kindergartens.ok ? 'var(--success)' : 'var(--danger)', title: 'Ma\'lumotlar bazasi', status: `${h.kindergartens.count} ta o'quv markaz`, detail: 'JSON fayllar' });
+
+  // Super bot
+  const botOk = h.super_bot.ok && h.super_bot.bot_online;
+  checks.push({ icon: botOk ? 'fa-check-circle' : 'fa-times-circle', color: botOk ? 'var(--success)' : 'var(--danger)', title: 'Super Bot', status: botOk ? `@${h.super_bot.bot_username || 'Online'}` : 'Offline', detail: botOk ? `Token: ${h.super_bot.has_token ? '✅' : '❌'}, Chat: ${h.super_bot.has_chat_id ? '✅' : '❌'}` : h.super_bot.error || 'Token yoki Chat ID yo\'q' });
+
+  // KG Bots
+  checks.push({ icon: h.kg_bots.ok ? 'fa-check-circle' : 'fa-info-circle', color: h.kg_bots.ok ? 'var(--success)' : 'var(--warning)', title: 'Botlar', status: `${h.kg_bots.online}/${h.kg_bots.total} online`, detail: `Jami ${h.kg_bots.total} ta bot` });
+
+  // Audit chain
+  checks.push({ icon: h.audit_chain.ok ? 'fa-shield-halved' : 'fa-shield-halved', color: h.audit_chain.ok ? 'var(--success)' : 'var(--danger)', title: 'Audit zanjiri', status: h.audit_chain.ok ? `Yaxlit (${h.audit_chain.entries} ta)` : 'BUZILGAN!', detail: h.audit_chain.ok ? 'Hash zanjiri yaxlit' : 'Audit jurnali buzilgan bo\'lishi mumkin!' });
+
+  // Environment
+  checks.push({ icon: 'fa-gear', color: 'var(--primary)', title: 'Environment', status: `Vercel: ${h.env.vercel ? '✅' : '❌'}`, detail: `DB: ${h.env.database_url ? '✅' : '❌'} | Cron: ${h.env.cron_secret ? '✅' : '❌'} | URL: ${h.env.site_url}` });
+
+  grid.innerHTML = checks.map(c => `<div class="super-card rv" style="margin:0">
+    <div class="super-card-body" style="padding:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;color:${c.color};font-size:16px"><i class="fas ${c.icon}"></i></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${c.title}</div>
+          <div style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:${c.color}">${c.status}</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);word-break:break-all">${c.detail}</div>
+    </div>
+  </div>`).join('');
+}
+</script>
+{% endblock %}

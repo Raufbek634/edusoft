@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ _('register') }} — {{ settings.name }}</title>
+<meta name="description" content="Farzandingizni o'quv markazga ro'yxatdan o'tkazing. EduSoft tizimida o'quvchi arizasini qoldiring va biz siz bilan bog'lanamiz.">
+<meta name="keywords" content="EduSoft, bolani o'quv markazga yozildirish, o'quv markaz ro'yxati, o'quv markazga qabul, o'quv markaz">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<link rel="stylesheet" href="/static/css/login.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+body{background:var(--bg)}
+.register-wrap{max-width:520px;margin:0 auto;padding:24px 16px 40px}
+.register-card{background:#fff;border-radius:16px;padding:28px;box-shadow:var(--shadow-md)}
+.register-header{text-align:center;margin-bottom:24px}
+.register-header h1{font-size:22px;font-weight:800;color:var(--text)}
+.register-header p{font-size:13px;color:var(--text3);margin-top:6px}
+.back-link{display:inline-block;margin-bottom:16px;font-size:13px;font-weight:700;color:var(--primary)}
+.success-box{display:none;padding:16px;background:var(--success-light);border-radius:10px;color:#166534;font-weight:600;text-align:center;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="register-wrap">
+  <a href="/login" class="back-link">← {{ _('back') }}</a>
+  <div class="register-card">
+    <div class="register-header">
+      {% if settings.logo %}<img src="{{ settings.logo }}" alt="" style="width:56px;height:56px;border-radius:12px;margin:0 auto 12px;object-fit:cover">{% endif %}
+      <h1>{{ settings.name }}</h1>
+      <p>Yangi o'quvchi uchun ro'yxat arizasi</p>
+    </div>
+    <div class="success-box" id="successBox"></div>
+    <div class="error-msg" id="errorMsg" style="display:none"></div>
+
+    <form id="regForm" onsubmit="submitReg(event)">
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">{{ _('name') }} *</label>
+          <input class="form-control" id="child_first" required placeholder="Ali"></div>
+        <div class="form-group"><label class="form-label">{{ _('surname') }} *</label>
+          <input class="form-control" id="child_last" required placeholder="Karimov"></div>
+      </div>
+      <div class="form-group"><label class="form-label">{{ _('birth_date') }}</label>
+        <input class="form-control" type="date" id="birth_date"></div>
+      <div class="form-group"><label class="form-label">{{ _('parent_name') }} *</label>
+        <input class="form-control" id="parent_name" required placeholder="Karimov Bobur"></div>
+      <div class="form-group"><label class="form-label">{{ _('phone') }} *</label>
+        <input class="form-control" id="parent_phone" type="tel" required placeholder="998901234567"></div>
+      <div class="form-group"><label class="form-label">{{ _('group') }} (ixtiyoriy)</label>
+        <input class="form-control" id="group_pref" placeholder="Kichik guruh"></div>
+      <div class="form-group"><label class="form-label">Qo'shimcha ma'lumot</label>
+        <textarea class="form-control" id="notes" rows="3" placeholder="Qo'shimcha izoh..."></textarea></div>
+      <button type="submit" class="btn btn-primary w-full" style="padding:14px;font-size:15px" id="submitBtn">{{ _('send') }} →</button>
+    </form>
+    <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px">
+      Telegram: botda /start yuborib telefon raqamingizni ulashing<br>
+      <i class="fas fa-credit-card"></i> To'lov: Admin karta raqamiga pul o'tkazing va chek yuklang<br>
+      <a href="/pricing" style="color:var(--primary);font-weight:700;display:inline-flex;align-items:center;gap:6px;margin-top:6px"><i class="fas fa-tag"></i> Narxlar bilan tanishing</a>
+    </p>
+  </div>
+  <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:20px">Raufbek Turaqulov tomonidan yaratilgan</p>
+</div>
+<script>
+async function submitReg(e) {
+  e.preventDefault();
+  const err = document.getElementById('errorMsg');
+  const ok = document.getElementById('successBox');
+  err.style.display = 'none';
+  ok.style.display = 'none';
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '{{ _('send')|e }}...';
+
+  const body = {
+    child_first_name: document.getElementById('child_first').value.trim(),
+    child_last_name: document.getElementById('child_last').value.trim(),
+    birth_date: document.getElementById('birth_date').value,
+    parent_name: document.getElementById('parent_name').value.trim(),
+    parent_phone: document.getElementById('parent_phone').value.trim(),
+    group_preference: document.getElementById('group_pref').value.trim(),
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.success) {
+      ok.textContent = data.message || 'Ariza qabul qilindi!';
+      ok.style.display = 'block';
+      document.getElementById('regForm').reset();
+    } else {
+      err.textContent = data.message || '{{ _('error')|e }}';
+      err.style.display = 'block';
+    }
+  } catch {
+    err.textContent = 'Ulanish xatosi';
+    err.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = '{{ _('send')|e }} →';
+}
+</script>
+</body>
+</html>
+

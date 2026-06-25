@@ -1,0 +1,95 @@
+{% extends "super_base.html" %}
+{% block title %}To'lovlar — Raufbek{% endblock %}
+{% block page_title %}To'lov paneli{% endblock %}
+{% block content %}
+<div class="super-stats-grid rv" id="payStats">
+  <div class="super-stat-card"><div class="super-stat-label">Jami yig'ilgan</div><div class="super-stat-value" id="p-collected">—</div><span class="super-stat-icon"><i class="fas fa-coins"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">Jami qarzdorlik</div><div class="super-stat-value" id="p-debt" style="color:var(--danger)">—</div><span class="super-stat-icon"><i class="fas fa-exclamation-circle"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">O'quv markazlar</div><div class="super-stat-value" id="p-kgs">—</div><span class="super-stat-icon"><i class="fas fa-school"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">Oy</div><div class="super-stat-value" id="p-month" style="font-size:16px">—</div><span class="super-stat-icon"><i class="fas fa-calendar"></i></span></div>
+</div>
+
+<div class="super-filter">
+  <label>{{ _('month') }}</label>
+  <input class="form-control" type="month" id="payMonth" value="{{ now().strftime('%Y-%m') }}" onchange="loadPayments()">
+  <label>{{ _('kg_name') }}</label>
+  <select class="form-control" id="payKgFilter" onchange="loadPayments()"><option value="">{{ _('all') }}</option></select>
+  <button class="btn btn-outline btn-xs" onclick="loadPayments()"><i class="fas fa-sync"></i> {{ _('refresh') }}</button>
+</div>
+
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-file-invoice-dollar" style="color:var(--success)"></i> O'quv markazlar bo'yicha to'lovlar</span>
+    <span class="badge badge-success" id="payCount">0</span>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+      <table class="super-table">
+        <thead><tr>
+          <th>{{ _('kg_name') }}</th><th>Plan</th><th>Aktiv</th><th>To'lagan</th><th>Kutilgan</th><th>Yig'ilgan</th><th>Qarzdorlik</th><th>Yig'im %</th>
+        </tr></thead>
+        <tbody id="payBody"><tr><td colspan="8" style="text-align:center;color:var(--text3)">{{ _('loading') }}</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load kg list for filter
+  const kgs = await api('/api/super/kg-admin-activity');
+  // We need kg list separately, use stats endpoint
+  const sel = document.getElementById('payKgFilter');
+  sel.innerHTML = '<option value="">{{ _('all') }}</option>';
+  try {
+    const r = await fetch('/api/super/stats');
+    // Just use kg names from our load
+  } catch(e) {}
+  loadPayments();
+});
+
+async function loadPayments() {
+  const month = document.getElementById('payMonth').value;
+  const kgId = document.getElementById('payKgFilter').value;
+  const d = await api(`/api/super/payment-overview?month=${month}&kg_id=${kgId}`);
+  
+  document.getElementById('p-collected').textContent = formatMoney(d.total_collected);
+  document.getElementById('p-debt').textContent = formatMoney(d.total_debt);
+  document.getElementById('p-kgs').textContent = d.total_kgs;
+  document.getElementById('p-month').textContent = d.month;
+  document.getElementById('payCount').textContent = d.kindergartens.length;
+
+  // Populate kg filter on first load
+  const sel = document.getElementById('payKgFilter');
+  if (sel.options.length <= 1 && d.kindergartens.length) {
+    d.kindergartens.forEach(kg => {
+      const opt = document.createElement('option');
+      opt.value = kg.id;
+      opt.textContent = kg.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  const tbody = document.getElementById('payBody');
+  if (!d.kindergartens.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3)">{{ _('no_data') }}</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.kindergartens.map(kg => `<tr>
+    <td><b>${kg.name}</b><br><small style="color:var(--text3)">${kg.id}</small></td>
+    <td><span class="badge badge-primary">${kg.plan}</span></td>
+    <td style="font-weight:700">${kg.active_count}/${kg.student_count}</td>
+    <td style="font-weight:700;color:var(--success)">${kg.paid_count}</td>
+    <td>${formatMoney(kg.expected)}</td>
+    <td style="font-weight:700;color:var(--success)">${formatMoney(kg.paid_sum)}</td>
+    <td style="font-weight:700;color:${kg.debt > 0 ? 'var(--danger)' : 'var(--success)'}">${formatMoney(kg.debt)}</td>
+    <td><span class="badge ${kg.collection_rate >= 80 ? 'badge-success' : kg.collection_rate >= 50 ? 'badge-warning' : 'badge-danger'}">${kg.collection_rate}%</span></td>
+  </tr>`).join('');
+}
+
+function formatMoney(n) {
+  if (!n) return '0 UZS';
+  return Number(n).toLocaleString() + ' UZS';
+}
+</script>
+{% endblock %}

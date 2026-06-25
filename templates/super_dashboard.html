@@ -1,0 +1,346 @@
+{% extends "super_base.html" %}
+{% block title %}{{ _('dashboard_title') }}{% endblock %}
+{% block page_title %}{{ _('platform_stats') }}{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div class="section-title">{{ _('platform_stats') }}</div>
+  <div class="section-sub">{{ _('platform_stats') }}</div>
+</div>
+
+<div class="super-stats-grid rv" id="superStats">
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('kg_list') }}</div><div class="super-stat-value" id="s-kg">—</div><span class="super-stat-icon"><i class="fas fa-school"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('kg_applications') }}</div><div class="super-stat-value" id="s-apps" style="color:var(--warning)">—</div><span class="super-stat-icon"><i class="fas fa-pen-to-square"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('total_students') }}</div><div class="super-stat-value" id="s-stu">—</div><span class="super-stat-icon"><i class="fas fa-user-graduate"></i></span></div>
+  <div class="super-stat-card"><div class="super-stat-label">{{ _('monthly_income') }}</div><div class="super-stat-value" id="s-rev">—</div><span class="super-stat-icon"><i class="fas fa-money-bill-wave"></i></span></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="super-card rv">
+    <div class="super-card-header">
+      <span class="super-card-title"><i class="fas fa-tags" style="color:var(--primary)"></i> {{ _('plans_title') }}</span>
+      <button class="btn btn-primary btn-sm" onclick="openPlanModal()"><i class="fas fa-plus"></i> {{ _('new_plan') }}</button>
+    </div>
+    <div class="super-card-body">
+      {% for p in platform.plans %}
+      <div class="super-plan-card rv" data-id="{{ p.id }}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="plan-name">{{ p.name }}</span>
+          <span class="badge badge-success">${{ p.price_usd }}/oy</span>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-top:6px">{{ p.desc }}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span style="font-size:11px;color:var(--success);font-weight:700"><i class="fas fa-gift"></i> {{ p.trial_days }} kun sinov</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-xs" onclick="editPlan('{{ p.id }}')"><i class="fas fa-pencil"></i></button>
+            {% if p.id != 'standard' %}
+            <button class="btn btn-ghost btn-xs" style="color:var(--danger)" onclick="deletePlan('{{ p.id }}','{{ p.name }}')"><i class="fas fa-trash-can"></i></button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="super-card rv">
+      <div class="super-card-header"><span class="super-card-title"><i class="fas fa-bullhorn" style="color:var(--warning)"></i> Majburiy kanallar</span></div>
+      <div class="super-card-body">
+        <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Barcha o'quv markazlar botlarida majburiy bo'ladigan kanallar</p>
+        <div class="form-group"><textarea class="form-control" id="s_platform_channels" rows="2" placeholder="@kanal1&#10;@kanal2">{{ platform.platform_channels | join('\n') if platform.platform_channels else '' }}</textarea></div>
+        <button class="btn btn-primary w-full btn-sm" onclick="savePlatformChannels()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+      </div>
+    </div>
+    <div class="super-card rv">
+      <div class="super-card-header"><span class="super-card-title"><i class="fas fa-bullhorn" style="color:var(--primary)"></i> Botlarga reklama</span></div>
+      <div class="super-card-body">
+        <div class="form-group"><textarea class="form-control" id="broadcast_msg" rows="2" placeholder="Reklama xabar matni..."></textarea></div>
+        <button class="btn btn-warning w-full btn-sm" onclick="sendBroadcast()"><i class="fas fa-paper-plane"></i> Barcha botlarga yuborish</button>
+        <div id="broadcastResult" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:12px;font-weight:600"></div>
+      </div>
+    </div>
+    <div class="super-card rv">
+      <div class="super-card-header"><span class="super-card-title"><i class="fas fa-bell" style="color:var(--success)"></i> Bildirishnoma</span></div>
+      <div class="super-card-body">
+        <div class="form-group"><input class="form-control" id="ann_title" placeholder="Sarlavha (masalan: Yangilanish)" style="font-size:12px"></div>
+        <div class="form-group"><textarea class="form-control" id="ann_msg" rows="2" placeholder="Xabar matni..."></textarea></div>
+        <button class="btn btn-primary w-full btn-sm" onclick="sendAnnouncement()"><i class="fas fa-paper-plane"></i> Barchaga yuborish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-clipboard-list" style="color:var(--primary)"></i> {{ _('kg_list') }}</span>
+    <a href="/super/kindergartens" class="btn btn-outline btn-sm">Barchasi <i class="fas fa-arrow-right"></i></a>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    <div class="super-table-wrap">
+    <table class="super-table">
+      <thead><tr><th>{{ _('kg_id') }}</th><th>{{ _('kg_name') }}</th><th>{{ _('kg_plan') }}</th><th>{{ _('kg_status') }}</th><th>{{ _('subscription') }}</th><th>{{ _('last_login') }}</th><th>{{ _('kg_students') }}</th><th>{{ _('actions') }}</th></tr></thead>
+      <tbody>
+        {% for kg in kindergartens %}
+        <tr>
+          <td style="font-family:monospace;font-size:10px;color:var(--text3)">{{ kg.id[:12] }}..</td>
+          <td><b>{{ kg.name }}</b></td>
+          <td><span class="badge badge-primary">{{ kg.plan }}</span></td>
+          <td>{{ statusBadge(kg.status) | safe }}</td>
+          <td>
+            {% set sub = kg.get('subscription', {}) %}
+            {% if sub.get('paid_until') %}
+              <span class="badge badge-success">{{ _('sub_paid') }}</span>
+            {% elif sub.get('trial_start') %}
+              <span class="badge badge-warning">{{ _('sub_trial') }}</span>
+            {% else %}
+              <span class="badge badge-danger">{{ _('sub_payment_needed') }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size:10px;white-space:nowrap">{% if kg.get('last_login') %}{{ kg['last_login'][:10] }} {{ kg['last_login'][11:16] }}{% else %}<span style="color:var(--text3)">{{ _('never') }}</span>{% endif %}</td>
+          <td style="text-align:center;font-weight:700"><span class="badge badge-gray">{{ kg.student_count }}</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-ghost btn-xs" onclick="extendSub('{{ kg.id }}')" title="Uzaytirish"><i class="fas fa-calendar-days"></i></button>
+            <button class="btn btn-ghost btn-xs" onclick="changeKgPw('{{ kg.id }}')" title="Parolni o'zgartirish"><i class="fas fa-key"></i></button>
+            <button class="btn btn-ghost btn-xs" style="color:var(--danger)" onclick="deleteKg('{{ kg.id }}','{{ kg.name|e }}')" title="{{ _('delete_kg_title') }}"><i class="fas fa-trash-can"></i></button>
+            {% if kg.status == 'blocked' %}
+            <button class="btn btn-ghost btn-xs" style="color:var(--success)" onclick="toggleBlock('{{ kg.id }}','active')" title="Blokni olib tashlash"><i class="fas fa-unlock"></i></button>
+            {% else %}
+            <button class="btn btn-ghost btn-xs" style="color:var(--danger)" onclick="toggleBlock('{{ kg.id }}','blocked')" title="Bloklash"><i class="fas fa-lock"></i></button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal-backdrop" id="planModal" style="display:none" onclick="if(event.target===this)closePlanModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="planModalTitle">{{ _('new_plan') }}</h3>
+      <button class="modal-close" onclick="closePlanModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="plan_id">
+      <div class="form-group">
+        <label class="form-label">{{ _('plan_name') }}</label>
+        <input class="form-control" id="plan_name" placeholder="Masalan: Premium">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ _('plan_price') }}</label>
+        <input class="form-control" id="plan_price" type="number" value="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ _('plan_trial') }}</label>
+        <input class="form-control" id="plan_trial" type="number" value="30">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ _('plan_desc') }}</label>
+        <textarea class="form-control" id="plan_desc" rows="2" placeholder="Plan haqida qisqacha"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Modullar</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="mod_telegram" checked> Telegram bot</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="mod_reminders" checked> Avto-eslatma</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="mod_reports"> Hisobot (Excel/PDF)</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="mod_portal"> Ota-ona portali</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer"><input type="checkbox" id="mod_multilang"> Ko'p tilli</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-ghost" onclick="closePlanModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-primary" onclick="savePlan()">{{ _('save_plan') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const d = await api('/api/super/stats');
+  document.getElementById('s-kg').textContent = d.kindergartens;
+  document.getElementById('s-apps').textContent = d.pending_apps;
+  document.getElementById('s-stu').textContent = d.total_students;
+  const totalRev = (d.plans || []).reduce((s, p) => s + (p.price_usd || 0), 0) * d.kindergartens;
+  document.getElementById('s-rev').textContent = '$' + totalRev.toLocaleString();
+});
+
+async function sendAnnouncement() {
+  const title = document.getElementById('ann_title').value.trim();
+  const message = document.getElementById('ann_msg').value.trim();
+  if (!message) { toast('Matn kiriting', 'error'); return; }
+  const res = await api('/api/super/announcement', 'POST', { title, message });
+  if (res.success) { toast('{{ _('success') }}', 'success'); document.getElementById('ann_msg').value = ''; }
+}
+
+async function savePlatformChannels() {
+  const val = document.getElementById('s_platform_channels').value;
+  const channels = val.split('\n').map(c => c.trim()).filter(Boolean);
+  const res = await api('/api/super/platform-channels', 'POST', { channels });
+  if (res.success) toast('{{ _('save') }}', 'success');
+  else toast('{{ _('error') }}', 'error');
+}
+
+async function sendBroadcast() {
+  const msg = document.getElementById('broadcast_msg').value.trim();
+  if (!msg) { toast('Xabar matnini kiriting', 'error'); return; }
+  if (!confirm('Barcha bog\'chalar botlari orqali ota-onalarga xabar yuborilsinmi?')) return;
+  const btn = document.querySelector('[onclick="sendBroadcast()"]');
+  btn.disabled = true; btn.textContent = '{{ _('loading') }}';
+  const el = document.getElementById('broadcastResult');
+  el.style.display = 'block'; el.style.background = 'var(--surface2)'; el.textContent = '{{ _('loading') }}';
+  const res = await api('/api/super/broadcast', 'POST', { message: msg });
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Barcha botlarga yuborish';
+  if (res.success) {
+    el.style.background = 'var(--success-light)'; el.style.color = '#059669';
+    el.innerHTML = `<i class="fas fa-check-circle"></i> Yuborildi! ${res.sent} ta botga yetkazildi`;
+  } else {
+    el.style.background = 'var(--danger-light)'; el.style.color = '#dc2626';
+    el.innerHTML = '<i class="fas fa-xmark"></i> ' + (res.message || '{{ _('error') }}');
+  }
+}
+
+function extendSub(kgId) {
+  const months = prompt('Necha oy uzaytiriladi?', '1');
+  if (!months) return;
+  openModal(`<i class="fas fa-calendar-days"></i> Obunani uzaytirish`, `
+    <p style="margin-bottom:16px;color:var(--text2)">O'quv markaz <b>${kgId}</b> uchun <b>${months} oy</b> uzaytirilsinmi?</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="confirmExtend('${kgId}', ${months})">{{ _('confirm') }}</button>
+    </div>`);
+}
+
+async function confirmExtend(kgId, months) {
+  const res = await api(`/api/super/subscription/${kgId}`, 'POST', { extend_months: months });
+  if (res.success) { toast(`${months} oy uzaytirildi <i class="fas fa-check-circle"></i>`, 'success'); closeModal(); location.reload(); }
+  else toast('{{ _('error') }}', 'error');
+}
+
+function openPlanModal(data) {
+  document.getElementById('planModal').style.display = 'flex';
+  if (data) {
+    document.getElementById('planModalTitle').textContent = '{{ _('edit_plan') }}';
+    document.getElementById('plan_id').value = data.id;
+    document.getElementById('plan_name').value = data.name;
+    document.getElementById('plan_price').value = data.price_usd;
+    document.getElementById('plan_trial').value = data.trial_days || 30;
+    document.getElementById('plan_desc').value = data.desc || '';
+    const mods = data.modules || ['telegram', 'reminders'];
+    document.getElementById('mod_telegram').checked = mods.includes('telegram');
+    document.getElementById('mod_reminders').checked = mods.includes('reminders');
+    document.getElementById('mod_reports').checked = mods.includes('reports');
+    document.getElementById('mod_portal').checked = mods.includes('portal');
+    document.getElementById('mod_multilang').checked = mods.includes('multilang');
+  } else {
+    document.getElementById('planModalTitle').textContent = '{{ _('new_plan') }}';
+    document.getElementById('plan_id').value = '';
+    document.getElementById('plan_name').value = '';
+    document.getElementById('plan_price').value = 10;
+    document.getElementById('plan_trial').value = 30;
+    document.getElementById('plan_desc').value = '';
+    ['mod_telegram','mod_reminders','mod_reports','mod_portal','mod_multilang'].forEach(id => document.getElementById(id).checked = id === 'mod_telegram' || id === 'mod_reminders');
+  }
+}
+
+async function savePlan() {
+  const id = document.getElementById('plan_id').value.trim();
+  const name = document.getElementById('plan_name').value.trim();
+  const price = document.getElementById('plan_price').value;
+  const trialDays = document.getElementById('plan_trial').value;
+  const desc = document.getElementById('plan_desc').value.trim();
+  const modules = [];
+  if (document.getElementById('mod_telegram').checked) modules.push('telegram');
+  if (document.getElementById('mod_reminders').checked) modules.push('reminders');
+  if (document.getElementById('mod_reports').checked) modules.push('reports');
+  if (document.getElementById('mod_portal').checked) modules.push('portal');
+  if (document.getElementById('mod_multilang').checked) modules.push('multilang');
+  if (!name) { toast('Plan nomini kiriting', 'error'); return; }
+  const res = await api('/api/super/plan/save', 'POST', { id, name, price_usd: price, trial_days: trialDays, desc, modules });
+  if (res.success) { toast('{{ _('success') }}', 'success'); closeModal(); location.reload(); }
+  else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+async function editPlan(pid) {
+  const cards = document.querySelectorAll('.super-plan-card');
+  for (const card of cards) {
+    if (card.dataset.id === pid) {
+      const name = card.querySelector('.plan-name').textContent;
+      const price = parseInt(card.querySelector('.badge-success').textContent.replace('$','').replace('/oy',''));
+      const descEl = card.querySelector('p');
+      const desc = descEl ? descEl.textContent.trim() : '';
+      const trialText = card.textContent.match(/(\d+) kun sinov/);
+      const trialDays = trialText ? parseInt(trialText[1]) : 30;
+      openPlanModal({ id: pid, name, price_usd: price, trial_days: trialDays, desc });
+      return;
+    }
+  }
+}
+
+async function deletePlan(pid, pname) {
+  if (!confirm(`${pname} planini o'chirishni tasdiqlaysizmi?`)) return;
+  const res = await api('/api/super/plan/delete', 'POST', { id: pid });
+  if (res.success) { toast('{{ _('delete') }}', 'success'); location.reload(); }
+  else toast('{{ _('error') }}', 'error');
+}
+
+async function toggleBlock(kgId, status) {
+  const label = status === 'blocked' ? 'Bloklash' : 'Blokni olib tashlash';
+  if (!confirm(`${label} — ${kgId}?`)) return;
+  const res = await api('/api/super/block', 'POST', { kg_id: kgId, status });
+  if (res.success) { toast(res.message || '{{ _('success') }}', 'success'); location.reload(); }
+  else toast('{{ _('error') }}', 'error');
+}
+
+function changeKgPw(kgId) {
+  openModal(`<i class="fas fa-key"></i> ${kgId} — parolni o'zgartirish`, `
+    <p style="margin-bottom:16px;color:var(--text2)">Yangi parolni kiriting</p>
+    <div class="form-group">
+      <input class="form-control" type="password" id="kgNewPw" placeholder="Kamida 6 belgi" style="font-size:16px">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+      <button class="btn btn-primary" onclick="confirmKgPw('${kgId}')">{{ _('save') }}</button>
+    </div>`);
+  setTimeout(() => document.getElementById('kgNewPw').focus(), 100);
+}
+
+async function confirmKgPw(kgId) {
+  const pw = document.getElementById('kgNewPw').value;
+  if (pw.length < 6) { toast('Kamida 6 belgi', 'error'); return; }
+  const res = await api('/api/super/kg-password', 'POST', { kg_id: kgId, new_password: pw });
+  if (res.success) { toast(res.message, 'success'); closeModal(); }
+  else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+function deleteKg(kgId, kgName) {
+  openModal(`<i class="fas fa-trash-can"></i> {{ _('delete_kg_title') }}`, `
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:40px;margin-bottom:12px;color:var(--danger)"><i class="fas fa-triangle-exclamation"></i></div>
+      <p style="font-size:15px;font-weight:700;color:var(--danger);margin-bottom:10px">"${kgName}"</p>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:14px">{{ _('delete_kg_warn') }}</p>
+      <div style="background:var(--danger-light);padding:10px;border-radius:8px;margin-bottom:16px">
+        <p style="font-size:12px;font-weight:700;color:var(--danger)">{{ _('delete_kg_confirm') }}</p>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-ghost" onclick="closeModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-danger" onclick="confirmDeleteKg('${kgId}')"><i class="fas fa-trash-can"></i> {{ _('delete_kg_btn') }}</button>
+      </div>
+    </div>`);
+}
+
+async function confirmDeleteKg(kgId) {
+  const res = await api('/api/super/delete-kg', 'POST', { kg_id: kgId });
+  if (res.success) { toast(res.message || '{{ _('success') }}', 'success'); closeModal(); location.reload(); }
+  else toast('{{ _('error') }}', 'error');
+}
+
+function closePlanModal() {
+  document.getElementById('planModal').style.display = 'none';
+}
+</script>
+{% endblock %}

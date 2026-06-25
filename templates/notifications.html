@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ _('notifications') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-bell"></i> {{ _('notifications') }}{% endblock %}
+{% block content %}
+<div class="section-header rv">
+  <div class="section-title">{{ _('notifications') }}</div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost" onclick="markAllRead()"><i class="fas fa-check-circle"></i> {{ _('all') }}</button>
+    <button class="btn btn-primary" onclick="runSmartCheck()">🔍 {{ _('view') }}</button>
+  </div>
+</div>
+<div class="card mb-16 rv">
+  <div class="card-header"><span class="card-title"><i class="fas fa-paper-plane"></i> {{ _('complaints') }}</span></div>
+  <div id="complaintList"><div class="loading"><div class="spinner"></div>{{ _('loading') }}</div></div>
+</div>
+<div class="card rv">
+  <div id="notifList"><div class="loading"><div class="spinner"></div>{{ _('loading') }}</div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => { loadComplaints(); loadNotifications(); });
+
+async function loadComplaints() {
+  const list = await api('/api/complaints');
+  const el = document.getElementById('complaintList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:24px"><p>{{ _('no_complaints') }}</p></div>';
+    return;
+  }
+  const labels = { shikoyat: '🔴 {{ _('complaint') }}', taklif: '💡 {{ _('view') }}', norozilik: '😞 {{ _('error') }}' };
+  el.innerHTML = list.slice(0, 30).map(c => `
+    <div class="notif-item ${c.status==='new'?'unread':''}">
+      <div class="notif-icon">${labels[c.category]||'<i class="fas fa-paper-plane"></i>'}</div>
+      <div class="notif-content">
+        <div class="notif-msg"><b>${c.student_name}</b> · ${c.parent_phone || '—'}<br>${c.message}</div>
+        <div class="notif-time">${fmtDateTime(c.created_at)}</div>
+      </div>
+      ${c.status==='new' ? `<button class="btn btn-ghost btn-sm" onclick="markComplaintRead('${c.id}',this)">✓</button>` : ''}
+    </div>`).join('');
+}
+
+async function markComplaintRead(id, btn) {
+  await api(`/api/complaints/${id}/status`, 'POST', { status: 'read' });
+  btn.closest('.notif-item').classList.remove('unread');
+  btn.remove();
+}
+
+async function loadNotifications() {
+  const notifs = await api('/api/notifications');
+  if (!notifs.length) {
+    document.getElementById('notifList').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-bell"></i></div><h3>{{ _('notifications') }}</h3><p>{{ _('no_data') }}</p></div>';
+    return;
+  }
+  const icons = { payment:'<i class="fas fa-credit-card"></i>', info:'<i class="fas fa-circle-info"></i>', warning:'<i class="fas fa-triangle-exclamation"></i>', birthday:'<i class="fas fa-cake-candles"></i>', debt:'<i class="fas fa-credit-card"></i>', absent:'<i class="fas fa-xmark"></i>' };
+  document.getElementById('notifList').innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.read?'':'unread'}">
+      <div class="notif-icon">${icons[n.type]||'<i class="fas fa-bell"></i>'}</div>
+      <div class="notif-content">
+        <div class="notif-msg">${n.message}</div>
+        <div class="notif-time">${fmtDateTime(n.created_at)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-icon notif-del" onclick="dismissNotif('${n.id}',this)" title="{{ _('delete') }}"><i class="fas fa-xmark"></i></button>
+    </div>`).join('');
+}
+
+async function markAllRead() {
+  await api('/api/notifications/mark-read','POST');
+  toast('{{ _('success') }} <i class="fas fa-check-circle"></i>','success');
+  loadNotifications(); loadNotifBadge();
+}
+
+async function dismissNotif(id, btn) {
+  await api(`/api/notifications/dismiss/${id}`,'DELETE');
+  btn.closest('.notif-item').remove();
+  loadNotifBadge();
+}
+
+async function runSmartCheck() {
+  const alerts = await api('/api/notifications/smart-check');
+  if (!alerts.length) { toast('{{ _('success') }} <i class="fas fa-check-circle"></i>','success'); return; }
+  toast(`${alerts.length} {{ _('notifications') }}`,'warning');
+  loadNotifications();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "super_base.html" %}
+{% block title %}IP Bloklash — Raufbek{% endblock %}
+{% block page_title %}IP Bloklash{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-shield" style="color:var(--danger)"></i> Bloklangan IP manzillar</span>
+    <button class="btn btn-primary btn-sm" onclick="openAddIpModal()"><i class="fas fa-plus"></i> IP qo'shish</button>
+  </div>
+  <div class="super-card-body">
+    <p style="font-size:11px;color:var(--text3);margin-bottom:14px">Bloklangan IP manzillardan kelgan so'rovlar avtomatik ravishda rad etiladi.</p>
+    <div id="ipListContainer"></div>
+  </div>
+</div>
+
+<!-- Add IP Modal -->
+<div class="modal-backdrop" id="addIpModal" style="display:none" onclick="if(event.target===this)closeAddIpModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3><i class="fas fa-shield"></i> IP bloklash</h3>
+      <button class="modal-close" onclick="closeAddIpModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">IP manzil</label>
+        <input class="form-control" id="newIp" placeholder="192.168.1.1" style="font-family:monospace">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sabab</label>
+        <input class="form-control" id="ipReason" placeholder="Masalan: Brute force urinish">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-ghost" onclick="closeAddIpModal()">{{ _('cancel') }}</button>
+        <button class="btn btn-danger" onclick="addIp()"><i class="fas fa-lock"></i> Bloklash</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', loadIps);
+
+async function loadIps() {
+  const data = await api('/api/super/blocked-ips');
+  const container = document.getElementById('ipListContainer');
+  if (!data.ips || !data.ips.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:30px;text-align:center"><div class="empty-icon"><i class="fas fa-shield-halved"></i></div><h3>Bloklangan IP yo\'q</h3><p>Hamma narsa tinch</p></div>';
+    return;
+  }
+  container.innerHTML = '<div class="super-table-wrap"><table class="super-table"><thead><tr><th>IP</th><th>Sabab</th><th>Bloklagan</th><th>Vaqt</th><th></th></tr></thead><tbody>' +
+    data.ips.map(b => `<tr>
+      <td><code style="font-size:12px">${b.ip}</code></td>
+      <td>${b.reason || '—'}</td>
+      <td>${b.blocked_by || '?'}</td>
+      <td style="font-size:10px;color:var(--text3)">${b.blocked_at ? b.blocked_at.slice(0,19) : '—'}</td>
+      <td><button class="btn btn-ghost btn-xs" style="color:var(--danger)" onclick="unblockIp('${b.ip}')"><i class="fas fa-unlock"></i></button></td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+
+async function addIp() {
+  const ip = document.getElementById('newIp').value.trim();
+  const reason = document.getElementById('ipReason').value.trim();
+  if (!ip) { toast('IP manzil kiriting', 'error'); return; }
+  const res = await api('/api/super/blocked-ips', 'POST', { ip, reason });
+  if (res.success) { toast(`IP bloklandi: ${ip}`, 'success'); closeAddIpModal(); loadIps(); }
+  else toast(res.message || 'Xatolik', 'error');
+}
+
+function openAddIpModal() {
+  document.getElementById('addIpModal').style.display = 'flex';
+  document.getElementById('newIp').value = '';
+  document.getElementById('ipReason').value = '';
+  setTimeout(() => document.getElementById('newIp').focus(), 100);
+}
+
+function closeAddIpModal() {
+  document.getElementById('addIpModal').style.display = 'none';
+}
+
+async function unblockIp(ip) {
+  if (!confirm(`IP blokini olib tashlash: ${ip}?`)) return;
+  const res = await api('/api/super/blocked-ips', 'DELETE', { ip });
+  if (res.success) { toast(`${ip} blokdan chiqarildi`, 'success'); loadIps(); }
+  else toast('Xatolik', 'error');
+}
+</script>
+{% endblock %}

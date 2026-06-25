@@ -1,0 +1,807 @@
+{% extends "base.html" %}
+{% block title %}{{ _('settings') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-gear"></i> {{ _('settings') }}{% endblock %}
+{% block extra_head %}
+<style>
+.settings-group{background:var(--surface);backdrop-filter:blur(var(--blur)) saturate(1.5);-webkit-backdrop-filter:blur(var(--blur)) saturate(1.5);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:all .25s var(--smooth)}
+.settings-group:hover{border-color:var(--border-hover)}
+.settings-group.open{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary-light)}
+.settings-group + .settings-group{margin-top:0}
+.settings-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:all .2s var(--smooth);position:relative}
+.settings-header:hover{background:var(--primary-light)}
+.settings-header:active{background:var(--primary-light);transform:scale(.995)}
+.settings-header-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .3s var(--spring)}
+.settings-group:nth-child(1) .settings-header-icon{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;box-shadow:0 3px 10px rgba(99,102,241,.25)}
+.settings-group:nth-child(2) .settings-header-icon{background:linear-gradient(135deg,#059669,#34d399);color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.25)}
+.settings-group:nth-child(3) .settings-header-icon{background:linear-gradient(135deg,#d97706,#fbbf24);color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.25)}
+.settings-group:nth-child(4) .settings-header-icon{background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff;box-shadow:0 3px 10px rgba(79,70,229,.25)}
+.settings-group:nth-child(5) .settings-header-icon{background:linear-gradient(135deg,#f43f5e,#fb7185);color:#fff;box-shadow:0 3px 10px rgba(244,63,94,.25)}
+.settings-group:nth-child(6) .settings-header-icon{background:linear-gradient(135deg,#3b82f6,#60a5fa);color:#fff;box-shadow:0 3px 10px rgba(59,130,246,.25)}
+.settings-group:nth-child(7) .settings-header-icon{background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;box-shadow:0 3px 10px rgba(139,92,246,.25)}
+.settings-group:nth-child(8) .settings-header-icon{background:linear-gradient(135deg,#14b8a6,#5eead4);color:#fff;box-shadow:0 3px 10px rgba(20,184,166,.25)}
+.settings-group:nth-child(9) .settings-header-icon{background:linear-gradient(135deg,#64748b,#94a3b8);color:#fff;box-shadow:0 3px 10px rgba(100,116,139,.25)}
+.settings-group:nth-child(10) .settings-header-icon{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;box-shadow:0 3px 10px rgba(99,102,241,.25)}
+.settings-header-icon i{transition:transform .3s var(--spring)}
+.settings-header:hover .settings-header-icon i{transform:scale(1.12) rotate(-5deg)}
+.settings-header-text{flex:1;min-width:0}
+.settings-header-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.1px}
+.settings-header-sub{font-size:10px;color:var(--text3);margin-top:1px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.settings-chevron{font-size:10px;color:var(--text3);opacity:.4;transition:all .35s var(--smooth);flex-shrink:0}
+.settings-group.open .settings-chevron{transform:rotate(180deg);opacity:.7}
+.settings-body{max-height:0;overflow:hidden;transition:max-height .45s var(--smooth),opacity .3s var(--smooth);opacity:0}
+.settings-group.open .settings-body{max-height:2500px;opacity:1}
+.settings-body-inner{padding:0 18px 18px;border-top:1px solid var(--border);margin-top:0;padding-top:16px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="section-title mb-20">{{ _('settings_page') }}</div>
+
+<!-- General settings -->
+<div class="settings-group open" data-section="general">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-school"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('settings') }}</div>
+      <div class="settings-header-sub">Umumiy sozlamalar</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div class="form-group"><label class="form-label">{{ _('kg_name') }}</label>
+        <input class="form-control" id="s_name" value="{{ settings.name }}"></div>
+      <div class="form-group"><label class="form-label">Valyuta</label>
+        <select class="form-control" id="s_currency">
+          <option value="UZS" {% if settings.currency=='UZS' %}selected{% endif %}>UZS (so'm)</option>
+          <option value="USD" {% if settings.currency=='USD' %}selected{% endif %}>USD (dollar)</option>
+          <option value="EUR" {% if settings.currency=='EUR' %}selected{% endif %}>EUR (yevro)</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">{{ _('kg_name') }} URL</label>
+        <input class="form-control" id="s_logo" value="{{ settings.logo or '' }}" placeholder="https://..."></div>
+      <div class="form-group"><label class="form-label">{{ _('note') }}</label>
+        <input class="form-control" id="s_tagline" value="{{ settings.tagline or '' }}" placeholder="{{ _('note') }}..."></div>
+      <button class="btn btn-primary w-full" onclick="saveGeneralSettings()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Settings -->
+<div class="settings-group" data-section="payment">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-credit-card"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('payments') }}</div>
+      <div class="settings-header-sub">To'lov usullari va ma'lumotlari</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div class="form-group"><label class="form-label">{{ _('payment_method') }}</label>
+        <select class="form-control" id="s_payment_provider">
+          <option value="manual_card" {% if settings.payment_provider=='manual_card' %}selected{% endif %}><i class="fas fa-credit-card"></i> Bank kartasi (qo'lda)</option>
+          <option value="tezcheck" {% if settings.payment_provider=='tezcheck' %}selected{% endif %}>🔵 TezCheck</option>
+          <option value="click" {% if settings.payment_provider=='click' %}selected{% endif %}>🔘 CLICK</option>
+          <option value="uzum" {% if settings.payment_provider=='uzum' %}selected{% endif %}>🟢 Uzum</option>
+          <option value="payme" {% if settings.payment_provider=='payme' %}selected{% endif %}>🔵 Payme</option>
+        </select></div>
+      <div class="form-group section-toggle" id="card_section"><label class="form-label">{{ _('card') }}</label>
+        <input class="form-control" id="s_payment_card" value="{{ settings.payment_card or '' }}" placeholder="9860XXXXXXXXXXXX"></div>
+      <div class="form-group section-toggle hidden" id="merchant_section"><label class="form-label">Merchant ID</label>
+        <input class="form-control" id="s_payment_merchant_id" value="{{ settings.payment_merchant_id or '' }}" placeholder="12345"></div>
+      <div class="form-group section-toggle hidden" id="service_section"><label class="form-label">Service ID (CLICK)</label>
+        <input class="form-control" id="s_payment_service_id" value="{{ settings.payment_service_id or '' }}" placeholder="12345"></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <label class="toggle" style="margin:0">
+          <input type="checkbox" id="s_auto_payment" {% if settings.auto_payment %}checked{% endif %}>
+          <span class="toggle-slider"></span>
+        </label>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Avtomatik to'lov (TezCheck)</div>
+          <div style="font-size:10px;color:var(--text3)">To'lov qo'shilganda avtomatik TezCheck API orqali to'lov havolasi yaratilsin</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <button class="btn btn-outline w-full" onclick="generatePayLink()" id="genPayLinkBtn" type="button">
+          <i class="fas fa-link"></i> To'lov havolasini yaratish
+        </button>
+        <div id="payLinkResult" style="margin-top:8px;display:none"></div>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">{{ _('parent') }} {{ _('payments') }}</p>
+      <button class="btn btn-primary w-full" onclick="savePaymentSettings()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Fees -->
+<div class="settings-group" data-section="fees">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-tag"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">Guruh narxlari</div>
+      <div class="settings-header-sub">Har bir guruh uchun oylik to'lov</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Har bir guruh uchun oylik to'lov narxini belgilang. Bu narxlar <a href="/pricing" target="_blank" style="color:var(--primary);font-weight:700">Narxlar sahifasida</a> ko'rsatiladi.</p>
+      <div id="groupFeesList"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="form-control" id="newGroupName" placeholder="Guruh nomi" style="flex:1">
+        <input class="form-control" id="newGroupFee" type="number" placeholder="Narx" style="width:140px">
+        <button class="btn btn-primary btn-sm" onclick="addGroupFee()"><i class="fas fa-plus"></i></button>
+      </div>
+      <button class="btn btn-primary w-full mt-16" onclick="saveGroupFees()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Checks -->
+<div class="settings-group" data-section="checks">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-paper-plane"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('check') }}</div>
+      <div class="settings-header-sub">Tasdiqlanmagan to'lov cheklari</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div id="pendingChecks" style="margin-bottom:12px">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+      <button class="btn btn-outline w-full" onclick="loadPendingChecks()"><i class="fas fa-rotate"></i> {{ _('view') }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Debt Reminders -->
+<div class="settings-group" data-section="reminders">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-bell"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">Qarzdorlik eslatmalari</div>
+      <div class="settings-header-sub">Avtomatik va qo'lda eslatma yuborish</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div class="form-group"><label class="form-label">Eslatma chastotasi</label>
+        <select class="form-control" id="s_reminder_freq">
+          <option value="off" {% if settings.reminder_frequency=='off' or not settings.reminder_frequency %}selected{% endif %}>O'chirilgan</option>
+          <option value="daily" {% if settings.reminder_frequency=='daily' %}selected{% endif %}>Har kuni</option>
+          <option value="weekly" {% if settings.reminder_frequency=='weekly' %}selected{% endif %}>Haftada bir</option>
+        </select>
+        <small style="color:var(--text3);font-size:11px">Eslatmalar avtomatik yuborilmaydi — qo'lda yuborish uchun pastdagi tugmani bosing</small></div>
+      <div class="form-group"><label class="form-label">Xabar matni</label>
+        <textarea class="form-control" id="s_reminder_msg" rows="3" placeholder="Hurmatli ona/ota...">{{ settings.reminder_message or '' }}</textarea>
+        <small style="color:var(--text3);font-size:11px">Qo'llaniladigan o'zgaruvchilar: <code>{name}</code> — bola ismi, <code>{debt}</code> — qarz summasi, <code>{currency}</code> — valyuta, <code>{month}</code> — oy nomi</small></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveReminderSettings()"><i class="fas fa-floppy-disk"></i> {{ _('save') }}</button>
+        <button class="btn btn-outline" onclick="sendTestReminder()"><i class="fas fa-paper-plane"></i> Test yuborish</button>
+        <button class="btn btn-warning" onclick="sendDebtReminders()"><i class="fas fa-bell"></i> Barcha qarzdorlarga yuborish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Telegram settings -->
+<div class="settings-group" data-section="telegram">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-mobile-screen"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('telegram_bot') }}</div>
+      <div class="settings-header-sub">Bot token, kanal va chat ID</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div class="form-group"><label class="form-label">Bot Token</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-control" id="s_bot_token" type="password" placeholder="{% if settings.bot_token %}••••••••••••••••••••••••{% else %}123456:ABC-DEF...{% endif %}" autocomplete="off">
+          {% if settings.bot_token %}<span class="badge badge-success" style="white-space:nowrap">✓ O'rnatilgan</span>{% endif %}
+        </div>
+        <small style="color:var(--text3);font-size:11px">Token bir marta kiritiladi. Saqlashda agar bo'sh qoldirilsa, eski token saqlanadi.</small></div>
+      <div class="form-group"><label class="form-label">Bot username</label>
+        <input class="form-control" id="s_bot_username" value="{{ settings.bot_username or '' }}" placeholder="@mykindergarten_bot">
+        <small style="color:var(--text3);font-size:11px">Ota-ona portalida bot tugmasi ko'rinishi uchun. "Botni sinash" tugmasidan avtomatik olinadi.</small></div>
+      <div class="form-group"><label class="form-label">{{ _('admin_login') }} Telegram Chat ID</label>
+        <input class="form-control" id="s_admin_chat" value="{{ settings.admin_telegram_chat_id or '' }}" placeholder="123456789">
+        <small style="color:var(--text3);font-size:11px">@userinfobot dan oling — shikoyat va ulanish xabarlari shu yerga keladi</small></div>
+      <div class="form-group"><label class="form-label">Majburiy kanal (1 ta)</label>
+        <textarea class="form-control" id="s_channels" rows="2" placeholder="@mykindergarten">{{ settings.required_channels | join('\n') if settings.required_channels else '' }}</textarea>
+        <small style="color:var(--text3);font-size:11px">Faqat 1 ta kanal qo'shishingiz mumkin. Platforma kanallari avtomatik qo'shiladi.</small></div>
+      <button class="btn btn-primary w-full" onclick="saveTelegramSettings()">💾 {{ _('save') }}</button>
+      <div id="tgStatus" style="padding:12px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--text2)">{{ _('loading') }}</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-outline w-full" onclick="testBot()"><i class="fas fa-robot"></i> {{ _('telegram_bot') }}</button>
+        <button class="btn btn-outline w-full" onclick="checkTgStatus()">📡 {{ _('status') }}</button>
+        <button class="btn btn-outline w-full" onclick="setWebhook()">🔗 Webhook</button>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5">
+        <b>Mahalliy:</b> <code>python app.py</code> — bot avtomatik ishlaydi.<br>
+        <b>Vercel:</b> Webhook o'rnating + SITE_URL.<br>
+        Ota-ona: /start → <i class="fas fa-mobile-screen"></i> telefon → bola ulanadi. Admin chat ID — @userinfobot (telefon emas!).
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Admin login -->
+<div class="settings-group" data-section="admin-login">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-user"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('admin_login') }}</div>
+      <div class="settings-header-sub">Login va telefon raqam</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div style="padding:14px;background:var(--surface2);border-radius:8px;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px">{{ _('admin_login') }}:</div>
+        <div style="font-weight:700;font-family:monospace">{{ settings.get('admin_login', '') }}</div>
+      </div>
+      <div class="form-group"><label class="form-label">{{ _('phone') }}</label>
+        <input class="form-control" id="new_login" placeholder="998901234567"></div>
+      <button class="btn btn-ghost w-full" onclick="changeLogin()">💾 {{ _('edit') }}</button>
+      <div style="margin-top:16px;padding:12px;background:var(--warning-light);border-radius:8px;font-size:12.5px;color:#d97706">
+        <i class="fas fa-triangle-exclamation"></i> {{ _('admin_login') }} {{ _('edit') }}.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Additional admins -->
+<div class="settings-group" data-section="kg-admins">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-users"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">Qo'shimcha adminlar</div>
+      <div class="settings-header-sub">O'quv markaz adminlarini boshqarish</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <p style="font-size:12px;color:var(--text3);margin:0 0 12px 0">O'quv markazingizga qo'shimcha adminlarni qo'shing. Ular o'z login va paroli bilan tizimga kiradi.</p>
+      <div style="overflow-x:auto;margin-bottom:12px">
+        <table class="table" style="font-size:12px">
+          <thead><tr><th>Ism</th><th>Login</th><th>Huquqlar</th><th></th></tr></thead>
+          <tbody id="kgAdminsBody">
+            <tr><td colspan="4" style="text-align:center;color:var(--text3)">Yuklanmoqda...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn btn-primary btn-xs" onclick="openKgAdminModal()"><i class="fas fa-plus"></i> Admin qo'shish</button>
+    </div>
+  </div>
+</div>
+
+{% if is_super %}
+<!-- Password change -->
+<div class="settings-group" data-section="password">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-lock"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('password') }}</div>
+      <div class="settings-header-sub">Parolni o'zgartirish</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <div class="form-group"><label class="form-label">Eski {{ _('password') }}</label>
+        <input class="form-control" type="password" id="old_pw" placeholder="••••••••"></div>
+      <div class="form-group"><label class="form-label">Yangi {{ _('password') }}</label>
+        <input class="form-control" type="password" id="new_pw" placeholder="{{ _('password') }}"></div>
+      <div class="form-group"><label class="form-label">Yangi {{ _('password') }} (takror)</label>
+        <input class="form-control" type="password" id="new_pw2" placeholder="••••••••"></div>
+      <button class="btn btn-warning w-full" onclick="changePassword()"><i class="fas fa-key"></i> {{ _('password') }}</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Info -->
+<div class="settings-group" data-section="info">
+  <div class="settings-header" onclick="toggleAccordion(this)">
+    <div class="settings-header-icon"><i class="fas fa-circle-info"></i></div>
+    <div class="settings-header-text">
+      <div class="settings-header-title">{{ _('settings_page') }}</div>
+      <div class="settings-header-sub">Tizim haqida ma'lumot</div>
+    </div>
+    <div class="settings-chevron"><i class="fas fa-chevron-down"></i></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-body-inner">
+      <table class="info-table">
+        <tr><td>{{ _('settings') }}</td><td><b>v1.0.0</b></td></tr>
+        <tr><td>Backend</td><td><b>Python Flask</b></td></tr>
+        <tr><td>Ma'lumotlar bazasi</td><td><b>JSON fayl tizimi</b></td></tr>
+        <tr><td>{{ _('parent') }}</td><td><b><a href="/parent" target="_blank" style="color:var(--primary)">/parent</a></b></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Kg Admin Modal -->
+<div class="modal-backdrop" id="kgAdminModal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="kgAdminModalTitle">Admin qo'shish</h3>
+      <button class="modal-close" onclick="closeKgAdminModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Ism</label><input class="form-control" id="kg_a_name"></div>
+      <div class="form-group"><label class="form-label">Login</label><input class="form-control" id="kg_a_login"><span id="kgLoginStatus" style="font-size:11px;color:var(--text3)"></span></div>
+      <div class="form-group"><label class="form-label">Parol</label><input class="form-control" type="password" id="kg_a_password" placeholder="Kamida 6 belgi"><span id="kg_pwHelp" style="font-size:11px;color:var(--text3)">Bo'sh qoldirilsa, parol o'zgarmaydi</span></div>
+      <div class="form-group"><label class="form-label">Huquqlar</label>
+        <div id="kgPermsList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveKgAdmin()"><i class="fas fa-check"></i> Saqlash</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleAccordion(header){
+  const section=header.closest('.settings-group');
+  const isOpen=section.classList.contains('open');
+  document.querySelectorAll('.settings-group.open').forEach(s=>s.classList.remove('open'));
+  if(!isOpen) section.classList.add('open');
+}
+
+document.addEventListener('DOMContentLoaded', checkTgStatus);
+
+async function checkTgStatus() {
+  const el = document.getElementById('tgStatus');
+  if (!el) return;
+  const d = await api('/api/telegram/status');
+  if (!d.success) {
+    el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> {{ _('error') }}';
+    el.style.background = 'var(--warning-light)';
+    return;
+  }
+  let html = '';
+  if (d.polling_local && !d.webhook_active) html += '<i class="fas fa-check-circle"></i> {{ _('settings') }}<br>';
+  else if (d.webhook_active) html += `<i class="fas fa-check-circle"></i> Webhook: ${d.webhook_url}<br>`;
+  else html += '<i class="fas fa-triangle-exclamation"></i> {{ _('error') }}<br>';
+  html += d.admin_chat_ok ? '<i class="fas fa-check-circle"></i> {{ _('success') }}<br>' : '<i class="fas fa-xmark"></i> {{ _('error') }}';
+  el.innerHTML = html;
+  el.style.background = d.admin_chat_ok && (d.polling_local || d.webhook_active) ? 'var(--success-light)' : 'var(--warning-light)';
+}
+
+async function saveGeneralSettings() {
+  const data = {
+    name: document.getElementById('s_name').value.trim(),
+    currency: document.getElementById('s_currency').value,
+    logo: document.getElementById('s_logo').value.trim(),
+    tagline: document.getElementById('s_tagline').value.trim()
+  };
+  const res = await api('/api/settings','POST',data);
+  if (res.success) { toast('{{ _('save') }} <i class="fas fa-check-circle"></i>','success'); loadSidebarName(); }
+  else toast('{{ _('error') }}','error');
+}
+
+async function saveTelegramSettings() {
+  const raw = document.getElementById('s_channels').value.split('\n').map(c=>c.trim()).filter(Boolean);
+  const channels = raw.slice(0, 1);
+  if (raw.length > 1) toast('{{ _('error') }}', 'warning');
+  const data = {
+    bot_token: document.getElementById('s_bot_token').value.trim(),
+    bot_username: document.getElementById('s_bot_username').value.trim(),
+    admin_telegram_chat_id: document.getElementById('s_admin_chat').value.trim(),
+    required_channels: channels
+  };
+  const res = await api('/api/settings','POST',data);
+  if (res.success) toast('{{ _('telegram_bot') }} <i class="fas fa-check-circle"></i>','success');
+  else toast('{{ _('error') }}','error');
+}
+
+async function changePassword() {
+  const old_password = document.getElementById('old_pw').value;
+  const new_password = document.getElementById('new_pw').value;
+  const new_pw2 = document.getElementById('new_pw2').value;
+  if (new_password !== new_pw2) { toast('{{ _('error') }}','error'); return; }
+  const res = await api('/api/settings/change-password','POST',{old_password,new_password});
+  if (res.success) { toast('{{ _('password') }} <i class="fas fa-check-circle"></i>','success'); document.getElementById('old_pw').value=''; document.getElementById('new_pw').value=''; document.getElementById('new_pw2').value=''; }
+  else toast(res.message||'{{ _('error') }}','error');
+}
+
+async function testBot() {
+  const token = document.getElementById('s_bot_token').value.trim();
+  if (!token) { toast('{{ _('error') }}','error'); return; }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const data = await res.json();
+    if (data.ok) {
+      const username = '@' + data.result.username;
+      document.getElementById('s_bot_username').value = username;
+      toast(`<i class="fas fa-check-circle"></i> {{ _('success') }}: ${username}`,'success');
+      autoSaveBotUsername(username);
+    } else toast('{{ _('error') }}','error');
+  } catch { toast('{{ _('error') }}','error'); }
+}
+
+async function autoSaveBotUsername(bot_username) {
+  const res = await api('/api/settings','POST',{bot_username});
+  if (res.success) toast('{{ _('save') }} <i class="fas fa-check-circle"></i>','success');
+}
+
+async function setWebhook() {
+  const site = prompt('{{ _('settings') }}:', window.location.origin);
+  if (!site) return;
+  const res = await api('/api/telegram/set-webhook', 'POST', { site_url: site.replace(/\/$/, '') });
+  if (res.success) toast('{{ _('success') }}: ' + res.url, 'success');
+  else toast(res.message || '{{ _('error') }}', 'error');
+}
+
+async function changeLogin() {
+  const new_login = document.getElementById('new_login').value.trim();
+  if (!new_login) { toast('{{ _('error') }}','error'); return; }
+  const admins = await fetch('/api/settings').then(r=>r.json());
+  toast('{{ _('password') }}','info');
+}
+
+async function savePaymentSettings() {
+  const data = {
+    payment_provider: document.getElementById('s_payment_provider').value,
+    payment_card: document.getElementById('s_payment_card').value.trim(),
+    payment_merchant_id: document.getElementById('s_payment_merchant_id').value.trim(),
+    payment_service_id: document.getElementById('s_payment_service_id').value.trim(),
+    auto_payment: document.getElementById('s_auto_payment').checked
+  };
+  const res = await api('/api/settings','POST',data);
+  if (res.success) toast('{{ _('payments') }} <i class="fas fa-check-circle"></i>','success');
+  else toast('{{ _('error') }}','error');
+}
+
+function updatePaymentFields() {
+  const prov = document.getElementById('s_payment_provider').value;
+  document.getElementById('card_section').classList.toggle('hidden', prov !== 'manual_card');
+  document.getElementById('merchant_section').classList.toggle('hidden', prov === 'manual_card' || prov === 'tezcheck');
+  document.getElementById('service_section').classList.toggle('hidden', prov !== 'click');
+  const sel = document.getElementById('s_payment_provider');
+  sel.classList.add('input-changed');
+  setTimeout(() => sel.classList.remove('input-changed'), 300);
+}
+
+// ─── Group Fee Management ─────────────────────────────────────
+let _groupFees = {};
+
+async function loadGroupFees() {
+  try {
+    const s = await api('/api/settings');
+    _groupFees = s.group_fees || {};
+    renderGroupFees();
+  } catch (e) { console.warn('Group fees error:', e); }
+}
+
+function renderGroupFees() {
+  const el = document.getElementById('groupFeesList');
+  const keys = Object.keys(_groupFees);
+  if (!keys.length) {
+    el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:13px"><i class="fas fa-tag"></i> Hozircha guruh narxlari belgilanmagan</div>';
+    return;
+  }
+  el.innerHTML = keys.map((g, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xs);margin-bottom:6px;animation:fadeIn .25s ease both;animation-delay:${i*0.03}s">
+      <span style="flex:1;font-weight:600;font-size:13px">${escapeHtml(g)}</span>
+      <span style="font-weight:800;font-size:14px;color:var(--primary);min-width:80px;text-align:right">${Number(_groupFees[g]).toLocaleString('uz-UZ')}</span>
+      <button class="btn btn-ghost btn-icon btn-xs" style="width:30px;height:30px" onclick="editGroupFee('${escapeHtml(g)}')"><i class="fas fa-pen"></i></button>
+      <button class="btn btn-danger btn-icon btn-xs" style="width:30px;height:30px" onclick="removeGroupFee('${escapeHtml(g)}')"><i class="fas fa-xmark"></i></button>
+    </div>`).join('');
+}
+
+function addGroupFee() {
+  const name = document.getElementById('newGroupName').value.trim();
+  const fee = parseInt(document.getElementById('newGroupFee').value);
+  if (!name || !fee) { toast('Guruh nomi va narxni kiriting', 'warning'); return; }
+  _groupFees[name] = fee;
+  renderGroupFees();
+  document.getElementById('newGroupName').value = '';
+  document.getElementById('newGroupFee').value = '';
+  toast('Qo\'shildi: ' + name, 'success');
+}
+
+function editGroupFee(name) {
+  const current = _groupFees[name];
+  const newName = prompt('Guruh nomi:', name);
+  if (!newName) return;
+  const newFee = parseInt(prompt('Oylik to\'lov:', current));
+  if (!newFee) return;
+  if (newName !== name) {
+    delete _groupFees[name];
+  }
+  _groupFees[newName] = newFee;
+  renderGroupFees();
+  toast('O\'zgartirildi', 'success');
+}
+
+function removeGroupFee(name) {
+  confirmAction(name + ' — o\'chirilsinmi?', async () => {
+    delete _groupFees[name];
+    renderGroupFees();
+    toast('O\'chirildi', 'info');
+  });
+}
+
+async function saveGroupFees() {
+  const res = await api('/api/settings', 'POST', { group_fees: _groupFees });
+  if (res.success) {
+    toast('Narxlar saqlandi ✅', 'success');
+    renderGroupFees();
+  } else toast('Xatolik', 'error');
+}
+
+async function loadPendingChecks() {
+  const el = document.getElementById('pendingChecks');
+  const d = await api('/api/payment-checks?status=pending');
+  if (!d.length) {
+    el.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text3);font-size:13px"><i class="fas fa-envelope-open-text"></i> {{ _('no_data') }}</div>';
+    return;
+  }
+  el.innerHTML = d.map(c => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--warning-light);border-radius:8px;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px">${c.student_name}</div>
+        <div style="font-size:12px;color:var(--text2)">${Number(c.amount).toLocaleString()} UZS</div>
+        <div style="font-size:11px;color:var(--text3)">${c.id}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-success btn-sm" onclick="approveCheck('${c.id}')"><i class="fas fa-check-circle"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="rejectCheck('${c.id}')"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+async function approveCheck(id) {
+  confirmAction('{{ _('confirm') }}', async () => {
+    const res = await api(`/api/payment-checks/${id}/status`, 'POST', {status: 'approved'});
+    if (res.success) { toast('{{ _('success') }} <i class="fas fa-check-circle"></i>', 'success'); loadPendingChecks(); }
+    else toast(res.message || '{{ _('error') }}', 'error');
+  });
+}
+
+async function rejectCheck(id) {
+  confirmAction('{{ _('delete') }}', async () => {
+    const res = await api(`/api/payment-checks/${id}/status`, 'POST', {status: 'rejected'});
+    if (res.success) { toast('{{ _('delete') }}', 'info'); loadPendingChecks(); }
+    else toast(res.message || '{{ _('error') }}', 'error');
+  });
+}
+
+// ─── Debt Reminder Functions ─────────────────────────────────────
+async function saveReminderSettings() {
+  const data = {
+    reminder_frequency: document.getElementById('s_reminder_freq').value,
+    reminder_message: document.getElementById('s_reminder_msg').value.trim()
+  };
+  const res = await api('/api/settings', 'POST', data);
+  if (res.success) toast('Eslatma sozlamalari saqlandi ✅', 'success');
+  else toast('Xatolik', 'error');
+}
+
+async function sendDebtReminders() {
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
+  try {
+    const msg = document.getElementById('s_reminder_msg').value.trim();
+    const res = await api('/api/debt-reminders/send', 'POST', { message: msg || undefined });
+    if (res.success) toast(`${res.sent} ta yuborildi, ${res.failed} ta xatolik`, res.failed ? 'warning' : 'success');
+    else toast(res.message || 'Xatolik', 'error');
+  } catch (e) { toast('Xatolik', 'error'); }
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-bell"></i> Barcha qarzdorlarga yuborish';
+}
+
+async function sendTestReminder() {
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
+  try {
+    const msg = document.getElementById('s_reminder_msg').value.trim();
+    const res = await api('/api/telegram/send', 'POST', {
+      target: document.getElementById('s_admin_chat').value || '',
+      message: '🧪 Test xabar: Qarzdorlik eslatma tizimi ishlamoqda.\n\n' + (msg || 'Hurmatli ona/ota...')
+    });
+    if (res.success && res.sent > 0) toast('Test xabar yuborildi ✅', 'success');
+    else toast('Admin chat ID ni tekshiring', 'warning');
+  } catch (e) { toast('Xatolik', 'error'); }
+  btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Test yuborish';
+}
+
+// ─── Kg Admin Management ────────────────────────────────────
+let kgEditingId = null
+let kgAllPerms = []
+
+async function loadKgPerms(){
+  const r=await(await fetch('/api/kg-admins/permissions')).json()
+  kgAllPerms=r.permissions||[]
+}
+
+function kgRenderPerms(selected=[]){
+  const el=document.getElementById('kgPermsList')
+  if(!el)return
+  el.innerHTML=kgAllPerms.map(p=>
+    `<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+      <input type="checkbox" value="${p.id}" ${selected.includes(p.id)?'checked':''}>
+      ${p.label}
+    </label>`
+  ).join('')
+}
+
+function kgGetSelectedPerms(){
+  const el=document.getElementById('kgPermsList')
+  if(!el)return ['all']
+  return [...el.querySelectorAll('input:checked')].map(c=>c.value)
+}
+
+async function loadKgAdmins(){
+  const el=document.getElementById('kgAdminsBody')
+  try{
+    const r=await(await fetch('/api/kg-admins')).json()
+    const admins=r.admins||[]
+    if(!admins.length){
+      el.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Admin yo\'q</td></tr>'
+      return
+    }
+    el.innerHTML=admins.map(a=>
+      `<tr>
+        <td><b>${a.name}</b></td>
+        <td><code>${a.login}</code></td>
+        <td>${(a.permissions||[]).includes('all') ? 'Barcha huquqlar' : (a.permissions||[]).map(p=>{
+          const found=kgAllPerms.find(x=>x.id===p)
+          return found?found.label:p
+        }).join(', ')}</td>
+        <td>
+          <button class="btn btn-ghost btn-xs" onclick="editKgAdmin('${a.id}')"><i class="fas fa-pen"></i></button>
+          <button class="btn btn-danger btn-xs" onclick="deleteKgAdmin('${a.id}','${a.name}')"><i class="fas fa-trash-can"></i></button>
+        </td>
+      </tr>`
+    ).join('')
+  }catch(e){
+    el.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--color-danger)">Xatolik</td></tr>'
+  }
+}
+
+function openKgAdminModal(){
+  kgEditingId=null
+  document.getElementById('kgAdminModalTitle').textContent='Admin qo\'shish'
+  document.getElementById('kg_a_name').value=''
+  document.getElementById('kg_a_login').value=''
+  document.getElementById('kg_a_password').value=''
+  document.getElementById('kg_pwHelp').textContent='Kamida 6 belgi'
+  document.getElementById('kgLoginStatus').textContent=''
+  kgRenderPerms()
+  document.getElementById('kgAdminModal').style.display='flex'
+}
+
+async function editKgAdmin(id){
+  kgEditingId=id
+  document.getElementById('kgAdminModalTitle').textContent='Adminni tahrirlash'
+  document.getElementById('kg_pwHelp').textContent='Bo\'sh qoldirilsa, parol o\'zgarmaydi'
+  try{
+    const r=await(await fetch('/api/kg-admins')).json()
+    const a=(r.admins||[]).find(x=>x.id===id)
+    if(!a)return
+    document.getElementById('kg_a_name').value=a.name||''
+    document.getElementById('kg_a_login').value=a.login||''
+    document.getElementById('kg_a_password').value=''
+    kgRenderPerms(a.permissions||[])
+    document.getElementById('kgAdminModal').style.display='flex'
+  }catch(e){toast('Xatolik','error')}
+}
+
+async function saveKgAdmin(){
+  const name=document.getElementById('kg_a_name').value.trim()
+  const login=document.getElementById('kg_a_login').value.trim()
+  const password=document.getElementById('kg_a_password').value
+  const permissions=kgGetSelectedPerms()
+  if(!name||!login){toast('Ism va login kiriting','error');return}
+  if(!kgEditingId&&(!password||password.length<6)){toast('Parol kamida 6 belgi','error');return}
+  const body={name,login,permissions}
+  if(password)body.password=password
+  let url='/api/kg-admins'
+  let method='POST'
+  if(kgEditingId){url=`/api/kg-admins/${kgEditingId}`;method='PUT'}
+  try{
+    const r=await(await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json()
+    if(r.success){toast('Admin saqlandi ✅','success');closeKgAdminModal();loadKgAdmins()}
+    else toast(r.message||'Xatolik','error')
+  }catch(e){toast('Server xatosi','error')}
+}
+
+function closeKgAdminModal(){
+  document.getElementById('kgAdminModal').style.display='none'
+}
+
+async function deleteKgAdmin(id,name){
+  if(!confirm(`${name} ni o'chirish?`))return
+  try{
+    const r=await(await fetch(`/api/kg-admins/${id}`,{method:'DELETE'})).json()
+    if(r.success){toast('Admin o\'chirildi','success');loadKgAdmins()}
+    else toast(r.message||'Xatolik','error')
+  }catch(e){toast('Server xatosi','error')}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(loadPendingChecks,500)
+  setTimeout(loadGroupFees,300)
+  const sel=document.getElementById('s_payment_provider')
+  if(sel)sel.addEventListener('change',updatePaymentFields)
+  updatePaymentFields()
+  loadKgPerms()
+  loadKgAdmins()
+  document.getElementById('kgAdminModal').addEventListener('click',function(e){if(e.target===this)closeKgAdminModal()})
+})
+
+function generatePayLink() {
+  const btn = document.getElementById('genPayLinkBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Yaratilmoqda...';
+  const resultDiv = document.getElementById('payLinkResult');
+  resultDiv.style.display = 'none';
+
+  const amount = prompt('To\'lov summasini kiriting (so\'m):', '100000');
+  if (!amount || parseInt(amount) < 100) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-link"></i> To\'lov havolasini yaratish';
+    return;
+  }
+
+  fetch('/api/tezcheck/create-payment', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({kg_id: '{{ kg_id }}', amount: parseInt(amount)})
+  }).then(r => r.json()).then(d => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-link"></i> To\'lov havolasini yaratish';
+    if (d.success) {
+      const payUrl = d.pay_url;
+      const pageUrl = window.location.origin + '/tezcheck-pay/{{ kg_id }}';
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML =
+        '<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;font-size:13px">' +
+        '<div style="color:#22c55e;font-weight:600;margin-bottom:6px"><i class="fas fa-check-circle"></i> To\'lov havolasi yaratildi</div>' +
+        '<div style="margin-bottom:6px"><strong>To\'lov sahifasi:</strong></div>' +
+        '<div style="background:rgba(15,23,42,.5);padding:8px 10px;border-radius:8px;word-break:break-all;font-size:12px;color:#a78bfa;margin-bottom:6px">' + pageUrl + '</div>' +
+        '<div style="margin-bottom:4px"><strong>To\'g\'ridan-to\'g\'ri to\'lov linki:</strong></div>' +
+        '<div style="background:rgba(15,23,42,.5);padding:8px 10px;border-radius:8px;word-break:break-all;font-size:12px;color:#a78bfa;margin-bottom:8px">' + payUrl + '</div>' +
+        '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-outline" style="flex:1;padding:8px;font-size:12px" onclick="copyText(\'' + pageUrl + '\')"><i class="fas fa-copy"></i> Nusxa olish</button>' +
+        '<a href="' + payUrl + '" target="_blank" class="btn btn-primary" style="flex:1;padding:8px;font-size:12px;text-decoration:none;text-align:center"><i class="fas fa-external-link-alt"></i> Ochish</a>' +
+        '</div>' +
+        '</div>';
+    } else {
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px;font-size:13px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> ' + (d.message || 'Xatolik yuz berdi') + '</div>';
+    }
+  }).catch(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-link"></i> To\'lov havolasini yaratish';
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px;font-size:13px;color:#ef4444"><i class="fas fa-exclamation-circle"></i> Server bilan bog\'lanib bo\'lmadi</div>';
+  });
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast('Nusxa olindi', 'success');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Nusxa olindi', 'success');
+  });
+}
+</script>
+{% endblock %}

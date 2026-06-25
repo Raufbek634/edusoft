@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Narxlar — {{ settings.name }}</title>
+<meta name="description" content="EduSoft narxlari — o'quv markazingiz uchun eng qulay tariflar. 30 kun bepul sinov muddati.">
+<meta name="keywords" content="EduSoft, o'quv markaz narxlari, o'quv markaz boshqaruvi narxi, o'quv markaz tariflari, o'quv markaz dasturi">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=2">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+.pricing-page{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 30%,rgba(79,70,229,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(14,165,233,.04) 0%,transparent 60%),radial-gradient(ellipse at 50% 50%,rgba(139,92,246,.03) 0%,transparent 70%);padding:40px 16px}
+.pricing-wrap{max-width:640px;margin:0 auto}
+.pricing-header{text-align:center;margin-bottom:32px}
+.pricing-header img{width:64px;height:64px;border-radius:16px;object-fit:cover;margin:0 auto 14px;border:1px solid var(--border)}
+.pricing-header h1{font-size:26px;font-weight:800;color:var(--text)}
+.pricing-header p{font-size:13px;color:var(--text3);margin-top:4px}
+.pricing-card{background:var(--surface);backdrop-filter:blur(var(--blur)) saturate(1.5);-webkit-backdrop-filter:blur(var(--blur)) saturate(1.5);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:var(--shadow-sm);transition:all .3s var(--smooth)}
+.pricing-card:hover{box-shadow:var(--shadow);border-color:var(--border-hover);background:var(--surface-hover)}
+.pricing-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pricing-card-title{font-size:16px;font-weight:700;color:var(--text)}
+.pricing-card-count{font-size:11px;color:var(--text3);background:var(--primary-light);padding:3px 10px;border-radius:10px;font-weight:600}
+.pricing-card-fee{font-size:28px;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+.pricing-card-fee span{font-size:14px;font-weight:600;color:var(--text3);letter-spacing:0}
+.pricing-card-note{font-size:11px;color:var(--text3);margin-top:4px}
+.pricing-sub{text-align:center;font-size:12px;color:var(--text3);margin-top:24px;line-height:1.7}
+.pricing-sub a{color:var(--primary);font-weight:700}
+.payment-info{margin-top:24px}
+.payment-info-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.payment-card-display{background:linear-gradient(135deg,#0b1e3a,#1a3366);border-radius:14px;padding:20px 24px;color:#fff;position:relative;overflow:hidden}
+.payment-card-display::before{content:'\f09d';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;right:18px;top:18px;font-size:28px;opacity:.2}
+.payment-card-display .label{font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.payment-card-display .number{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:2px}
+.pricing-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;font-size:13px;font-weight:600;color:var(--primary);transition:all .2s}
+.pricing-back:hover{transform:translateX(-3px)}
+.loading-fees{display:flex;align-items:center;justify-content:center;padding:60px 0;color:var(--text3);gap:10px}
+@media(max-width:480px){
+  .pricing-page{padding:24px 12px}
+  .pricing-header h1{font-size:22px}
+  .pricing-card{padding:18px}
+  .pricing-card-fee{font-size:24px}
+}
+</style>
+</head>
+<body>
+<div class="pricing-page">
+  <div class="pricing-wrap">
+    <a href="javascript:history.back()" class="pricing-back"><i class="fas fa-arrow-left"></i> Orqaga</a>
+    <div class="pricing-header" id="pricingHeader">
+      <img id="pLogo" src="" alt="" style="display:none">
+      <div id="pLogoFallback" style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--primary),#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px"><i class="fas fa-graduation-cap"></i></div>
+      <h1 id="pName">Narxlar</h1>
+      <p id="pTagline">Guruhlar va oylik to'lovlar</p>
+    </div>
+    <div id="feesContainer">
+      <div class="pricing-static" id="pricingStatic">
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-card-title">Standart guruh</div>
+          </div>
+          <div class="pricing-card-fee"><span>Oylik to'lov — o'quv markaz bilan kelishilgan narx</span></div>
+          <div class="pricing-card-note">* Barcha guruhlar va narxlar haqida batafsil ma'lumot yuklanmoqda</div>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-card-title">Premium guruh</div>
+          </div>
+          <div class="pricing-card-fee"><span>Kengaytirilgan imkoniyatlar bilan</span></div>
+          <div class="pricing-card-note">* 30 kun bepul sinov muddati mavjud</div>
+        </div>
+        <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:16px">
+          <i class="fas fa-sync-alt"></i> Aniq narxlar yuklanmoqda...
+        </p>
+      </div>
+      <div class="loading-fees" id="pricingLoading" style="display:none"><div class="spinner"></div> Yuklanmoqda...</div>
+    </div>
+    <div id="paymentInfo" style="display:none" class="payment-info">
+      <div class="pricing-card">
+        <div class="payment-info-title"><i class="fas fa-credit-card"></i> To'lov ma'lumotlari</div>
+        <div class="payment-card-display" id="paymentCardDisplay">
+          <div class="label">Karta raqami</div>
+          <div class="number" id="pCardNumber">—</div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">
+          <i class="fas fa-info-circle"></i> To'lovni amalga oshirgach, chekni <a href="/parent" style="color:var(--primary);font-weight:700">Ota-ona portalida</a> yuklang yoki admin bilan bog'laning.
+        </p>
+      </div>
+    </div>
+    <div class="pricing-sub">
+      <a href="/parent"><i class="fas fa-arrow-right"></i> Ota-ona portaliga kirish</a>
+    </div>
+  </div>
+</div>
+<script>
+async function loadFees() {
+  document.getElementById('pricingStatic').style.display = 'none';
+  document.getElementById('pricingLoading').style.display = 'flex';
+  try {
+    const d = await (await fetch('/api/public-fees')).json();
+    document.getElementById('pName').textContent = d.name + ' — Narxlar';
+    document.getElementById('pTagline').textContent = d.tagline || 'Guruhlar va oylik to\'lovlar';
+    const logo = document.getElementById('pLogo');
+    const fallback = document.getElementById('pLogoFallback');
+    if (d.logo) {
+      logo.src = d.logo; logo.style.display = 'block'; fallback.style.display = 'none';
+    } else {
+      logo.style.display = 'none'; fallback.style.display = 'flex';
+    }
+    let html = '';
+    const currency = d.currency || 'UZS';
+    for (const g of d.groups || []) {
+      let feeHtml;
+      if (g.fee_same) {
+        feeHtml = `<div class="pricing-card-fee">${Number(g.fee).toLocaleString('uz-UZ')} <span>/ oy</span></div>`;
+      } else {
+        feeHtml = `<div class="pricing-card-fee">${Number(g.fee_min).toLocaleString('uz-UZ')} – ${Number(g.fee_max).toLocaleString('uz-UZ')} <span>/ oy</span></div>`;
+      }
+      const countHtml = g.count > 0 ? `<div class="pricing-card-count">${g.count} ta o'quvchi</div>` : (g.configured ? '<div class="pricing-card-count" style="background:var(--success-light);color:var(--success)">Belgilangan</div>' : '');
+      html += `<div class="pricing-card">
+        <div class="pricing-card-header">
+          <div class="pricing-card-title">${g.name}</div>
+          ${countHtml}
+        </div>
+        ${feeHtml}
+        ${!g.fee_same ? '<div class="pricing-card-note">* O\'quvchi toifasiga qarab narx farqlanadi</div>' : ''}
+      </div>`;
+    }
+    if (!html) {
+      html = '<div class="pricing-card" style="text-align:center;padding:40px;color:var(--text3)"><i class="fas fa-info-circle" style="font-size:24px;margin-bottom:8px;display:block"></i>Hozircha narxlar mavjud emas</div>';
+    }
+    document.getElementById('feesContainer').innerHTML = html;
+    if (d.payment_card) {
+      document.getElementById('paymentInfo').style.display = 'block';
+      document.getElementById('pCardNumber').textContent = d.payment_card;
+    }
+  } catch (e) {
+    document.getElementById('feesContainer').innerHTML = '<div class="pricing-card" style="text-align:center;padding:40px;color:var(--danger)">Ma\'lumot yuklanmadi</div>';
+  }
+}
+loadFees();
+</script>
+<noscript>
+  <div style="max-width:640px;margin:20px auto;padding:20px;text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px">
+    <p style="color:#94a3b8;font-size:14px;margin-bottom:12px">Narxlar haqida batafsil ma'lumot olish uchun JavaScript yoqishingiz yoki admin bilan bog'lanishingiz kerak.</p>
+    <a href="/parent" style="color:#f1f5f9;font-weight:700">Ota-ona portaliga kirish →</a>
+  </div>
+</noscript>
+</body>
+</html>
+
+

@@ -1,0 +1,2019 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="google-site-verification" content="8e1127d0a057f256">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#050508" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#050508" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EduSoft">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/static/img/icon.svg">
+<link rel="apple-touch-icon" href="/static/img/icon.svg">
+<title>{{ _('login_title') }}</title>
+<meta name="description" content="EduSoft — o'quv markaz boshqaruv tizimi. O'quv markaz egalari uchun davomat, to'lovlar, hisobotlar, Telegram bot va ota-ona portal. 30 kun bepul sinov muddati.">
+<meta name="keywords" content="EduSoft, o'quv markaz, o'quv markazlarni raqamlashtirish, o'quv markaz boshqaruvi, o'quv markaz boshqaruv tizimi, o'quv markaz dasturi, o'quv markaz to'lovlari, o'quv markaz davomati, ota-ona kabineti, education center management, o'quv markazlar uchun dastur">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-title: 'Outfit', sans-serif;
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --smooth: cubic-bezier(.22,1,.36,1);
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #64748b;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #050508;
+  --bg-secondary: #0a0a0e;
+  --bg-tertiary: #121216;
+  --bg-glass: rgba(255, 255, 255, 0.04);
+  --bg-glass-hover: rgba(255, 255, 255, 0.08);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-glass: rgba(255, 255, 255, 0.08);
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.7);
+
+  --input-bg: rgba(255, 255, 255, 0.03);
+  --input-border: rgba(255, 255, 255, 0.08);
+  --input-focus-bg: rgba(255, 255, 255, 0.06);
+
+  --glow-1: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 40%);
+  --glow-2: radial-gradient(circle at 90% 80%, rgba(148, 163, 184, 0.04) 0%, transparent 45%);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f6f8fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edf0f5;
+  --bg-glass: rgba(255, 255, 255, 0.55);
+  --bg-glass-hover: rgba(255, 255, 255, 0.7);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --border-color: rgba(15, 23, 42, 0.06);
+  --border-hover: rgba(15, 23, 42, 0.14);
+  --border-glass: rgba(15, 23, 42, 0.05);
+
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.08);
+
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
+  --input-focus-bg: #ffffff;
+
+  --glow-1: radial-gradient(circle at 10% 20%, rgba(15, 23, 42, 0.03) 0%, transparent 40%);
+  --glow-2: radial-gradient(circle at 90% 80%, rgba(71, 85, 105, 0.02) 0%, transparent 45%);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  transition: background-color .4s var(--smooth), color .4s var(--smooth);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: var(--font-sans);
+}
+
+/* Background Glow Blobs */
+.bg-glow {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  filter: blur(150px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.3;
+  mix-blend-mode: screen;
+  animation: float-slow 14s ease-in-out infinite alternate;
+}
+.bg-glow-1 {
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.15) 0%, transparent 70%);
+  top: -150px;
+  right: -80px;
+}
+.bg-glow-2 {
+  background: radial-gradient(circle, rgba(203, 213, 225, 0.1) 0%, transparent 70%);
+  bottom: 20%;
+  left: -180px;
+  animation-delay: -7s;
+}
+
+/* Nav */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-glass);
+  transition: background .4s var(--smooth), border-color .4s var(--smooth);
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+}
+.nav-logo span {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-glass);
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.nav-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all .3s var(--spring);
+}
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass-hover);
+}
+.nav-cta {
+  padding: 10px 20px;
+  border-radius: 9px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border-glass);
+  transition: all .3s var(--spring);
+}
+.nav-cta:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+.theme-toggle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all .3s var(--spring);
+}
+.theme-toggle-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: var(--bg-glass-hover);
+}
+/* Hero */
+.hero {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 140px 24px 70px;
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  min-height: 85vh;
+}
+.hero-content {
+  flex: 1.2;
+  max-width: 600px;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-family: var(--font-title);
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  letter-spacing: -1.5px;
+}
+.hero h1 span {
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-glass);
+}
+.hero p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 36px;
+  max-width: 520px;
+}
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-p {
+  padding: 14px 28px;
+  border-radius: 10px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-glass);
+  transition: all .3s var(--spring);
+}
+.btn-p:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.btn-p:active,.btn-o:active,.btn-k:active,.nav-cta:active,.cf .bs:active{transform:scale(.96)!important}
+.btn-o {
+  padding: 14px 28px;
+  border-radius: 10px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .3s var(--spring);
+}
+.btn-o:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Hero Visual & CSS Dashboard Mockup */
+.hero-visual {
+  flex: 0.9;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+.hero-card {
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 30px;
+  width: 100%;
+  max-width: 410px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+  transition: all .4s var(--smooth);
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--glow-1);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+.hero-card-title {
+  font-family: var(--font-title);
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+.hero-card-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-glass);
+  position: relative;
+  z-index: 1;
+}
+.hero-card-item:last-child {
+  border-bottom: none;
+}
+.hero-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: all .3s var(--spring);
+}
+.ic-p { background: var(--bg-glass); backdrop-filter: blur(8px); color: var(--text-primary); border: 1px solid var(--border-glass); }
+.ic-g { background: var(--bg-glass); backdrop-filter: blur(8px); color: var(--text-primary); border: 1px solid var(--border-glass); }
+.ic-b { background: var(--bg-glass); backdrop-filter: blur(8px); color: var(--color-success); border: 1px solid var(--border-glass); }
+.ic-o { background: var(--bg-glass); backdrop-filter: blur(8px); color: var(--text-secondary); border: 1px solid var(--border-glass); }
+
+.hero-card-item:hover .hero-card-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+.hero-card-text {
+  flex-grow: 1;
+}
+.hero-card-text strong {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 700;
+  display: block;
+}
+.hero-card-text div {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* Stats Section */
+.stats {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+.stats-g {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.si {
+  text-align: center;
+  padding: 30px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-sm);
+  transition: all .4s var(--smooth);
+  position: relative;
+  overflow: hidden;
+}
+.si::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--glow-2);
+  pointer-events: none;
+}
+.si:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+.sn {
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.sl {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Sections */
+.sec {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 70px 24px;
+}
+.slbl {
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.sttl {
+  font-family: var(--font-title);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 12px;
+  letter-spacing: -0.8px;
+}
+.ssub {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin-bottom: 50px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* Feature grid */
+.fg {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+.fc {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  padding: 30px;
+  transition: all .4s var(--smooth);
+  position: relative;
+  overflow: hidden;
+}
+.fc::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--glow-1);
+  pointer-events: none;
+}
+.fc:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+.fi {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-glass);
+  transition: all .3s var(--spring);
+}
+.fc:hover .fi {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+}
+.fc h3 {
+  font-family: var(--font-title);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.fc p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Guide Steps */
+.gs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+.gst {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  padding: 30px 20px;
+  text-align: center;
+  transition: all .4s var(--smooth);
+}
+.gst:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+.gn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.gst h3 {
+  font-family: var(--font-title);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.gst p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Pricing Overrides */
+.pricing-badge {
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  display: inline-block;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-glass);
+}
+
+/* Contact and Support Section */
+.cg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+.ci {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cc {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all .4s var(--smooth);
+}
+.cc:hover {
+  transform: translateX(8px);
+  border-color: var(--border-hover);
+  background: var(--bg-glass-hover);
+  box-shadow: var(--shadow-md);
+}
+.cci {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: all .3s var(--spring);
+}
+.cc:hover .cci {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+}
+.cct h4 {
+  font-family: var(--font-title);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.cct a {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 700;
+  transition: color .3s var(--spring);
+}
+.cct a:hover {
+  color: var(--text-secondary);
+}
+.cct p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Contact Form */
+.cf {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: var(--shadow-md);
+  transition: all .4s var(--smooth);
+}
+.cf:hover {
+  border-color: var(--border-hover);
+}
+.cf h3 {
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.cf > p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.cf label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.cf input, .cf textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: all .3s var(--spring);
+}
+.cf input:focus, .cf textarea:focus {
+  border-color: var(--border-hover);
+  background-color: var(--input-focus-bg);
+  box-shadow: 0 0 0 4px var(--border-glass);
+}
+.cf textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+.cf .bs {
+  width: 100%;
+  padding: 13px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: all .3s var(--spring);
+  margin-top: 10px;
+}
+.cf .bs:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Footer */
+.ft {
+  padding: 30px 24px;
+  border-top: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  font-size: 13px;
+  background: var(--bg-glass);
+  transition: background .4s var(--smooth);
+}
+.fti {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.ft strong {
+  color: var(--text-primary);
+}
+.ft a {
+  font-weight: 600;
+  transition: color .3s var(--spring);
+  margin-left: 14px;
+}
+.ft a:hover {
+  color: var(--text-primary);
+}
+
+/* Modals */
+.mo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  transition: opacity .4s var(--smooth);
+}
+.mo.o {
+  display: flex;
+  opacity: 1;
+}
+.lm {
+  background: var(--bg-glass);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  padding: 36px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.9);
+  transition: transform .4s var(--smooth);
+}
+.mo.o .lm {
+  transform: scale(1);
+}
+.lm h2 {
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.lm > p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.fl {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.fctrl {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14.5px;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: all .3s var(--spring);
+}
+.fctrl:focus {
+  border-color: var(--border-hover);
+  background-color: var(--input-focus-bg);
+  box-shadow: 0 0 0 4px var(--border-glass);
+}
+.pw-row {
+  position: relative;
+}
+.pw-row .fctrl {
+  padding-right: 48px;
+}
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  color: var(--text-muted);
+  transition: color .3s var(--spring);
+}
+.pw-toggle:hover {
+  color: var(--text-primary);
+}
+.err-msg {
+  display: none;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--color-danger);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 18px;
+}
+.btn-k {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid var(--border-glass);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all .3s var(--spring);
+}
+.btn-k:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.btn-k:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.lm .mc {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .3s var(--spring);
+}
+.lm .mc:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.remember-row input {
+  accent-color: var(--text-primary);
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--input-border);
+}
+.remember-row label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.lm-links {
+  text-align: center;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lm-links a {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  transition: color .3s var(--spring);
+}
+.lm-links a:hover {
+  color: var(--text-secondary);
+}
+
+@media(max-width:1024px){
+  .hero { padding: 120px 24px 50px; gap: 40px; }
+  .stats-g { grid-template-columns: repeat(2, 1fr); }
+  .cg { grid-template-columns: 1fr; gap: 30px; }
+}
+@media(max-width:768px){
+  html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .nav, .nav-inner, .hero, .stats, .sec, .ft { width: 100%; max-width: 100%; }
+  .hero { flex-direction: column; text-align: center; padding: 96px 16px 36px; gap: 28px; min-height: auto; align-items: stretch; overflow: hidden; }
+  .hero-content { width: 100%; max-width: 100%; min-width: 0; flex: none; }
+  .hero h1, .hero p, .sttl, .ssub, .fc h3, .fc p { overflow-wrap: anywhere; word-break: normal; }
+  .hero p { margin: 0 auto 28px; max-width: 100%; }
+  .hero-actions { justify-content: center; }
+  .hero-visual { width: 100%; min-width: 0; flex: none; }
+  .hero-card { max-width: 100%; width: 100%; }
+  .nav-links .nav-link { display: none; }
+  .gs { grid-template-columns: 1fr 1fr; }
+  .lm { margin: 0 8px; max-height: 90vh; overflow-y: auto; }
+  .nav-inner { padding: 0 12px; height: 60px; gap: 8px; }
+  .nav-logo { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .nav-links { min-width: 0; flex-shrink: 0; gap: 6px; }
+  .nav-cta { padding: 8px 14px; font-size: 12px; }
+  .theme-toggle-btn { width: 32px; height: 32px; font-size: 13px; }
+  .si { padding: 20px 14px; }
+  .fc { padding: 24px 18px; }
+  .hero h1 { font-size: clamp(1.75rem, 8vw, 2.45rem); line-height: 1.08; letter-spacing: -0.6px; }
+  .hero p { font-size: 14px; }
+}
+@media(max-width:480px){
+  .hero { padding: 82px 12px 24px; gap: 22px; }
+  .nav-logo { font-size: 14px; max-width: 42vw; }
+  .nav-logo span { width: 28px; height: 28px; font-size: 13px; }
+  .nav-inner { padding: 0 10px; height: 56px; }
+  .nav-links { gap: 5px; }
+  .nav-link { padding: 7px 8px; font-size: 12px; }
+  .theme-toggle-btn, .lang-btn { width: 32px; height: 32px; padding: 0; justify-content: center; }
+  .lang-arrow { display: none; }
+  .nav-cta { display: none; }
+  .lang-btn { font-size: 11px; }
+  .lang-label { display: none; }
+  .stats-g { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fg, .gs { grid-template-columns: 1fr; }
+  .cf { padding: 20px 16px; }
+  .lm { padding: 20px 16px; border-radius: 18px; margin: 0 4px; }
+  .lm h2 { font-size: 18px; }
+  .fctrl { padding: 10px 14px; font-size: 14px; }
+  .btn-k, .btn-p, .btn-o { padding: 11px 20px; font-size: 13px; }
+  .fti { flex-direction: column; text-align: center; gap: 8px; }
+  .ft a { margin: 0 7px; }
+  .hero-badge { font-size: 10px; padding: 6px 12px; }
+  .hero h1 { font-size: clamp(1.65rem, 9vw, 2.05rem); letter-spacing: -0.4px; }
+  .hero p { font-size: 13px; margin-bottom: 24px; }
+  .hero-actions { gap: 10px; }
+  .btn-p, .btn-o { width: 100%; justify-content: center; }
+  .sec { padding: 40px 16px; }
+  .sttl { font-size: clamp(1.4rem, 5vw, 1.8rem); }
+  .ssub { font-size: 13px; margin-bottom: 30px; }
+  .fc h3 { font-size: 15px; }
+  .fc p { font-size: 12.5px; }
+  .gst { padding: 20px 14px; }
+  .ci { gap: 10px; }
+  .cc { padding: 16px; gap: 14px; }
+  .cci { width: 40px; height: 40px; font-size: 16px; }
+  .cct h4 { font-size: 13px; }
+  .cct p { font-size: 11px; }
+  .cc:hover { transform: none; }
+  .fc:hover { transform: none; }
+  .gst:hover { transform: none; }
+  .si:hover { transform: none; }
+  .hero-card:hover { transform: none; }
+  .btn-p:hover { transform: none; }
+  .btn-o:hover { transform: none; }
+  .pw-toggle { font-size: 14px; right: 10px; }
+  .remember-row { margin-bottom: 14px; }
+  .mo { padding: 8px; align-items: flex-end; }
+  .mo.o .lm { transform: scale(1) translateY(0); }
+  .lm { transform: scale(1) translateY(20px); border-radius: 18px 18px 18px 18px; max-height: 92vh; }
+  .lm .mc { top: 10px; right: 10px; }
+  .bg-glow { width: 300px; height: 300px; opacity: 0.2; }
+  .hero-card { padding: 18px 14px; border-radius: 14px; }
+  .hero-card-title { font-size: 10px; text-align: left; margin-bottom: 14px; }
+  .hero-card-item { padding: 10px 0; }
+  .hero-card-icon { width: 36px; height: 36px; font-size: 14px; }
+  .hero-card-text { min-width: 0; text-align: left; }
+  .hero-card-text strong { font-size: 12px; }
+  .hero-card-text div { font-size: 11px; }
+  #forgotSection { padding-top: 12px; }
+  .pw-row .fctrl { padding-right: 40px; }
+}
+@media(max-width:380px){
+  .hero { padding: 78px 10px 20px; }
+  .nav-logo { font-size: 12px; max-width: 34vw; }
+  .nav-links { gap: 4px; }
+  .nav-link { display: none; }
+  .hero-badge { max-width: 100%; white-space: normal; justify-content: center; }
+  .hero h1 { font-size: 1.72rem; }
+  .lm h2 { font-size: 16px; }
+  .lm > p { font-size: 12px; }
+}
+
+/* Animations */
+@keyframes float-slow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.af {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.af1 { animation-delay: 0.1s; }
+.af2 { animation-delay: 0.2s; }
+.af3 { animation-delay: 0.3s; }
+.af4 { animation-delay: 0.4s; }
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.rv {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rv.vs {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Language Switcher */
+.lang-switch{position:relative;display:inline-block}
+.lang-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;background:var(--input-bg);border:1px solid var(--border-glass);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;transition:all .25s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;font-family:var(--font-sans);-webkit-tap-highlight-color:transparent}
+.lang-btn:hover{background:var(--bg-glass-hover);border-color:var(--border-hover);color:var(--text-primary)}
+.lang-arrow{font-size:9px;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.lang-arrow.open{transform:rotate(180deg)}
+.lang-label{font-size:11px;margin-left:3px}
+.lang-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:110px;background:var(--bg-glass);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid var(--border-glass);border-radius:10px;box-shadow:var(--shadow-md);z-index:300;display:none;overflow:hidden;padding:4px}
+.lang-menu.open{display:block;animation:fadeDown .25s cubic-bezier(.22,1,.36,1)}
+.lang-option{display:block;width:100%;padding:9px 14px;border:none;background:none;color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;border-radius:6px;text-align:left;transition:all .2s cubic-bezier(.22,1,.36,1);font-family:var(--font-sans)}
+.lang-option:hover{background:var(--bg-glass-hover);color:var(--text-primary)}
+.lang-option.active{background:var(--bg-glass-hover);color:var(--text-primary);font-weight:700}
+
+/* ── Children Playing Animations ── */
+.kid-container {
+  position: fixed;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 150;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.kid-container.show {
+  opacity: 1;
+}
+.kid-container.left {
+  left: clamp(10px, 3vw, 60px);
+}
+.kid-container.right {
+  right: clamp(10px, 3vw, 60px);
+}
+.kid-svg {
+  width: clamp(80px, 12vw, 160px);
+  height: auto;
+}
+@keyframes jump {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  15% { transform: translateY(-28px) rotate(-3deg); }
+  30% { transform: translateY(0) rotate(2deg); }
+  45% { transform: translateY(-18px) rotate(-2deg); }
+  60% { transform: translateY(0) rotate(1deg); }
+}
+@keyframes swing {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+}
+@keyframes run {
+  0% { transform: translateX(-8px) rotate(0deg); }
+  25% { transform: translateX(0) rotate(-2deg); }
+  50% { transform: translateX(8px) rotate(0deg); }
+  75% { transform: translateX(0) rotate(2deg); }
+  100% { transform: translateX(-8px) rotate(0deg); }
+}
+@keyframes float-up {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-60px) scale(1); opacity: 0; }
+}
+@keyframes flutter {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+.jump-kid { animation: jump 2s ease-in-out infinite; }
+.swing-kid { animation: swing 1.8s ease-in-out infinite; transform-origin: bottom center; }
+.run-kid { animation: run 1.5s ease-in-out infinite; }
+.float-particle {
+  position: absolute;
+  font-size: 14px;
+  animation: float-up 3s ease-out infinite;
+  pointer-events: none;
+}
+.float-particle:nth-child(2) { animation-delay: 1s; left: 20px; }
+.float-particle:nth-child(3) { animation-delay: 2s; left: 40px; }
+.flutter {
+  animation: flutter 1.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media(max-width:768px){
+  .kid-container { display: none; }
+}
+</style>
+</head>
+<body data-theme="{{ current_theme }}">
+
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-5"/>
+        </svg>
+      </span> 
+      {{ _('app_name') }}
+    </a>
+    <div class="nav-links">
+      <a href="#" class="nav-link" onclick="event.preventDefault();openLogin()">{{ _('login') }}</a>
+      <a href="https://t.me/mr_turaqulov" target="_blank" class="nav-link">{{ _('contact') }}</a>
+      <a href="#" class="nav-cta" onclick="event.preventDefault();openMaxsus()">{{ _('super_admin') }}</a>
+      
+      <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Mavzuni o'zgartirish">
+        <i class="fas {% if current_theme == 'dark' %}fa-sun{% else %}fa-moon{% endif %}" id="themeIcon"></i>
+      </button>
+
+      <div class="lang-switch">
+        <button class="lang-btn" onclick="toggleLangMenu()" type="button">
+          <span>{% if current_lang == 'uz' %}🇺🇿<span class="lang-label">UZ</span>{% elif current_lang == 'ru' %}🇷🇺<span class="lang-label">RU</span>{% else %}🇬🇧<span class="lang-label">EN</span>{% endif %}</span>
+          <i class="fas fa-chevron-down lang-arrow"></i>
+        </button>
+        <div class="lang-menu" id="langMenu">
+          <button class="lang-option {% if current_lang == 'uz' %}active{% endif %}" onclick="setLang('uz')" type="button">🇺🇿 UZ</button>
+          <button class="lang-option {% if current_lang == 'ru' %}active{% endif %}" onclick="setLang('ru')" type="button">🇷🇺 RU</button>
+          <button class="lang-option {% if current_lang == 'en' %}active{% endif %}" onclick="setLang('en')" type="button">🇬🇧 EN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge af af1">
+      <i class="fas fa-rocket"></i> {{ _('free_trial') }} 30 kun
+    </div>
+    <h1 class="af af2"><span>{{ _('hero_title') }}</span></h1>
+    <p class="af af3">{{ _('hero_desc') }}</p>
+    <div class="hero-actions af af4">
+      <a href="/bogcha-register" class="btn-p">{{ _('free_trial') }} →</a>
+      <a href="#" class="btn-o" onclick="event.preventDefault();openLogin()"><i class="fas fa-lock"></i> {{ _('login') }}</a>
+    </div>
+  </div>
+  <div class="hero-visual af af3">
+    <div class="hero-card">
+      <div class="hero-card-title">{{ _('hero_card_title') }}</div>
+      <div class="hero-card-item">
+        <div class="hero-card-icon ic-p"><i class="fas fa-chart-simple"></i></div>
+        <div class="hero-card-text"><strong>{{ _('dashboard_title') }}</strong><div>{{ _('hero_realtime') }}</div></div>
+      </div>
+      <div class="hero-card-item">
+        <div class="hero-card-icon ic-g"><i class="fas fa-credit-card"></i></div>
+        <div class="hero-card-text"><strong>{{ _('payments') }}</strong><div>{{ _('hero_auto_calc') }}</div></div>
+      </div>
+      <div class="hero-card-item">
+        <div class="hero-card-icon ic-b"><i class="fas fa-calendar-days"></i></div>
+        <div class="hero-card-text"><strong>{{ _('attendance') }}</strong><div>{{ _('hero_daily_mark') }}</div></div>
+      </div>
+      <div class="hero-card-item">
+        <div class="hero-card-icon ic-o"><i class="fas fa-robot"></i></div>
+        <div class="hero-card-text"><strong>{{ _('telegram_bot') }}</strong><div>{{ _('hero_for_parents') }}</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stats-g">
+    <div class="si rv"><div class="sn">50+</div><div class="sl">{{ _('kg_list') }}</div></div>
+    <div class="si rv"><div class="sn">500+</div><div class="sl">{{ _('students') }}</div></div>
+    <div class="si rv"><div class="sn">99%</div><div class="sl">{{ _('attendance') }}</div></div>
+    <div class="si rv"><div class="sn">24/7</div><div class="sl">{{ _('guide_support') }}</div></div>
+  </div>
+</div>
+
+<section class="sec">
+  <div class="slbl">{{ _('features_title') }}</div>
+  <h2 class="sttl">{{ _('features_sub') }}</h2>
+  <p class="ssub">{{ _('hero_desc') }}</p>
+  <div class="fg">
+    <div class="fc rv"><div class="fi"><i class="fas fa-chart-simple"></i></div><h3>{{ _('dashboard_title') }}</h3><p>{{ _('feature_dashboard') }}</p></div>
+    <div class="fc rv"><div class="fi"><i class="fas fa-user-graduate"></i></div><h3>{{ _('students') }}</h3><p>{{ _('feature_students') }}</p></div>
+    <div class="fc rv"><div class="fi"><i class="fas fa-calendar-days"></i></div><h3>{{ _('attendance') }}</h3><p>{{ _('feature_attendance') }}</p></div>
+    <div class="fc rv"><div class="fi"><i class="fas fa-credit-card"></i></div><h3>{{ _('payments') }}</h3><p>{{ _('feature_payments') }}</p></div>
+    <div class="fc rv"><div class="fi"><i class="fas fa-robot"></i></div><h3>{{ _('telegram_bot') }}</h3><p>{{ _('feature_bot') }}</p></div>
+    <div class="fc rv"><div class="fi"><i class="fas fa-users"></i></div><h3>{{ _('parent_portal') }}</h3><p>{{ _('feature_portal') }}</p></div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:0">
+  <div class="slbl">{{ _('guide_title') }}</div>
+  <h2 class="sttl">{{ _('guide_sub') }}</h2>
+  <p class="ssub">{{ _('guide_sub') }}</p>
+  <div class="gs">
+    <div class="gst rv"><div class="gn">1</div><h3>{{ _('guide_step1') }}</h3><p>{{ _('guide_step1_desc') }}</p></div>
+    <div class="gst rv"><div class="gn">2</div><h3>{{ _('guide_step2') }}</h3><p>{{ _('guide_step2_desc') }}</p></div>
+    <div class="gst rv"><div class="gn">3</div><h3>{{ _('guide_step3') }}</h3><p>{{ _('guide_step3_desc') }}</p></div>
+    <div class="gst rv"><div class="gn">4</div><h3>{{ _('guide_step4') }}</h3><p>{{ _('guide_step4_desc') }}</p></div>
+    <div class="gst rv"><div class="gn">5</div><h3>{{ _('guide_step5') }}</h3><p>{{ _('guide_step5_desc') }}</p></div>
+  </div>
+</section>
+
+<section class="sec" style="padding-top:0">
+  <div class="slbl">Narxlar</div>
+  <h2 class="sttl">O'quv markazingiz uchun eng qulay tarif</h2>
+  <p class="ssub">Oylik to'lov — barcha imkoniyatlar ochiq. 30 kun bepul sinov muddati bilan.</p>
+  <div class="fg">
+{% if plans %}
+  {% for p in plans %}
+    <div class="fc rv" style="text-align:center;padding:40px 24px;border:1px solid {{ 'var(--border-hover)' if loop.index0==1 else 'var(--border-glass)' }}">
+      {% if loop.index0==1 %}
+        <span class="pricing-badge">Mashhur</span>
+      {% endif %}
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--bg-glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--border-glass);color:var(--text-primary);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 20px">
+        <i class="fas fa-{{ 'crown' if loop.last else 'rocket' }}"></i>
+      </div>
+      <h3 style="font-size:20px;font-weight:800;color:var(--text-primary);margin-bottom:8px">{{ p.name or ('Standart' if loop.first else 'Premium') }}</h3>
+      <div style="margin:16px 0">
+        <span style="font-size:42px;font-weight:900;color:var(--text-primary)">${{ p.price_usd }}</span>
+        <span style="font-size:14px;color:var(--text-secondary)">/oy</span>
+      </div>
+      <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-top:12px;min-height:60px">{{ p.desc }}</p>
+      <div style="margin-top:24px">
+        <a href="/bogcha-register" class="btn-p" style="display:inline-flex;padding:12px 32px;width:100%;justify-content:center">
+          {{ 'Premium' if loop.last else 'Boshlash' }}
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p style="grid-column:1/-1;text-align:center;color:var(--text-secondary)">Narxlar ma'lumotlari topilmadi.</p>
+{% endif %}
+  </div>
+</section>
+
+<section class="sec" style="padding-top:0">
+  <div class="slbl">{{ _('support_title') }}</div>
+  <h2 class="sttl">{{ _('support_response') }}</h2>
+  <p class="ssub">{{ _('support_response') }}</p>
+  <div class="cg">
+    <div class="ci">
+      <div class="cc rv">
+        <div class="cci"><img src="/static/img/supportbot.png" style="width:24px;height:24px;border-radius:6px;flex-shrink:0;object-fit:cover"></div>
+        <div class="cct"><h4>Telegram</h4><a href="https://t.me/EduSoft_Support_bot" target="_blank">@EduSoft_Support_bot</a><p>{{ _('support_bot') }}</p><a href="https://t.me/mr_turaqulov" target="_blank" style="font-size:11px;color:var(--text-muted)">@mr_turaqulov — {{ _('support_telegram') }}</a></div>
+      </div>
+      <div class="cc rv">
+        <div class="cci"><i class="fas fa-phone"></i></div>
+        <div class="cct"><h4>{{ _('phone') }}</h4><a href="tel:+998993190712">+998 99 319 07 12</a><p>{{ _('support_phone') }}</p></div>
+      </div>
+      <div class="cc rv">
+        <div class="cci"><i class="fas fa-envelope"></i></div>
+        <div class="cct"><h4>Email</h4><a href="mailto:turaqulovraufbek@gmail.com">turaqulovraufbek@gmail.com</a><p>{{ _('support_email') }}</p></div>
+      </div>
+    </div>
+    <div class="cf rv">
+      <h3><i class="fas fa-paper-plane"></i> {{ _('send_complaint') }}</h3>
+      <p>{{ _('support_response') }}</p>
+      <div class="form-group"><label>{{ _('name') }}</label><input type="text" id="contactName" placeholder="Alisher"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="contactEmail" placeholder="alisher@example.com"></div>
+      <div class="form-group"><label>{{ _('phone') }}</label><input type="tel" id="contactPhone" placeholder="998901234567"></div>
+      <div class="form-group"><label>{{ _('notif_message') }}</label><textarea id="contactMsg" placeholder="{{ _('complaint_text') }}"></textarea></div>
+      <button class="bs" onclick="sendContact()">{{ _('send') }} →</button>
+      <div id="contactResult" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:13px;font-weight:700;text-align:center"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="ft">
+  <div class="fti">
+    <span><strong style="color:var(--text-primary)">{{ _('app_name') }}</strong> — Raufbek Turaqulov {{ _('created_by') }}</span>
+    <span>
+      <a href="https://t.me/EduSoft_Support_bot" target="_blank"><i class="fas fa-robot" style="font-size:10px;margin-right:3px"></i>Support Bot</a>
+      · <a href="/privacy"><i class="fas fa-shield" style="font-size:10px;margin-right:3px"></i>{{ _('privacy_title') }}</a>
+      · <a href="https://t.me/mr_turaqulov" target="_blank">Telegram</a>
+      · <a href="tel:+998993190712">+998 99 319 07 12</a>
+      · <a href="mailto:turaqulovraufbek@gmail.com">Email</a>
+    </span>
+  </div>
+</footer>
+
+<!-- Login Modal -->
+<div class="kid-container left" id="kidLeft">
+  <svg class="kid-svg jump-kid" viewBox="0 0 100 140" fill="none">
+    <circle cx="50" cy="22" r="14" fill="var(--text-muted)" opacity="0.7"/>
+    <ellipse cx="50" cy="62" rx="20" ry="28" fill="var(--text-muted)" opacity="0.5"/>
+    <line x1="38" y1="88" x2="30" y2="130" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="62" y1="88" x2="70" y2="130" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="38" y1="55" x2="20" y2="80" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="62" y1="55" x2="80" y2="80" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="45" cy="18" r="2" fill="var(--bg-primary)"/>
+    <circle cx="55" cy="18" r="2" fill="var(--bg-primary)"/>
+    <path d="M42 28 Q50 34 58 28" stroke="var(--text-muted)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+  <div class="float-particle">🦋</div>
+  <div class="float-particle">🌸</div>
+  <div class="float-particle">✨</div>
+</div>
+
+<div class="kid-container right" id="kidRight">
+  <svg class="kid-svg swing-kid" viewBox="0 0 100 140" fill="none">
+    <circle cx="50" cy="22" r="14" fill="var(--text-muted)" opacity="0.7"/>
+    <ellipse cx="50" cy="62" rx="20" ry="28" fill="var(--text-muted)" opacity="0.5"/>
+    <line x1="38" y1="88" x2="30" y2="130" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="62" y1="88" x2="70" y2="130" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="38" y1="55" x2="22" y2="70" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <line x1="62" y1="55" x2="78" y2="70" stroke="var(--text-muted)" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="45" cy="18" r="2" fill="var(--bg-primary)"/>
+    <circle cx="55" cy="18" r="2" fill="var(--bg-primary)"/>
+    <path d="M42 28 Q50 34 58 28" stroke="var(--text-muted)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </svg>
+  <div class="float-particle" style="left:10px">🦋</div>
+  <div class="float-particle" style="left:35px;animation-delay:1.5s">⭐</div>
+  <div class="float-particle" style="left:60px;animation-delay:0.5s">🌸</div>
+</div>
+
+<div class="mo" id="loginModal">
+  <div class="lm">
+    <button class="mc" onclick="closeLogin()"><i class="fas fa-xmark"></i></button>
+    <h2><i class="fas fa-lock" style="margin-right:4px"></i> {{ _('admin_login') }}</h2>
+    <p>{{ _('login_modal_sub') }}</p>
+    <div class="err-msg" id="errorMsg"></div>
+    
+    <div id="blockTimer" style="display:none;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:10px;text-align:center;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--color-danger)"><i class="fas fa-lock"></i> {{ _('too_many_attempts') }}</div>
+      <div id="timerDisplay" style="font-size:24px;font-weight:800;color:var(--color-danger);font-family:monospace;margin-top:6px"></div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">{{ _('try_again_later') }}</div>
+    </div>
+    
+    <div id="attemptsWarning" style="display:none;padding:8px 12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;text-align:center;font-size:12px;font-weight:600;color:var(--color-warning);margin-bottom:14px"></div>
+    
+    <div class="form-group">
+      <label class="fl"><i class="fas fa-phone" style="font-size:10px;margin-right:4px"></i> {{ _('login') }} ({{ _('phone') }})</label>
+      <input class="fctrl" type="text" id="loginInput" placeholder="993190712" autocomplete="username">
+    </div>
+    
+    <div class="form-group">
+      <label class="fl"><i class="fas fa-key" style="font-size:10px;margin-right:4px"></i> {{ _('password') }}</label>
+      <div class="pw-row">
+        <input class="fctrl" type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="togglePw"><i class="fas fa-eye"></i></button>
+      </div>
+    </div>
+    
+    <div id="captchaContainer" style="display:none;margin-bottom:16px">
+      <div class="h-captcha" data-sitekey="{{ hcaptcha_sitekey or '' }}" id="hcaptchaWidget"></div>
+    </div>
+    
+    <div class="remember-row">
+      <input type="checkbox" id="rememberMe">
+      <label for="rememberMe">{{ _('remember_me') }}</label>
+    </div>
+    
+    <button type="button" class="btn-k" id="loginBtn">{{ _('login') }} →</button>
+    
+    <div id="codeSection" style="display:none;margin-top:18px">
+      <div class="form-group">
+        <label class="fl"><i class="fas fa-mobile-screen"></i> {{ _('telegram_code') }}</label>
+        <input class="fctrl" type="text" id="codeInput" placeholder="{{ _('code_placeholder') }}" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:800;font-family:monospace">
+      </div>
+      <button type="button" class="btn-k" id="codeBtn" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)"><i class="fas fa-check-circle"></i> {{ _('confirm') }}</button>
+      <p style="font-size:12px;color:var(--text-secondary);text-align:center;margin-top:10px">{{ _('code_sent') }}</p>
+    </div>
+    
+    <div style="text-align:center;margin-top:4px;margin-bottom:12px">
+      <button type="button" onclick="showForgotPassword()" style="background:none;border:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-sans);padding:6px;transition:color .3s var(--spring)" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
+        <i class="fas fa-key" style="font-size:10px;margin-right:4px"></i> {{ _('forgot_password') }}
+      </button>
+    </div>
+    
+    <div class="lm-links">
+      <a href="/parent"><i class="fas fa-users" style="font-size:11px;margin-right:4px"></i> {{ _('parent_portal') }}</a>
+      <a href="/bogcha-register"><i class="fas fa-school" style="font-size:11px;margin-right:4px"></i> {{ _('kg_register') }}</a>
+      <a href="/register"><i class="fas fa-pen-to-square" style="font-size:11px;margin-right:4px"></i> {{ _('register') }}</a>
+    </div>
+    
+    <!-- Forgot Password Section -->
+    <div id="forgotSection" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-glass)">
+      <div id="forgotStep1">
+        <p style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:14px">{{ _('forgot_desc') }}<br><a href="https://t.me/EduSoft_Support_bot" target="_blank" style="color:var(--text-primary);font-weight:700;font-size:12px">@EduSoft_Support_bot</a></p>
+        <div class="form-group">
+          <label class="fl"><i class="fas fa-phone" style="font-size:10px;margin-right:4px"></i> {{ _('login') }} ({{ _('phone') }})</label>
+          <input class="fctrl" type="text" id="forgotPhone" placeholder="993190712">
+        </div>
+        <div id="forgotError" style="display:none;padding:8px 12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:12px;font-weight:600;color:var(--color-danger);margin-bottom:12px;text-align:center"></div>
+        <button type="button" class="btn-k" id="sendOtpBtn" onclick="sendOtp()"><i class="fas fa-paper-plane"></i> {{ _('send_code') }}</button>
+      </div>
+      
+      <div id="forgotStep2" style="display:none">
+        <p style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:14px"><i class="fas fa-mobile-screen"></i> {{ _('enter_code_telegram') }}</p>
+        <div class="form-group">
+          <input class="fctrl" type="text" id="otpInput" placeholder="{{ _('code_placeholder') }}" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:800;font-family:monospace">
+        </div>
+        <div id="otpError" style="display:none;padding:8px 12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:12px;font-weight:600;color:var(--color-danger);margin-bottom:12px;text-align:center"></div>
+        <button type="button" class="btn-k" id="verifyOtpBtn" onclick="verifyOtp()"><i class="fas fa-check-circle"></i> {{ _('confirm') }}</button>
+        <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">
+          <a href="#" onclick="event.preventDefault();resendOtp()" style="color:var(--text-primary);font-weight:600">{{ _('resend_code') }}</a>
+        </p>
+      </div>
+      
+      <div id="forgotStep3" style="display:none">
+        <p style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:14px">{{ _('new_password_desc') }}</p>
+        <div class="form-group">
+          <label class="fl"><i class="fas fa-key" style="font-size:10px;margin-right:4px"></i> {{ _('new_password_title') }}</label>
+          <div class="pw-row">
+            <input class="fctrl" type="password" id="newPasswordInput" placeholder="NewPass1">
+            <button type="button" class="pw-toggle" onclick="const p=document.getElementById('newPasswordInput');p.type=p.type==='password'?'text':'password';this.innerHTML=p.type==='password'?'<i class=\"fas fa-eye\"></i>':'<i class=\"fas fa-eye-slash\"></i>'"><i class="fas fa-eye"></i></button>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:4px">{{ _('password_requirements') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="fl"><i class="fas fa-check"></i> {{ _('confirm_password') }}</label>
+          <div class="pw-row">
+            <input class="fctrl" type="password" id="confirmPasswordInput" placeholder="NewPass1">
+          </div>
+        </div>
+        <div id="resetError" style="display:none;padding:8px 12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:12px;font-weight:600;color:var(--color-danger);margin-bottom:12px;text-align:center"></div>
+        <button type="button" class="btn-k" id="resetBtn" onclick="resetPassword()"><i class="fas fa-save"></i> {{ _('save') }}</button>
+      </div>
+      
+      <div id="forgotSuccess" style="display:none;text-align:center;padding:16px 0">
+        <div style="font-size:40px;color:var(--color-success);margin-bottom:10px"><i class="fas fa-check-circle"></i></div>
+        <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px">{{ _('password_changed') }}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">{{ _('password_changed_alert') }}</div>
+        <button type="button" class="btn-k" onclick="closeForgotPassword()"><i class="fas fa-lock"></i> {{ _('login') }} →</button>
+      </div>
+    </div>
+    
+    <div style="margin-top:20px;padding:16px;background:var(--bg-tertiary);border:1px solid var(--border-glass);border-radius:12px;text-align:center;font-size:12px;color:var(--text-secondary);line-height:1.7">
+      <div style="font-weight:700;color:var(--text-primary);margin-bottom:4px"><i class="fas fa-tag"></i> Platforma narxlari</div>
+      <div id="modalPricing">{% if plans %}<strong>{{ plans[0].name or 'Standart' }}</strong> ${{ plans[0].price_usd }}/oy{% if plans|length > 1 %} | <strong>{{ plans[1].name or 'Premium' }}</strong> ${{ plans[1].price_usd }}/oy{% endif %}{% else %}—{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Maxsus Modal -->
+<div class="mo" id="maxsusModal">
+  <div class="lm">
+    <button class="mc" onclick="closeMaxsus()"><i class="fas fa-xmark"></i></button>
+    <h2><i class="fas fa-star" style="margin-right:4px"></i> {{ _('super_admin') }}</h2>
+    <p>{{ _('maxsus_sub') }}</p>
+    <div class="err-msg" id="maxsusError"></div>
+    <div id="maxsusPinSection">
+      <div class="form-group">
+        <label class="fl"><i class="fas fa-lock"></i> PIN</label>
+        <input class="fctrl" type="password" id="maxsusPinInput" placeholder="PIN" maxlength="20" style="text-align:center;font-size:18px;letter-spacing:4px">
+      </div>
+    </div>
+    <div id="maxsusCodeSection" style="display:none">
+      <button type="button" class="btn-k" id="maxsusBtn"><i class="fas fa-mobile-screen"></i> {{ _('get_code') }}</button>
+    </div>
+    <div id="maxsusVerifySection" style="display:none;margin-top:16px">
+      <div class="form-group">
+        <label class="fl"><i class="fas fa-mobile-screen"></i> {{ _('telegram_code') }}</label>
+        <input class="fctrl" type="text" id="maxsusCodeInput" placeholder="{{ _('code_placeholder') }}" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:800;font-family:monospace">
+      </div>
+      <button type="button" class="btn-k" id="maxsusVerifyBtn" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary)"><i class="fas fa-check-circle"></i> {{ _('confirm') }}</button>
+      <p style="font-size:12px;color:var(--text-secondary);text-align:center;margin-top:10px">{{ _('code_sent') }}</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function toast(m,t='info'){
+  let e=document.getElementById('_tst');
+  if(!e){e=document.createElement('div');e.id='_tst';e.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;background:#1e293b;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.3);opacity:0;transition:opacity 0.3s;max-width:90vw;text-align:center';document.body.appendChild(e)}
+  const c={'success':'#22c55e','error':'#ef4444','info':'#1e293b'};
+  if(t==='success')e.style.background='#065f46';
+  else if(t==='error')e.style.background='#7f1d1d';
+  else e.style.background='#1e293b';
+  e.textContent=m;e.style.opacity='1';
+  if(window._th)clearTimeout(window._th);
+  window._th=setTimeout(()=>{e.style.opacity='0'},4000)
+}
+
+function openLogin(){
+  const modal = document.getElementById('loginModal');
+  modal.classList.add('o');
+  document.body.style.overflow='hidden';
+  document.getElementById('kidLeft').classList.add('show');
+  document.getElementById('kidRight').classList.add('show');
+}
+function closeLogin(){
+  const modal = document.getElementById('loginModal');
+  modal.classList.remove('o');
+  document.body.style.overflow='';
+  hideKids();
+}
+function hideKids(){
+  document.getElementById('kidLeft').classList.remove('show');
+  document.getElementById('kidRight').classList.remove('show');
+}
+document.getElementById('loginModal').addEventListener('click',e=>{if(e.target===document.getElementById('loginModal'))closeLogin()})
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLogin()})
+let captchaResolved = false;
+let blockTimerInterval = null;
+let userLat, userLng;
+// Request geolocation silently on page load
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; },
+    () => {},
+    { timeout: 5000, enableHighAccuracy: false }
+  );
+}
+
+document.getElementById('loginBtn').onclick=doLogin
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('loginModal').classList.contains('o'))doLogin()})
+document.getElementById('togglePw').onclick=function(){
+  const p=document.getElementById('passwordInput');
+  const on=p.type==='password';
+  p.type=on?'text':'password';
+  this.innerHTML=on?'<i class="fas fa-eye-slash"></i>':'<i class="fas fa-eye"></i>';
+}
+
+function showBlockTimer(seconds){
+  const el=document.getElementById('blockTimer');
+  const td=document.getElementById('timerDisplay');
+  const btn=document.getElementById('loginBtn');
+  el.style.display='block';
+  btn.disabled=true;
+  if(blockTimerInterval)clearInterval(blockTimerInterval);
+  function update(){
+    if(seconds<=0){
+      el.style.display='none';
+      btn.disabled=false;
+      td.textContent='';
+      if(blockTimerInterval)clearInterval(blockTimerInterval);
+      blockTimerInterval=null;
+      return;
+    }
+    const m=Math.floor(seconds/60);
+    const s=seconds%60;
+    td.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    seconds--;
+  }
+  update();
+  blockTimerInterval=setInterval(update,1000);
+}
+
+// Load hCaptcha script if needed
+function loadCaptcha(){
+  if(typeof hcaptcha!=='undefined')return;
+  const s=document.createElement('script');
+  s.src='https://js.hcaptcha.com/1/api.js';
+  s.async=true;
+  s.defer=true;
+  document.head.appendChild(s);
+}
+
+async function doLogin(){
+  const login=document.getElementById('loginInput').value.trim()
+  const password=document.getElementById('passwordInput').value
+  const code=document.getElementById('codeInput').value.trim()
+  const btn=document.getElementById('loginBtn')
+  const err=document.getElementById('errorMsg')
+  
+  // Get stored geolocation if available
+  let lat='', lng=''
+  if(typeof userLat !== 'undefined' && typeof userLng !== 'undefined'){
+    lat=userLat; lng=userLng
+  }
+  
+  // Get captcha token if captcha is shown
+  let captcha_token = '';
+  const captchaContainer = document.getElementById('captchaContainer');
+  if (captchaContainer.style.display !== 'none' && typeof hcaptcha !== 'undefined') {
+    captcha_token = hcaptcha.getResponse();
+    if (!captcha_token) {
+      err.textContent='Iltimos, CAPTCHA ni tasdiqlang';
+      err.style.display='block';
+      err.style.background='rgba(239, 68, 68, 0.08)';
+      err.style.color='var(--color-danger)';
+      err.style.borderColor='rgba(239, 68, 68, 0.2)';
+      return;
+    }
+  }
+  
+  if(!login||!password){err.textContent='{{ _('enter_login_pass')|e }}';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='{{ _('logging_in')|e }}';err.style.display='none'
+  try{
+    const body={login,password,code,remember:document.getElementById('rememberMe').checked,lat,lng}
+    if(captcha_token) body.captcha_token=captcha_token
+    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)})
+    const data=await res.json()
+    
+    // Handle block
+    if(data.blocked){
+      btn.disabled=true;
+      document.getElementById('blockTimer').style.display='block';
+      err.style.display='none';
+      if(data.remaining>0){
+        showBlockTimer(data.remaining);
+      } else {
+        document.getElementById('timerDisplay').textContent='♾️';
+      }
+      btn.textContent='{{ _('login')|e }} →';
+      return;
+    }
+    
+    if(data.code_required){
+      btn.style.display='none'
+      document.getElementById('codeSection').style.display='block'
+      document.getElementById('codeInput').focus()
+      err.innerHTML='<i class="fas fa-mobile-screen"></i> '+(data.message||'{{ _('code_sent_telegram')|e }}')
+      err.style.display='block';err.style.background='var(--bg-glass)';err.style.color='var(--text-primary)';err.style.borderColor='var(--border-glass)'
+      btn.disabled=false;btn.textContent='{{ _('login')|e }} →';return
+    }
+    
+    // Show captcha if required
+    if(data.captcha_required){
+      loadCaptcha();
+      captchaContainer.style.display='block';
+    }
+    
+    // Show attempt count
+    if(data.attempts && data.attempts >= 2){
+      const warnEl=document.getElementById('attemptsWarning');
+      const remaining = Math.max(0, 5 - data.attempts);
+      if(remaining > 0){
+        warnEl.innerHTML='<i class="fas fa-triangle-exclamation"></i> '+remaining+' {{ _('attempts_remaining') }}';
+      } else {
+        warnEl.innerHTML='<i class="fas fa-exclamation-circle"></i> {{ _('too_many_attempts') }}';
+      }
+      warnEl.style.display='block';
+    }
+    
+    if(data.success){
+      btn.textContent='✓ {{ _('success')|e }}';
+      const url=data.redirect||'/dashboard';
+      setTimeout(()=>{location.href=url},400)
+    }
+    else{
+      err.textContent=data.message||'{{ _('wrong_data')|e }}';
+      err.style.display='block';
+      err.style.background='rgba(239, 68, 68, 0.08)';
+      err.style.color='var(--color-danger)';
+      err.style.borderColor='rgba(239, 68, 68, 0.2)';
+      btn.disabled=false;
+      btn.textContent='{{ _('login')|e }} →'
+    }
+  }catch{
+    err.textContent='{{ _('server_error')|e }}';
+    err.style.display='block';
+    btn.disabled=false;
+    btn.textContent='{{ _('login')|e }} →'
+  }
+}
+
+document.getElementById('codeBtn').onclick=doLogin
+document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()})
+
+function openMaxsus(){document.getElementById('maxsusModal').classList.add('o');document.body.style.overflow='hidden';hideKids();document.getElementById('maxsusPinSection').style.display='block';document.getElementById('maxsusCodeSection').style.display='none';document.getElementById('maxsusVerifySection').style.display='none';document.getElementById('maxsusPinInput').value='';document.getElementById('maxsusPinInput').focus()}
+function closeMaxsus(){document.getElementById('maxsusModal').classList.remove('o');document.body.style.overflow='';document.getElementById('maxsusPinSection').style.display='block';document.getElementById('maxsusCodeSection').style.display='none';document.getElementById('maxsusVerifySection').style.display='none'}
+document.getElementById('maxsusModal').addEventListener('click',e=>{if(e.target===document.getElementById('maxsusModal'))closeMaxsus()})
+document.getElementById('maxsusPinInput').addEventListener('keydown',e=>{if(e.key==='Enter'){const pin=e.target.value.trim();if(pin)document.getElementById('maxsusBtn').click()}})
+document.getElementById('maxsusBtn').onclick=async function(){
+  const btn=this;btn.disabled=true;btn.textContent='{{ _('sending')|e }}'
+  const err=document.getElementById('maxsusError');err.style.display='none'
+  const pin=document.getElementById('maxsusPinInput').value.trim()
+  if(!pin){err.textContent='PIN kiriting';err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="fas fa-mobile-screen"></i> {{ _('get_code')|e }}';return}
+  try{
+    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({maxsus:true,pin:pin})})
+    const data=await res.json()
+    if(data.code_required){
+      document.getElementById('maxsusPinSection').style.display='none'
+      document.getElementById('maxsusCodeSection').style.display='none'
+      document.getElementById('maxsusVerifySection').style.display='block'
+      document.getElementById('maxsusCodeInput').focus()
+      err.innerHTML='<i class="fas fa-mobile-screen"></i> '+(data.message||'{{ _('code_sent_telegram')|e }}')
+      err.style.display='block';err.style.background='var(--bg-glass)';err.style.color='var(--text-primary)';err.style.borderColor='var(--border-glass)'
+    }else{err.textContent=data.message||'{{ _('error')|e }}';err.style.display='block'}
+  }catch{err.textContent='{{ _('server_error')|e }}';err.style.display='block'}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-mobile-screen"></i> {{ _('get_code')|e }}'
+}
+document.getElementById('maxsusVerifyBtn').onclick=async function(){
+  const code=document.getElementById('maxsusCodeInput').value.trim()
+  const err=document.getElementById('maxsusError')
+  if(!code){err.textContent='{{ _('enter_code')|e }}';err.style.display='block';return}
+  const btn=this;btn.disabled=true;btn.textContent='{{ _('checking')|e }}';err.style.display='none'
+  try{
+    const pin=document.getElementById('maxsusPinInput').value.trim()
+    const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({code,pin})})
+    const data=await res.json()
+    if(data.success){btn.textContent='✓';setTimeout(()=>{location.href=data.redirect||'/super'},300)}
+    else{err.textContent=data.message||'{{ _('wrong_code')|e }}';err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="fas fa-check-circle"></i> {{ _('confirm')|e }}'}
+  }catch{err.textContent='{{ _('error')|e }}';err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="fas fa-check-circle"></i> {{ _('confirm')|e }}'}
+}
+document.getElementById('maxsusCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('maxsusVerifyBtn').click()})
+
+// ─── Forgot Password ────────────────────────────────────────────────────
+function showForgotPassword(){
+  document.getElementById('loginBtn').style.display='none';
+  document.getElementById('forgotSection').style.display='block';
+  document.getElementById('forgotStep1').style.display='block';
+  document.getElementById('forgotStep2').style.display='none';
+  document.getElementById('forgotStep3').style.display='none';
+  document.getElementById('forgotSuccess').style.display='none';
+  document.getElementById('forgotPhone').value=document.getElementById('loginInput').value;
+}
+
+function closeForgotPassword(){
+  document.getElementById('forgotSection').style.display='none';
+  document.getElementById('loginBtn').style.display='';
+  document.getElementById('forgotStep1').style.display='block';
+  document.getElementById('forgotStep2').style.display='none';
+  document.getElementById('forgotStep3').style.display='none';
+  document.getElementById('forgotSuccess').style.display='none';
+}
+
+async function sendOtp(){
+  const phone=document.getElementById('forgotPhone').value.trim();
+  const btn=document.getElementById('sendOtpBtn');
+  const err=document.getElementById('forgotError');
+  if(!phone){err.textContent='{{ _('enter_phone')|e }}';err.style.display='block';return}
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> {{ _('sending')|e }}';err.style.display='none'
+  try{
+    const res=await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'send_otp',phone})})
+    const d=await res.json()
+    if(d.success){
+      document.getElementById('forgotStep1').style.display='none';
+      document.getElementById('forgotStep2').style.display='block';
+      document.getElementById('otpInput').focus();
+      err.style.display='none';
+      toast(d.message||'Kod yuborildi','success')
+    }else{
+      err.textContent=d.message||'{{ _('error')|e }}';
+      err.style.display='block';
+      btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> {{ _('send_code')|e }}'
+    }
+  }catch{
+    err.textContent='{{ _('server_error')|e }}';
+    err.style.display='block';
+    btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> {{ _('send_code')|e }}'
+  }
+}
+
+async function verifyOtp(){
+  const otp=document.getElementById('otpInput').value.trim();
+  const btn=document.getElementById('verifyOtpBtn');
+  const err=document.getElementById('otpError');
+  if(!otp){err.textContent='{{ _('enter_code')|e }}';err.style.display='block';return}
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> {{ _('checking')|e }}';err.style.display='none'
+  try{
+    const res=await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'verify_otp',otp})})
+    const d=await res.json()
+    if(d.success){
+      document.getElementById('forgotStep2').style.display='none';
+      document.getElementById('forgotStep3').style.display='block';
+      document.getElementById('newPasswordInput').focus();
+    }else{
+      err.textContent=d.message||'{{ _('wrong_code')|e }}';
+      err.style.display='block';
+      btn.disabled=false;btn.innerHTML='<i class="fas fa-check-circle"></i> {{ _('confirm')|e }}'
+    }
+  }catch{
+    err.textContent='{{ _('server_error')|e }}';
+    err.style.display='block';
+    btn.disabled=false;btn.innerHTML='<i class="fas fa-check-circle"></i> {{ _('confirm')|e }}'
+  }
+}
+
+async function resendOtp(){
+  const phone=document.getElementById('forgotPhone').value.trim();
+  if(!phone)return;
+  document.getElementById('otpInput').value='';
+  document.getElementById('otpError').style.display='none';
+  try{
+    await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'send_otp',phone})});
+    toast('Kod qayta yuborildi','success')
+  }catch{}
+}
+
+async function resetPassword(){
+  const np=document.getElementById('newPasswordInput').value;
+  const cp=document.getElementById('confirmPasswordInput').value;
+  const btn=document.getElementById('resetBtn');
+  const err=document.getElementById('resetError');
+  if(np!==cp){err.textContent='{{ _('passwords_dont_match')|e }}';err.style.display='block';return}
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> {{ _('saving')|e }}';err.style.display='none'
+  try{
+    const res=await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({step:'reset_password',new_password:np})})
+    const d=await res.json()
+    if(d.success){
+      document.getElementById('forgotStep3').style.display='none';
+      document.getElementById('forgotSuccess').style.display='block';
+    }else{
+      err.textContent=d.message||'{{ _('error')|e }}';
+      err.style.display='block';
+      btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> {{ _('save')|e }}'
+    }
+  }catch{
+    err.textContent='{{ _('server_error')|e }}';
+    err.style.display='block';
+    btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> {{ _('save')|e }}'
+  }
+}
+
+function toggleLangMenu() {
+  const menu = document.getElementById('langMenu');
+  const arrow = document.querySelector('.lang-arrow');
+  if (menu) menu.classList.toggle('open');
+  if (arrow) arrow.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.lang-switch')) {
+    const menu = document.getElementById('langMenu');
+    const arrow = document.querySelector('.lang-arrow');
+    if (menu) menu.classList.remove('open');
+    if (arrow) arrow.classList.remove('open');
+  }
+});
+
+async function setLang(lang) {
+  try {
+    const res = await fetch('/api/lang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang })
+    });
+    const data = await res.json();
+    if (data.success) location.reload();
+  } catch (e) {
+    console.warn('Lang switch failed:', e);
+  }
+}
+
+async function sendContact(){
+  const name=document.getElementById('contactName').value.trim()
+  const email=document.getElementById('contactEmail').value.trim()
+  const phone=document.getElementById('contactPhone').value.trim()
+  const msg=document.getElementById('contactMsg').value.trim()
+  const el=document.getElementById('contactResult')
+  if(!name||!msg){el.textContent='Ism va xabar matnini kiriting';el.style.display='block';el.style.background='rgba(239, 68, 68, 0.08)';el.style.color='var(--color-danger)';return}
+  el.style.display='block';el.textContent='{{ _('sending')|e }}...';el.style.background='var(--bg-tertiary)';el.style.color='var(--text-primary)'
+  try{
+    const res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,msg})})
+    const d=await res.json()
+    if(d.success){el.innerHTML='<i class="fas fa-check-circle"></i> {{ _('success')|e }}!';el.style.background='rgba(16, 185, 129, 0.08)';el.style.color='var(--color-success)'
+    document.getElementById('contactName').value='';document.getElementById('contactEmail').value='';document.getElementById('contactPhone').value='';document.getElementById('contactMsg').value=''}
+    else el.textContent=d.message||'{{ _('error')|e }}'
+  }catch{el.textContent='{{ _('error')|e }}';el.style.background='rgba(239, 68, 68, 0.08)';el.style.color='var(--color-danger)'}
+}
+
+// Theme Switcher Logic
+function toggleTheme() {
+  const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  // Update frontend DOM
+  document.body.setAttribute('data-theme', newTheme);
+  
+  const icon = document.getElementById('themeIcon');
+  if (newTheme === 'dark') {
+    icon.className = 'fas fa-sun';
+  } else {
+    icon.className = 'fas fa-moon';
+  }
+  
+  // Persist theme choice via server API
+  fetch('/api/theme', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme: newTheme })
+  }).catch(err => console.log('Theme persistence failed:', err));
+}
+
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vs')}})},{threshold:.1})
+document.querySelectorAll('.rv').forEach(el=>observer.observe(el))
+if(new URLSearchParams(window.location.search).get('login')==='1')openLogin()
+</script>
+</body>
+</html>
+

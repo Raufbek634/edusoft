@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EduSoft — O'quv markaz CRM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-snap-type:y mandatory;scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#08080f;color:#e4e4ec;overflow-x:hidden}
+  ::selection{background:rgba(99,102,241,.25);color:#fff}
+
+  section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:80px 7%;position:relative;scroll-snap-align:start;overflow:hidden}
+
+  /* ─── Reveal animation ─── */
+  .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.visible{opacity:1;transform:translateY(0)}
+  .reveal-d1{transition-delay:.1s}
+  .reveal-d2{transition-delay:.2s}
+  .reveal-d3{transition-delay:.3s}
+  .reveal-d4{transition-delay:.4s}
+
+  /* ─── Gradient orb ─── */
+  .orb{position:fixed;width:600px;height:600px;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;opacity:.12;animation:orb 20s ease-in-out infinite alternate}
+  .orb1{top:-200px;right:-100px;background:#6366f1}
+  .orb2{bottom:-200px;left:-100px;background:#34d399;animation-delay:-7s}
+  .orb3{top:50%;left:50%;background:#a78bfa;animation-delay:-14s;width:400px;height:400px}
+  @keyframes orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-30px) scale(1.1)}66%{transform:translate(-20px,20px) scale(.9)}100%{transform:translate(10px,10px) scale(1.05)}}
+
+  /* ─── Nav ─── */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 7%;display:flex;justify-content:space-between;align-items:center;background:rgba(8,8,15,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.04);transition:transform .3s}
+  nav.hidden{transform:translateY(-100%)}
+  .logo{font-size:1.1rem;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+  .logo-mark{width:22px;height:22px;background:linear-gradient(135deg,#6366f1,#818cf8);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+  .logot{color:#e4e4ec}
+  .logot span{color:#818cf8}
+  .nav-l{display:flex;gap:24px}
+  .nav-l a{color:rgba(255,255,255,.35);text-decoration:none;font-size:.8rem;font-weight:500;transition:color .2s}
+  .nav-l a:hover{color:#e4e4ec}
+  .nav-r{display:flex;gap:8px;align-items:center}
+  .nav-r a{padding:8px 20px;border-radius:8px;font-size:.8rem;font-weight:600;text-decoration:none;transition:all .2s;background:#6366f1;color:#fff}
+  .nav-r a:hover{background:#5558e6;transform:translateY(-1px);box-shadow:0 4px 20px rgba(99,102,241,.2)}
+
+  /* ─── Right dots ─── */
+  .rnav{position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:99;display:flex;flex-direction:column;gap:10px}
+  .rnav a{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+  .rnav a.active{background:#818cf8;transform:scale(1.5);box-shadow:0 0 16px rgba(99,102,241,.15)}
+
+  /* ─── Hero ─── */
+  .hero{text-align:center;align-items:center;justify-content:center}
+  .hero-i{position:relative;z-index:2;max-width:800px}
+  .hero-b{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:6px;font-size:.72rem;font-weight:500;color:rgba(129,140,248,.7);background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.1);margin-bottom:28px}
+  .hero h1{font-size:clamp(2.8rem,6.5vw,5rem);font-weight:800;line-height:1.06;margin-bottom:20px;letter-spacing:-2px}
+  .hero h1 .g{background:linear-gradient(135deg,#818cf8 0%,#34d399 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{font-size:1.05rem;color:rgba(255,255,255,.35);max-width:500px;margin:0 auto 36px;line-height:1.7}
+  .hero-act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn-p{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:8px;background:#6366f1;color:#fff;font-weight:600;font-size:.88rem;text-decoration:none;transition:all .2s}
+  .btn-p:hover{background:#5558e6;transform:translateY(-2px)}
+  .btn-s{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:8px;background:transparent;color:rgba(255,255,255,.5);font-weight:500;font-size:.88rem;text-decoration:none;border:1px solid rgba(255,255,255,.06);transition:all .2s}
+  .btn-s:hover{border-color:rgba(255,255,255,.12);color:#e4e4ec;transform:translateY(-2px)}
+
+
+  /* ─── Sections ─── */
+  .sl{display:flex;align-items:center;gap:12px;font-size:.65rem;color:rgba(129,140,248,.5);font-weight:600;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px}
+  .sl:after{content:'';flex:1;max-width:60px;height:1px;background:rgba(99,102,241,.15)}
+  .st{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:700;margin-bottom:40px;letter-spacing:-1px;line-height:1.2}
+  .st .h{color:#818cf8}
+
+  /* ─── Cards ─── */
+  .g{display:grid;gap:16px;position:relative;z-index:2}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+  .c{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:28px;transition:all .35s;position:relative}
+  .c:hover{border-color:rgba(99,102,241,.12);background:rgba(99,102,241,.03);transform:translateY(-3px)}
+  .ci{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .ci svg{width:18px;height:18px}
+  .c h3{font-size:1rem;font-weight:600;margin-bottom:8px;letter-spacing:-.2px}
+  .c p{font-size:.85rem;line-height:1.6;color:rgba(255,255,255,.38)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .tag{padding:4px 10px;border-radius:5px;font-size:.68rem;font-weight:500;background:rgba(255,255,255,.03);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.04)}
+
+  /* ─── Highlight ─── */
+  .hl{background:linear-gradient(135deg,rgba(52,211,153,.04),rgba(52,211,153,.01));border:1px solid rgba(52,211,153,.08);border-radius:12px;padding:24px 28px;margin-top:28px;text-align:center;position:relative;z-index:2}
+  .hl h4{color:#34d399;font-size:.95rem;font-weight:600}
+  .hl p{color:rgba(255,255,255,.32);font-size:.85rem;margin-top:4px}
+
+  /* ─── Price ─── */
+  .pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:36px;position:relative;z-index:2}
+  .pc{text-align:center;padding:32px 24px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;transition:all .35s}
+  .pc:hover{border-color:rgba(99,102,241,.12);transform:translateY(-3px)}
+  .pc .pt{font-size:2.4rem;font-weight:800;margin:10px 0;letter-spacing:-1.5px}
+  .pc .pt span{font-size:.85rem;color:rgba(255,255,255,.2);font-weight:400}
+  .pc .pb{display:inline-block;padding:3px 12px;border-radius:5px;font-size:.62rem;font-weight:600;background:rgba(99,102,241,.1);color:#818cf8}
+  .pc ul{list-style:none;padding:0;margin-top:14px}
+  .pc ul li{padding:5px 0;font-size:.8rem;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px;justify-content:center}
+  .pc ul li svg{width:12px;height:12px;flex-shrink:0;color:#34d399}
+  .pc.f{border-color:rgba(99,102,241,.18);background:rgba(99,102,241,.04)}
+
+  /* ─── Timeline ─── */
+  .tl{position:relative;max-width:640px;margin:0 auto;padding:4px 0;z-index:2}
+  .tl::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,#6366f1,transparent)}
+  .tli{padding-left:52px;position:relative;margin-bottom:36px}
+  .tli:last-child{margin-bottom:0}
+  .tli::before{content:'';position:absolute;left:11px;top:6px;width:14px;height:14px;border-radius:50%;background:#6366f1;border:3px solid #08080f;box-shadow:0 0 20px rgba(99,102,241,.2)}
+  .tli .tp{font-size:.62rem;color:rgba(129,140,248,.4);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px}
+  .tli h4{font-size:.95rem;font-weight:600;margin-bottom:4px}
+  .tli p{font-size:.8rem;color:rgba(255,255,255,.32);line-height:1.5}
+
+  /* ─── Quote ─── */
+  .qt{border-left:2px solid #818cf8;padding:16px 24px;margin-top:28px;background:rgba(99,102,241,.02);border-radius:0 10px 10px 0;position:relative;z-index:2}
+  .qt p{font-style:italic;font-size:.85rem;color:rgba(255,255,255,.32)}
+  .qt .qa{font-weight:600;color:#e4e4ec;margin-top:6px;font-style:normal;font-size:.8rem}
+
+  /* ─── CTA ─── */
+  .cta{text-align:center}
+  .cta-i{max-width:720px;margin:0 auto;position:relative;z-index:2}
+  .ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:28px 0}
+  .ic{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:20px;text-align:left;transition:all .3s}
+  .ic:hover{border-color:rgba(99,102,241,.1);transform:translateY(-2px)}
+  .ic .il{font-size:.62rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+  .ic .iv{font-size:1.2rem;font-weight:700}
+  .ic .is{font-size:.7rem;color:rgba(255,255,255,.25);margin-top:6px;line-height:1.5}
+  .cr{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .cc{display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);text-decoration:none;color:#e4e4ec;transition:all .2s;flex:1;max-width:300px}
+  .cc:hover{border-color:rgba(99,102,241,.15);background:rgba(99,102,241,.04)}
+  .cc svg{width:18px;height:18px;color:#818cf8;flex-shrink:0}
+  .cc .cl{font-size:.62rem;color:rgba(255,255,255,.2)}
+  .cc .cv{font-size:.8rem;font-weight:600}
+  .ft{border-top:1px solid rgba(255,255,255,.03);margin-top:36px;padding-top:18px;font-size:.68rem;color:rgba(255,255,255,.12);text-align:center}
+
+  @media(max-width:900px){
+    section{padding:60px 5%}
+    .nav-l{display:none}
+    .rnav{right:10px;gap:6px}
+    .rnav a{width:6px;height:6px}
+    .g2{grid-template-columns:1fr}
+    .g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .pg{grid-template-columns:1fr 1fr}
+    .ig{grid-template-columns:1fr}
+    .cr{flex-direction:column;align-items:center}
+    .cc{max-width:100%}
+    .hero h1{font-size:clamp(2rem,7vw,2.8rem)}
+    .hero p{font-size:.9rem;max-width:100%}
+    .st{font-size:1.5rem;margin-bottom:24px}
+    .c{padding:20px}
+    .tl{max-width:100%}
+    .cta-i{padding:0}
+    .hero-b{margin-bottom:20px}
+    .hero-act .btn-p,.hero-act .btn-s{width:100%;justify-content:center}
+    .pc .pt{font-size:1.8rem}
+  }
+  @media(max-width:480px){
+    section{padding:40px 4%}
+    .pg{grid-template-columns:1fr}
+    .g3{grid-template-columns:1fr}
+    .hero h1{font-size:1.8rem;letter-spacing:-1px}
+    .hstats{gap:14px}
+    .st{font-size:1.3rem}
+    .tli{padding-left:40px}
+    .tli::before{left:7px;width:10px;height:10px}
+    .tl::before{left:12px}
+    .ic{padding:14px}
+    .pc{padding:24px 16px}
+    .hl{padding:16px}
+    .qt{padding:12px 16px}
+    .hero-b{font-size:.65rem;padding:4px 12px}
+    .nav-r a{padding:6px 14px;font-size:.75rem}
+    nav{padding:10px 4%}
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="particles">
+  <span></span><span></span><span></span>
+</div>
+
+<nav id="nav">
+  <div class="logo">
+    <div class="logo-mark">S</div>
+    <div class="logot">Sof<span>Garder</span></div>
+  </div>
+  <div class="nav-l">
+    <a href="#problem">Muammo</a>
+    <a href="#solution">Yechim</a>
+    <a href="#features">Imkoniyatlar</a>
+    <a href="#business">Biznes</a>
+    <a href="#roadmap">Reja</a>
+  </div>
+  <div class="nav-r">
+    <a href="https://t.me/mr_turaqulov" target="_blank">Aloqa</a>
+  </div>
+</nav>
+
+<div class="rnav">
+  <a href="#intro"></a>
+  <a href="#problem"></a>
+  <a href="#solution"></a>
+  <a href="#features"></a>
+  <a href="#business"></a>
+  <a href="#roadmap"></a>
+  <a href="#contact"></a>
+</div>
+
+<!-- ─── HERO ─── -->
+<section id="intro" class="hero">
+  <div class="hero-i">
+    <div class="hero-b">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Made in Uzbekistan
+    </div>
+    <h1>O'quv markazlarni <span class="g">Raqamlashtirish</span> Platformasi</h1>
+    <p>EduSoft — O'zbekistondagi o'quv markazlar uchun to'liq avtomatlashtirilgan CRM. Telegram botlar, onlayn to'lov, real-time hisobot.</p>
+    <div class="hero-act">
+      <a href="#solution" class="btn-p">
+        Yechim
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="#features" class="btn-s">Imkoniyatlar</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── MUAMMO ─── -->
+<section id="problem">
+  <div class="sl reveal">01 &mdash; Muammo</div>
+  <h2 class="st reveal">Nega hali <span class="h">raqamlashtirilmagan?</span></h2>
+  <div class="g g2">
+    <div class="c reveal reveal-d1">
+      <div class="ci" style="background:rgba(239,68,68,.08);color:#ef4444">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h3>Qog'ozbozlik</h3>
+      <p>O'quv markazlar qog'oz jurnal, Excel, qo'lda davomat. Kuniga 2–3 soat ma'muriy ishga ketadi.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(245,158,11,.08);color:#f59e0b">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+      </div>
+      <h3>Naqd pul</h3>
+      <p>To'lovlar naqd, yo'qoladi, esda qolmaydi. Oy oxirida debitorlikni hisoblash — muammo.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(99,102,241,.08);color:#818cf8">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <h3>Aloqa uzilgan</h3>
+      <p>Eslatma, bildirishnoma, tadbir — hammasi telefon qo'ng'iroq. Bir tomonlama va samarasiz.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(52,211,153,.08);color:#34d399">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <h3>Hisobot yo'q</h3>
+      <p>Daromad, bandlik, qarzdorlik — "ko'z bilan". Strategik qarorlar uchun ma'lumot yetishmaydi.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── YECHIM ─── -->
+<section id="solution" style="background:linear-gradient(135deg,rgba(99,102,241,.02),transparent)">
+  <div class="sl reveal">02 &mdash; Yechim</div>
+  <h2 class="st reveal"><span class="h">EduSoft</span> ekotizimi</h2>
+  <div class="g g3">
+    <div class="c" style="text-align:center">
+      <div class="ci" style="background:rgba(99,102,241,.08);color:#818cf8;margin:0 auto 14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Admin Panel</h3>
+      <p>O'quv markaz direktori uchun kuchli CRM: o'quvchilar, davomat, to'lovlar, hisobotlar — bir joyda.</p>
+      <div class="tags" style="justify-content:center">
+        <span class="tag">Davomat</span>
+        <span class="tag">To'lovlar</span>
+        <span class="tag">Hisobot</span>
+        <span class="tag">Excel/PDF</span>
+      </div>
+    </div>
+    <div class="c" style="text-align:center">
+      <div class="ci" style="background:rgba(52,211,153,.08);color:#34d399;margin:0 auto 14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3>Telegram Bot</h3>
+      <p>Har bir o'quv markaz o'z boti. Ota-onalar davomat, to'lov, statistika — hammasi Telegramda.</p>
+      <div class="tags" style="justify-content:center">
+        <span class="tag">Davomat</span>
+        <span class="tag">To'lov</span>
+        <span class="tag">Chek</span>
+        <span class="tag">Eslatma</span>
+      </div>
+    </div>
+    <div class="c" style="text-align:center">
+      <div class="ci" style="background:rgba(168,85,247,.08);color:#a78bfa;margin:0 auto 14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+      </div>
+      <h3>Parent Portal</h3>
+      <p>Ota-onalar uchun veb-sahifa. Telefonda ishlaydi, hech narsa o'rnatish shart emas.</p>
+      <div class="tags" style="justify-content:center">
+        <span class="tag">Davomat</span>
+        <span class="tag">To'lov</span>
+        <span class="tag">Shikoyat</span>
+        <span class="tag">Ro'yxat</span>
+      </div>
+    </div>
+  </div>
+  <div class="hl">
+    <h4>Bir platforma — uchta qurilma</h4>
+    <p>Admin desktopda ishlaydi, ota-onalar Telegram yoki telefon brauzeri orqali bog'lanadi.</p>
+  </div>
+</section>
+
+<!-- ─── IMKONIYATLAR ─── -->
+<section id="features">
+  <div class="sl reveal">03 &mdash; Imkoniyatlar</div>
+  <h2 class="st reveal">Nimalar <span class="h">qila oladi?</span></h2>
+  <div class="g g2">
+    <div class="c">
+      <div class="ci" style="background:rgba(99,102,241,.08);color:#818cf8">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <h3>Davomat tizimi</h3>
+      <p>Kunlik davomat, oylik hisobot, avtomat to'lov hisobi — faqat kelgan kunlar uchun.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(52,211,153,.08);color:#34d399">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+      </div>
+      <h3>Onlayn to'lov</h3>
+      <p>To'lov tizimlari bilan integratsiya. Kartadan to'lov, avtomat balans, Telegram eslatma.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(245,158,11,.08);color:#f59e0b">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <h3>Hisobot & analitika</h3>
+      <p>Excel/PDF eksport. Daromad, debitorlik, davomat foizi. Super admin uchun umumiy statistika.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(168,85,247,.08);color:#a78bfa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h3>Xavfsizlik</h3>
+      <p>SHA-256 audit log, brute-force himoya, IP bloklash, 2FA, AES-256 shifrlash.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(236,72,153,.08);color:#f472b6">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3>Telegram Bot</h3>
+      <p>Har bir o'quv markaz o'z boti. Davomat, to'lov, chek, statistika — hammasi Telegramda.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(34,211,238,.08);color:#38bdf8">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+      </div>
+      <h3>Multi-tenant SaaS</h3>
+      <p>Cheksiz o'quv markaz. Ma'lumotlar izolyatsiyalangan. Har bir o'quv markaz o'z sozlamalari bilan.</p>
+    </div>
+    <div class="c">
+      <div class="ci" style="background:rgba(251,191,36,.08);color:#fbbf24">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <h3>Tadbirlar & eslatmalar</h3>
+      <p>Kalendar, Telegram bildirishnoma, tug'ilgan kun, avtomat to'lov eslatmasi.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── BIZNES ─── -->
+<section id="business" style="background:linear-gradient(135deg,rgba(99,102,241,.02),transparent)">
+  <div class="sl reveal">04 &mdash; Biznes model</div>
+  <h2 class="st reveal">Qanday <span class="h">daromad?</span></h2>
+  <div class="pg">
+    <div class="pc">
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25)">Standart</div>
+      <div class="pt">$10<span>/oy</span></div>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Barcha CRM funksiyalari</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Telegram bot</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Parent portal</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>To'lov tizimi</li>
+      </ul>
+    </div>
+    <div class="pc f">
+      <span class="pb">Popular</span>
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-top:6px">Premium</div>
+      <div class="pt">$25<span>/oy</span></div>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Standartdagi hammasi</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Murakkab hisobotlar</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Ko'p tarmoqli</li>
+      </ul>
+    </div>
+    <div class="pc">
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#34d399">Enterprise</div>
+      <div class="pt">$50+<span>/oy</span></div>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Premiumdagi hammasi</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Dedicated server</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>SLA kafolati</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cheksiz o'quvchi</li>
+      </ul>
+    </div>
+  </div>
+  <div class="qt">
+    <p>"O'zbekistonda 10 000+ xususiy o'quv markaz. Har biri oyiga $10–25 to'lasa, $1.2M – $3M oylik potensial daromad. Bozor yil sayin 15–20% o'smoqda."</p>
+    <div class="qa">— Bozor tahlili, 2026</div>
+  </div>
+</section>
+
+<!-- ─── YO'L XARITASI ─── -->
+<section id="roadmap">
+  <div class="sl reveal">05 &mdash; Rivojlanish</div>
+  <h2 class="st reveal">Keyingi <span class="h">qadamlar</span></h2>
+  <div class="tl">
+    <div class="tli">
+      <div class="tp">1-bosqich &bull; Bajarilgan</div>
+      <h4>MVP — Asosiy platforma</h4>
+      <p>CRM, Telegram bot, to'lov tizimi, davomat, parent portal, super admin panel. 0 dan 1 kishi tomonidan.</p>
+    </div>
+    <div class="tli">
+      <div class="tp">2-bosqich &bull; 3 oy</div>
+      <h4>Marketing & pilot</h4>
+      <p>SMM, o'quv markazlar bilan uchrashuvlar, demo. 10–20 ta pilot o'quv markaz. Fikr-mulohaza asosida takomillashtirish.</p>
+    </div>
+    <div class="tli">
+      <div class="tp">3-bosqich &bull; 6 oy</div>
+      <h4>Mobil ilova & kengayish</h4>
+      <p>Android/iOS (Flutter). SMS xabarnoma. YANA integratsiya. 50+ o'quv markaz.</p>
+    </div>
+    <div class="tli">
+      <div class="tp">4-bosqich &bull; 12 oy</div>
+      <h4>Mintaqaviy kengayish</h4>
+      <p>Qozog'iston, Qirg'iziston, Tojikiston. Mahalliy to'lov tizimlari bilan integratsiya. 200+ o'quv markaz.</p>
+    </div>
+    <div class="tli">
+      <div class="tp">5-bosqich &bull; 18–24 oy</div>
+      <h4>AI & bashoratli analitika</h4>
+      <p>Sun'iy intellekt: bola rivojlanishini kuzatish, to'lov qobiliyati bashorati. 500+ o'quv markaz.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ─── -->
+<section id="contact" class="cta">
+  <div class="cta-i">
+    <div class="hero-b" style="margin-bottom:20px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      O'quv markazingizni raqamlashtiring
+    </div>
+    <h2 style="font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;margin-bottom:12px;letter-spacing:-.8px">Sinovdan <span class="h">bepul</span> foydalaning</h2>
+    <p style="font-size:.9rem;color:rgba(255,255,255,.3);max-width:520px;margin:0 auto 28px;line-height:1.6">30 kun bepul sinov muddati. Telegram bot, onlayn to'lov, davomat va hisobot — hammasi bir platformada.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:center;margin-bottom:28px">
+      <div style="background:#fff;border-radius:12px;padding:10px;display:inline-block">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://edusoft.vercel.app" alt="QR" style="display:block;width:160px;height:160px;border-radius:6px">
+      </div>
+      <div style="text-align:left;max-width:260px">
+        <div style="font-size:.75rem;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px">Saytga kirish</div>
+        <div style="font-size:.95rem;font-weight:600;margin-bottom:6px">EduSoft CRM</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.3);line-height:1.5">Telefon yoki planshetingiz bilan QR kodni skanerlang va tizimga kiring</div>
+      </div>
+    </div>
+    <div class="cr">
+      <a href="https://t.me/mr_turaqulov" target="_blank" class="cc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <div>
+          <div class="cl">Telegram</div>
+          <div class="cv">@mr_turaqulov</div>
+        </div>
+      </a>
+      <a href="https://t.me/EduSoft_Support_bot" target="_blank" class="cc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <div class="cl">Yordam boti</div>
+          <div class="cv">@EduSoft_Support_bot</div>
+        </div>
+      </a>
+    </div>
+    <div class="ft">&copy; 2026 EduSoft &mdash; Raufbek Turaqulov</div>
+  </div>
+</section>
+
+<script>
+// Reveal on scroll
+const ro=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting){en.target.classList.add('visible');ro.unobserve(en.target)}})},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+// Nav dots
+document.querySelectorAll('.rnav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});
+  });
+});
+window.addEventListener('scroll',()=>{
+  const sec=document.querySelectorAll('section');
+  const nav=document.querySelectorAll('.rnav a');
+  let cur='';
+  sec.forEach(s=>{const t=s.offsetTop-300;if(window.scrollY>=t)cur=s.id});
+  nav.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+});
+let ls=0;
+window.addEventListener('scroll',()=>{
+  const n=document.getElementById('nav');
+  const c=window.scrollY;
+  if(c>ls&&c>80)n.classList.add('hidden');else n.classList.remove('hidden');
+  ls=c;
+});
+</script>
+</body>
+</html>

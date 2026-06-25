@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="e7GKD7FBqxsXPyXCuOKUOK7W2wpStL_lU4VB3xjPdwY">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0c29" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EduSoft">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/static/img/icon.svg">
+<link rel="apple-touch-icon" href="/static/img/icon.svg">
+<title>{% block title %}{{ settings.name if settings else 'Boshqaruv' }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css?v=4">
+<link rel="stylesheet" href="/static/css/admin-theme.css?v=4">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+{% block extra_head %}{% endblock %}
+<script>
+  (function(){
+    const saved = localStorage.getItem('perf-mode');
+    const isLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
+    const isLowCpu = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (saved === 'low' || (!saved && (isLowMemory || isLowCpu || prefersReduced))) {
+      document.documentElement.classList.add('low-perf');
+    }
+  })();
+</script>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo" id="sidebarBrand">
+      {% if settings and settings.logo %}
+      <img class="sidebar-logo-img" id="sidebarLogo" src="{{ settings.logo }}" alt="{{ settings.name }}">
+      <span class="logo-icon" id="sidebarLogoFallback" style="display:none"><i class="fas fa-graduation-cap"></i></span>
+      {% else %}
+      <img class="sidebar-logo-img" id="sidebarLogo" src="" alt="" style="display:none">
+      <span class="logo-icon" id="sidebarLogoFallback"><i class="fas fa-graduation-cap"></i></span>
+      {% endif %}
+      <div class="logo-text-wrap">
+        <span class="logo-text" id="sidebarName">{{ settings.name if settings else "O'quv markaz" }}</span>
+        <span class="logo-sub" id="sidebarSub">{{ _('dashboard') }}</span>
+      </div>
+    </div>
+    <button class="sidebar-close" onclick="closeSidebar()"><i class="fas fa-xmark"></i></button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/dashboard" class="nav-item {% if request.path == '/dashboard' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-chart-simple"></i></span><span class="nav-label">{{ _('dashboard') }}</span>
+    </a>
+    <a href="/students" class="nav-item {% if request.path == '/students' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-user-graduate"></i></span><span class="nav-label">{{ _('students') }}</span>
+    </a>
+    <a href="/attendance" class="nav-item {% if request.path == '/attendance' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-calendar-days"></i></span><span class="nav-label">{{ _('attendance') }}</span>
+    </a>
+    <a href="/payments" class="nav-item {% if request.path == '/payments' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-credit-card"></i></span><span class="nav-label">{{ _('payments') }}</span>
+      <span class="nav-badge" id="checkBadge" style="display:none">0</span>
+    </a>
+    <a href="/parents" class="nav-item {% if request.path == '/parents' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-users"></i></span><span class="nav-label">{{ _('parents') }}</span>
+    </a>
+    <a href="/notifications" class="nav-item {% if request.path == '/notifications' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-bell"></i></span><span class="nav-label">{{ _('notifications') }}</span>
+      <span class="nav-badge" id="notifBadge" style="display:none">0</span>
+    </a>
+    <a href="/report" class="nav-item {% if request.path == '/report' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-file-lines"></i></span><span class="nav-label">{{ _('report') }}</span>
+    </a>
+    <a href="/performance" class="nav-item {% if request.path == '/performance' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-chart-line"></i></span><span class="nav-label">Samaradorlik</span>
+    </a>
+    <a href="/calendar" class="nav-item {% if request.path == '/calendar' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-calendar-days"></i></span><span class="nav-label">Taqvim</span>
+    </a>
+    <a href="/settings" class="nav-item {% if request.path == '/settings' %}active{% endif %}">
+      <span class="nav-icon"><i class="fas fa-gear"></i></span><span class="nav-label">{{ _('settings') }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-info">
+      <div class="admin-avatar">{{ admin_name[0] if admin_name else 'A' }}</div>
+      <div class="admin-details">
+        <div class="admin-name">{{ admin_name or 'Admin' }}</div>
+        <div class="admin-role" id="ownerSubLine">Egasi</div>
+      </div>
+    </div>
+    <a href="/logout" class="logout-btn" title="{{ _('logout') }}"><i class="fas fa-power-off"></i></a>
+  </div>
+</aside>
+
+<div id="platformAlertBar" class="platform-alert-bar" style="display:none"></div>
+<div class="main-wrapper">
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <div class="topbar-brand" id="topbarBrand">
+      {% if settings and settings.logo %}
+      <img class="topbar-logo" id="topbarLogo" src="{{ settings.logo }}" alt="">
+      {% else %}
+      <img class="topbar-logo" id="topbarLogo" src="" alt="" style="display:none">
+      {% endif %}
+      <div class="topbar-brand-text">
+        <span class="topbar-kg-name" id="topbarKgName">{{ settings.name if settings else '' }}</span>
+        <span class="topbar-page">{% block page_title %}{% endblock %}</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-search" id="globalSearchWrap">
+        <span class="topbar-search-icon"><i class="fas fa-search"></i></span>
+        <input class="form-control topbar-search-input" id="globalSearchInput" placeholder="{{ _('search') }}" autocomplete="off">
+        <div class="search-dropdown" id="searchDropdown"></div>
+      </div>
+      {% if kg_balance is defined %}
+      <div class="balance-badge" title="{{ _('balance') }}" onclick="toggleBalanceMenu(event)" style="cursor:pointer;position:relative">
+        <i class="fas fa-wallet"></i>
+        <span class="balance-amount">{{ "{:,.0f}".format(kg_balance) }} so'm</span>
+        <div class="balance-menu" id="balanceMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.25);z-index:999" onclick="event.stopPropagation()">
+          <button class="balance-menu-btn" onclick="closeBalanceMenu();openTopUpModal()"><i class="fas fa-arrow-up" style="width:18px;text-align:center"></i> {{ _('payment') }}</button>
+          <button class="balance-menu-btn" onclick="closeBalanceMenu();showWithdrawForm()"><i class="fas fa-arrow-down" style="width:18px;text-align:center"></i> Yechib olish</button>
+          <button class="balance-menu-btn" onclick="closeBalanceMenu();openBalanceHistory()"><i class="fas fa-clock-rotate" style="width:18px;text-align:center"></i> To'liq tarix</button>
+        </div>
+      </div>
+      {% endif %}
+      <a href="/parent" target="_blank" class="parent-portal-btn" title="{{ _('parent_portal') }}"><i class="fas fa-users"></i></a>
+      <button class="btn btn-ghost btn-xs" onclick="toggleTheme()" id="themeToggle" title="{% if current_theme == 'dark' %}{{ _('light_mode') }}{% else %}{{ _('dark_mode') }}{% endif %}">
+        <span id="themeIcon">{% if current_theme == 'dark' %}<i class="fas fa-sun"></i>{% else %}<i class="fas fa-moon"></i>{% endif %}</span>
+      </button>
+      <button class="btn btn-ghost btn-xs" onclick="togglePerformanceMode()" id="perfToggle" title="Tezkor rejim">
+        <span id="perfIcon"><i class="fas fa-gauge-high"></i></span>
+      </button>
+      <div class="lang-switch">
+        <button class="lang-btn" onclick="toggleLangMenu()">
+          <span>{% if current_lang == 'uz' %}🇺🇿<span class="lang-label">UZ</span>{% elif current_lang == 'ru' %}🇷🇺<span class="lang-label">RU</span>{% else %}🇬🇧<span class="lang-label">EN</span>{% endif %}</span>
+          <i class="fas fa-chevron-down lang-arrow"></i>
+        </button>
+        <div class="lang-menu" id="langMenu">
+          <button class="lang-option {% if current_lang == 'uz' %}active{% endif %}" onclick="setLang('uz')">🇺🇿 UZ</button>
+          <button class="lang-option {% if current_lang == 'ru' %}active{% endif %}" onclick="setLang('ru')">🇷🇺 RU</button>
+          <button class="lang-option {% if current_lang == 'en' %}active{% endif %}" onclick="setLang('en')">🇬🇧 EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content page-entrance">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<div id="toastContainer"></div>
+
+<div class="modal-backdrop" id="globalModal" style="display:none">
+  <div class="modal" id="globalModalBox">
+    <div class="modal-header">
+      <h3 id="modalTitle">Modal</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="pwaInstallBanner" style="display:none;position:fixed;bottom:20px;left:20px;right:20px;z-index:9998;background:var(--surface-solid);backdrop-filter:blur(var(--blur-xl)) saturate(1.8);-webkit-backdrop-filter:blur(var(--blur-xl)) saturate(1.8);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow-lg);animation:slideUp .4s var(--smooth)">
+  <div style="display:flex;align-items:center;gap:14px">
+    <img src="/static/img/icon.svg" alt="EduSoft" style="width:48px;height:48px;border-radius:12px;flex-shrink:0">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:14px;margin-bottom:2px">EduSoft</div>
+      <div style="font-size:12px;color:var(--text2)">Telefoningizga yuklab oling</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="installPWA()" style="white-space:nowrap"><i class="fas fa-download"></i> Yuklash</button>
+    <button class="btn btn-ghost btn-icon btn-xs" onclick="dismissPWA()" style="width:28px;height:28px;font-size:12px"><i class="fas fa-xmark"></i></button>
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+<script>
+  loadKindergartenBranding();
+  loadNotifBadge();
+  loadPlatformAlerts();
+  loadCheckBadge();
+  (function(){const o=new IntersectionObserver(e=>{e.forEach(e=>{e.isIntersecting&&(e.target.classList.add('vs'),o.unobserve(e.target))})},{threshold:.1});document.querySelectorAll('.rv').forEach(e=>o.observe(e))})();
+  document.addEventListener('change',function(e){if(e.target.matches('select.form-control,input[type=date].form-control')){e.target.classList.add('input-changed');setTimeout(function(){e.target.classList.remove('input-changed')},300)}});
+
+  function toggleBalanceMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('balanceMenu');
+    const isOpen = menu.style.display === 'block';
+    document.querySelectorAll('.balance-menu').forEach(m => m.style.display = 'none');
+    if (!isOpen) {
+      menu.style.display = 'block';
+      setTimeout(() => document.addEventListener('click', closeBalanceMenu, { once: true }), 10);
+    }
+  }
+  function closeBalanceMenu() {
+    document.querySelectorAll('.balance-menu').forEach(m => m.style.display = 'none');
+  }
+  function openTopUpModal() {
+    showTopUpForm();
+  }
+  function openBalanceHistory() {
+    showHistory();
+  }
+
+  function showTopUpForm() {
+    const html = `
+      <div style="padding:16px">
+        <div style="font-size:14px;color:var(--text2);margin-bottom:16px">
+          <i class="fas fa-wallet"></i> Joriy balans: <b style="color:#22c55e">{{ "{:,.0f}".format(kg_balance) }} so'm</b>
+        </div>
+        <div id="topUpForm">
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">To'lov summasi (so'm)</label>
+            <input type="number" id="topUpAmount" class="modal-input" value="100000" min="100" step="1000" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-weight:600">
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="fas fa-shield-halved"></i> To'lov <b>TezCheck</b> orqali amalga oshiriladi.</div>
+        </div>
+        <div id="topUpWaiting" style="display:none;text-align:center;padding:12px 0">
+          <div style="font-size:14px;color:var(--text3);margin-bottom:8px"><i class="fas fa-hourglass-half" style="color:#eab308"></i> To'lov kutilmoqda</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:12px">To'lov sahifasida to'lovni amalga oshiring va qaytib "Holatni tekshirish" tugmasini bosing.</div>
+          <div id="topUpStatusResult"></div>
+        </div>
+      </div>`;
+    openModal('Balansni to\'ldirish', html);
+    const body = document.getElementById('modalBody');
+    const btn = document.createElement('div');
+    btn.id = 'topUpBtnWrap';
+    btn.style.cssText = 'padding:0 16px 16px';
+    btn.innerHTML = '<button class="btn btn-primary" style="width:100%" onclick="startTopUp()" id="topUpMainBtn"><i class="fas fa-arrow-right"></i> To\'lov qilish</button>';
+    body.after(btn);
+  }
+
+  let _topUpOrderId = null;
+
+  function showWithdrawForm() {
+    const bal = {{ kg_balance }};
+    const html = `
+      <div style="padding:8px 0">
+        <div style="padding:0 0 12px;border-bottom:1px solid var(--border)">
+          <button class="btn" style="width:100%;justify-content:flex-start;padding:14px 16px;margin-bottom:6px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)" onclick="closeModal();showNewWithdraw()">
+            <i class="fas fa-plus-circle" style="width:20px"></i> <span style="flex:1;text-align:left">Yangi yechib olish</span> <span style="font-size:11px;opacity:.6">Kod yaratish</span>
+          </button>
+          <button class="btn" style="width:100%;justify-content:flex-start;padding:14px 16px;margin-bottom:6px;background:rgba(99,102,241,.1);color:var(--text);border:1px solid var(--border)" onclick="closeModal();showConfirmWithdraw()">
+            <i class="fas fa-check-circle" style="width:20px"></i> <span style="flex:1;text-align:left">Kod orqali tasdiqlash</span> <span style="font-size:11px;opacity:.6">ID yoki skaner</span>
+          </button>
+          <button class="btn" style="width:100%;justify-content:flex-start;padding:14px 16px;background:rgba(34,197,94,.1);color:var(--text);border:1px solid var(--border)" onclick="closeModal();showWithdrawList()">
+            <i class="fas fa-list" style="width:20px"></i> <span style="flex:1;text-align:left">Barcha yechib olishlar</span> <span style="font-size:11px;opacity:.6">Tarix</span>
+          </button>
+        </div>
+      </div>`;
+    openModal('Yechib olish', html);
+  }
+
+  function showNewWithdraw() {
+    const html = `
+      <div style="padding:16px">
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Summa (so'm)</label>
+          <input type="number" id="wdwAmount" class="modal-input" value="" min="100" step="1000" placeholder="Summani kiriting" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-weight:600">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Qabul qiluvchi (ism)</label>
+          <input type="text" id="wdwName" class="modal-input" placeholder="Kimga beriladi?" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Telefon (ixtiyoriy)</label>
+          <input type="text" id="wdwPhone" class="modal-input" placeholder="998 xx xxx xx xx" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Karta raqami (ixtiyoriy)</label>
+          <input type="text" id="wdwCard" class="modal-input" placeholder="xxxx xxxx xxxx xxxx" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px">
+        </div>
+        <div id="wdwResult" style="display:none;text-align:center;padding:20px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Yechib olish kodi</div>
+          <div id="wdwCodeDisplay" style="font-size:36px;font-weight:800;font-family:monospace;letter-spacing:6px;color:#22c55e;padding:8px 0"></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px">Ushbu kodni qabul qiluvchiga bering.<br>U kelganda "Kod orqali tasdiqlash" dan kodni kiriting.</div>
+        </div>
+      </div>`;
+    openModal('Yangi yechib olish', html);
+    const body = document.getElementById('modalBody');
+    const btn = document.createElement('div');
+    btn.id = 'wdwBtnWrap';
+    btn.style.cssText = 'padding:0 16px 16px';
+    btn.innerHTML = '<button class="btn" style="width:100%;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)" onclick="createWithdraw()"><i class="fas fa-arrow-down"></i> Yechib olish</button>';
+    body.after(btn);
+  }
+
+  async function createWithdraw() {
+    const amount = parseInt(document.getElementById('wdwAmount').value);
+    const name = document.getElementById('wdwName').value.trim();
+    const phone = document.getElementById('wdwPhone').value.trim();
+    const card = document.getElementById('wdwCard').value.trim();
+    if (!amount || amount < 100) { toast('Minimal summa 100 so\'m', 'error'); return; }
+    if (amount > {{ kg_balance }}) { toast('Balansda yetarli mablag\' yo\'q', 'error'); return; }
+    const btn = document.querySelector('#wdwBtnWrap .btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Bajarilmoqda...';
+    try {
+      const res = await api('/api/kg-balance/withdraw', 'POST', {
+        amount, recipient_name: name, recipient_phone: phone, recipient_card: card
+      });
+      if (res.success) {
+        document.getElementById('wdwResult').style.display = 'block';
+        document.getElementById('wdwCodeDisplay').textContent = res.withdrawal.code;
+        btn.style.display = 'none';
+        toast('<i class="fas fa-check-circle"></i> Kod yaratildi', 'success');
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-down"></i> Yechib olish';
+        toast(res.message || 'Xatolik yuz berdi', 'error');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-arrow-down"></i> Yechib olish';
+      toast('Server bilan bog\'lanib bo\'lmadi', 'error');
+    }
+  }
+
+  function showConfirmWithdraw() {
+    const html = `
+      <div style="padding:16px">
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px">Yechib olish kodini kiriting</label>
+          <input type="text" id="cfmCode" class="modal-input" placeholder="Masalan: A3X7K9Q2" maxlength="8" style="width:100%;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:20px;font-weight:700;font-family:monospace;text-align:center;letter-spacing:4px;text-transform:uppercase">
+        </div>
+        <div id="cfmInfo" style="display:none;padding:16px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);border-radius:12px;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Yechib olish ma'lumotlari</div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Summa</span><span id="cfmAmount" style="font-weight:700;color:#22c55e"></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Qabul qiluvchi</span><span id="cfmName" style="font-weight:600"></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Telefon</span><span id="cfmPhone"></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Karta</span><span id="cfmCard" style="font-family:monospace"></span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Yaratilgan</span><span id="cfmDate" style="font-size:12px"></span></div>
+        </div>
+      </div>`;
+    openModal('Kod orqali tasdiqlash', html);
+    const body = document.getElementById('modalBody');
+    const btn = document.createElement('div');
+    btn.id = 'cfmBtnWrap';
+    btn.style.cssText = 'padding:0 16px 16px';
+    btn.innerHTML = '<button class="btn" style="width:100%;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)" onclick="lookupWithdrawCode()"><i class="fas fa-search"></i> Kodni tekshirish</button>';
+    body.after(btn);
+    document.getElementById('cfmCode').addEventListener('input', function() {
+      if (this.value.length >= 6) lookupWithdrawCode();
+    });
+  }
+
+  async function lookupWithdrawCode() {
+    const code = document.getElementById('cfmCode').value.trim().toUpperCase();
+    if (code.length < 4) return;
+    const info = document.getElementById('cfmInfo');
+    info.style.display = 'none';
+    try {
+      const res = await api('/api/kg-balance/withdrawals', 'GET');
+      if (!res.success) return;
+      const w = (res.withdrawals || []).find(x => x.code === code);
+      if (!w) { toast('Kod topilmadi', 'error'); return; }
+      if (w.status !== 'pending') { toast('Bu kod allaqachon tasdiqlangan', 'error'); return; }
+      document.getElementById('cfmAmount').textContent = (w.amount || 0).toLocaleString() + ' so\'m';
+      document.getElementById('cfmName').textContent = w.recipient_name || '—';
+      document.getElementById('cfmPhone').textContent = w.recipient_phone || '—';
+      document.getElementById('cfmCard').textContent = w.recipient_card || '—';
+      document.getElementById('cfmDate').textContent = (w.created_at || '').slice(0, 16).replace('T', ' ');
+      info.style.display = 'block';
+      document.getElementById('cfmBtnWrap').innerHTML = '<button class="btn btn-success" style="width:100%" onclick="confirmWithdrawCode(\'' + code + '\')"><i class="fas fa-check-circle"></i> Tasdiqlash va balansdan yechish</button>';
+    } catch(e) { toast('Server bilan bog\'lanib bo\'lmadi', 'error'); }
+  }
+
+  async function confirmWithdrawCode(code) {
+    const btn = document.querySelector('#cfmBtnWrap .btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Bajarilmoqda...';
+    try {
+      const res = await api('/api/kg-balance/withdraw/confirm', 'POST', { code });
+      if (res.success) {
+        closeModal();
+        toast('<i class="fas fa-check-circle"></i> ' + res.withdrawal.amount.toLocaleString() + ' so\'m yechib olindi', 'success');
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Tasdiqlash';
+        toast(res.message || 'Xatolik yuz berdi', 'error');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Tasdiqlash';
+      toast('Server bilan bog\'lanib bo\'lmadi', 'error');
+    }
+  }
+
+  function showWithdrawList() {
+    openModal('Yechib olishlar', '<div style="padding:16px;text-align:center;color:var(--text3)"><span class="spinner"></span> Yuklanmoqda...</div>');
+    fetch('/api/kg-balance/withdrawals')
+      .then(r => r.json()).then(d => {
+        if (!d.success) { document.querySelector('#modalBody').innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)">Xatolik yuz berdi</div>'; return; }
+        const wds = d.withdrawals || [];
+        let html = '<div style="padding:8px 0;max-height:400px;overflow-y:auto">';
+        if (wds.length === 0) {
+          html += '<div style="padding:32px;text-align:center;color:var(--text3)">Hali yechib olishlar yo\'q</div>';
+        } else {
+          wds.slice().reverse().slice(0, 50).forEach(w => {
+            const done = w.status === 'confirmed';
+            const icon = done ? 'check-circle' : 'clock';
+            const color = done ? '#22c55e' : '#eab308';
+            const amt = (w.amount || 0).toLocaleString();
+            const date = (w.confirmed_at || w.created_at || '').slice(0, 10);
+            html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)">';
+            html += '<i class="fas fa-' + icon + '" style="color:' + color + ';width:16px;font-size:14px"></i>';
+            html += '<div style="flex:1;min-width:0">';
+            html += '<div style="font-size:13px;font-weight:600">' + amt + ' so\'m</div>';
+            html += '<div style="font-size:11px;color:var(--text3)">Kod: <b>' + w.code + '</b> | ' + (w.recipient_name || '—') + '</div>';
+            html += '</div>';
+            html += '<div style="text-align:right;font-size:11px;color:var(--text3)">' + date + '</div>';
+            html += '</div>';
+          });
+        }
+        html += '</div>';
+        document.querySelector('#modalBody').innerHTML = html;
+      }).catch(() => {
+        document.querySelector('#modalBody').innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)">Server bilan bog\'lanib bo\'lmadi</div>';
+      });
+  }
+
+  function showHistory() {
+    openModal('To\'lov tarixi', '<div style="padding:16px;text-align:center;color:var(--text3)"><span class="spinner"></span> Yuklanmoqda...</div>');
+    fetch('/api/kg-balance/history')
+      .then(r => r.json()).then(d => {
+        if (!d.success) { document.querySelector('#modalBody').innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)">Xatolik yuz berdi</div>'; return; }
+        const h = d.history || [];
+        let html = '<div style="padding:8px 0;max-height:400px;overflow-y:auto">';
+        if (h.length === 0) {
+          html += '<div style="padding:32px;text-align:center;color:var(--text3)">Hali hech qanday to\'lov amalga oshirilmagan</div>';
+        } else {
+          h.slice(0, 50).forEach(e => {
+            const isPaid = e.status === 'paid';
+            const icon = isPaid ? 'check-circle' : 'hourglass-half';
+            const color = isPaid ? '#22c55e' : '#eab308';
+            const label = e.parent_name ? (e.parent_name + ' to\'lovi') : (e.student_id ? 'O\'quvchi to\'lovi' : 'To\'lov');
+            const amt = (e.amount || 0).toLocaleString();
+            const date = (e.paid_at || e.created_at || '').slice(0, 10);
+            const time = (e.paid_at || e.created_at || '').slice(11, 16);
+            html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)">';
+            html += '<i class="fas fa-' + icon + '" style="color:' + color + ';width:16px;font-size:14px"></i>';
+            html += '<div style="flex:1;min-width:0">';
+            html += '<div style="font-size:13px;font-weight:600">' + amt + ' so\'m</div>';
+            html += '<div style="font-size:11px;color:var(--text3)">' + label + '</div>';
+            html += '</div>';
+            html += '<div style="text-align:right;font-size:11px;color:var(--text3)">';
+            if (date) html += '<div>' + date + '</div>';
+            if (time) html += '<div>' + time + '</div>';
+            html += '</div></div>';
+          });
+        }
+        html += '</div>';
+        document.querySelector('#modalBody').innerHTML = html;
+      }).catch(() => {
+        document.querySelector('#modalBody').innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)">Server bilan bog\'lanib bo\'lmadi</div>';
+      });
+  }
+
+  async function startTopUp() {
+    const amount = parseInt(document.getElementById('topUpAmount').value);
+    if (!amount || amount < 100) { toast('Minimal summa 100 so\'m', 'error'); return; }
+    const btn = document.getElementById('topUpMainBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Tayyorlanmoqda...';
+    try {
+      const res = await api('/api/tezcheck/create-payment', 'POST', {
+        kg_id: '{{ session.get("kindergarten_id", "") }}',
+        amount: amount,
+        parent_name: '{{ admin_name|e }}',
+        parent_phone: ''
+      });
+      if (res.success) {
+        _topUpOrderId = res.order_id;
+        document.getElementById('topUpForm').style.display = 'none';
+        document.getElementById('topUpWaiting').style.display = 'block';
+        btn.innerHTML = '<i class="fas fa-sync"></i> Holatni tekshirish';
+        btn.onclick = checkTopUpStatus;
+        btn.disabled = false;
+        toast('To\'lov sahifasi ochilmoqda', 'success');
+        window.open(res.pay_url, '_blank');
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right"></i> To\'lov qilish';
+        toast(res.message || 'Xatolik yuz berdi', 'error');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-arrow-right"></i> To\'lov qilish';
+      toast('Server bilan bog\'lanib bo\'lmadi', 'error');
+    }
+  }
+
+  async function checkTopUpStatus() {
+    if (!_topUpOrderId) return;
+    const btn = document.getElementById('topUpMainBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Tekshirilmoqda...';
+    try {
+      const res = await api('/api/tezcheck/check-status/' + _topUpOrderId, 'GET');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync"></i> Holatni tekshirish';
+      if (res.success && res.payment) {
+        const status = res.payment.status;
+        if (status === 'paid') {
+          document.getElementById('topUpStatusResult').innerHTML =
+            '<div style="padding:12px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2);border-radius:10px;font-size:13px;font-weight:600"><i class="fas fa-check-circle"></i> To\'lov qabul qilindi! Balans yangilanadi.</div>';
+          btn.style.display = 'none';
+          setTimeout(() => location.reload(), 2000);
+        } else if (status === 'pending') {
+          document.getElementById('topUpStatusResult').innerHTML =
+            '<div style="padding:12px;background:rgba(234,179,8,.1);color:#eab308;border:1px solid rgba(234,179,8,.2);border-radius:10px;font-size:12px"><i class="fas fa-hourglass-half"></i> To\'lov hali tasdiqlanmadi. Iltimos, kuting va qayta tekshiring.</div>';
+        } else {
+          document.getElementById('topUpStatusResult').innerHTML =
+            '<div style="padding:12px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:10px;font-size:12px"><i class="fas fa-exclamation-circle"></i> Holat: ' + status + '</div>';
+        }
+      } else {
+        document.getElementById('topUpStatusResult').innerHTML =
+          '<div style="padding:12px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:10px;font-size:12px"><i class="fas fa-exclamation-circle"></i> To\'lov topilmadi</div>';
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync"></i> Holatni tekshirish';
+      document.getElementById('topUpStatusResult').innerHTML =
+        '<div style="padding:12px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:10px;font-size:12px"><i class="fas fa-exclamation-circle"></i> Xatolik yuz berdi</div>';
+    }
+  }
+
+  async function startWithdraw() {
+    const amount = parseInt(document.getElementById('withdrawAmount').value);
+    const note = document.getElementById('withdrawNote').value;
+    if (!amount || amount < 100) { toast('Minimal summa 100 so\'m', 'error'); return; }
+    if (amount > {{ kg_balance }}) { toast('Balansda yetarli mablag\' yo\'q', 'error'); return; }
+    const btn = document.querySelector('#modalBody + div .btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Bajarilmoqda...';
+    try {
+      const res = await api('/api/kg-balance/add', 'POST', {
+        amount: -amount,
+        note: 'Yechib olish: ' + note
+      });
+      if (res.success) {
+        closeModal();
+        toast('<i class="fas fa-check-circle"></i> ' + amount.toLocaleString() + ' som yechib olindi', 'success');
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-down"></i> Yechib olish';
+        toast(res.message || 'Xatolik yuz berdi', 'error');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-arrow-down"></i> Yechib olish';
+      toast('Server bilan bog\'lanib bo\'lmadi', 'error');
+    }
+  }
+</script>
+</body>
+</html>

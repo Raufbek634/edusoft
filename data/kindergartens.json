@@ -1,0 +1,22 @@
+[
+  {
+    "id": "kg-048a0868",
+    "name": "yangi avlod",
+    "status": "active",
+    "plan": "premium",
+    "created_at": "2026-05-24T12:40:40.690515",
+    "subscription": {
+      "trial_start": "2026-05-24",
+      "trial_days": 30,
+      "monthly_price_usd": 25,
+      "paid_until": "2026-06-23"
+    },
+    "owner": {
+      "login": "993190712",
+      "password": "ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f",
+      "name": "Otabek samiyev",
+      "telegram_chat_id": ""
+    },
+    "last_login": "2026-05-24T16:33:52.853723Z"
+  }
+]

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ _('report') }} — {{ settings.name }}{% endblock %}
+{% block page_title %}{{ _('report') }}{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div>
+    <div class="section-title">{{ _('report') }}</div>
+    <div class="section-sub">Oylik hisobot — yuklab olish (PDF / Excel)</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px">
+        <label class="form-label" style="margin-bottom:4px">Oy</label>
+        <input class="form-control" type="month" id="reportMonth">
+      </div>
+      <div style="display:flex;gap:8px;padding-top:16px">
+        <button class="btn btn-primary" onclick="loadReport()"><i class="fas fa-rotate"></i> Yuklash</button>
+        <button class="btn btn-success" onclick="downloadExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+        <button class="btn btn-danger" onclick="downloadPdf()"><i class="fas fa-file-pdf"></i> PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="reportContent">
+  <div class="stats-grid" id="reportSummary"></div>
+  <div class="card">
+    <div class="card-header"><div class="card-title"><i class="fas fa-layer-group"></i> Guruhlar bo'yicha</div></div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap" style="border:none;border-radius:0">
+        <table class="data-table" id="groupTable">
+          <thead><tr>
+            <th>Guruh</th><th>Jami</th><th>Faol</th><th>Yig'ilgan</th><th>Qarzdorlik</th><th>O'rt. to'lov</th>
+          </tr></thead>
+          <tbody id="groupBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="card-title"><i class="fas fa-users"></i> O'quvchilar tafsiloti</div></div>
+    <div class="card-body" style="padding:0">
+      <div class="table-wrap" style="border:none;border-radius:0">
+        <table class="data-table" id="detailTable">
+          <thead><tr>
+            <th>Ism</th><th>Guruh</th><th>To'lov</th><th>To'lan.</th><th>To'langan</th><th>Qarz</th><th>Kelgan</th><th>Kelmagan</th>
+          </tr></thead>
+          <tbody id="detailBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function getYM() {
+  const input = document.getElementById('reportMonth');
+  if (!input.value) {
+    const d = new Date();
+    input.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  return input.value;
+}
+
+async function loadReport() {
+  const ym = getYM();
+  const [y, m] = ym.split('-');
+  const container = document.getElementById('reportContent');
+  const summary = document.getElementById('reportSummary');
+  const groupBody = document.getElementById('groupBody');
+  const detailBody = document.getElementById('detailBody');
+  summary.innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Yuklanmoqda...</div>';
+
+  try {
+    const d = await (await fetch(`/api/report/data?year=${y}&month=${m}`)).json();
+    const curr = d.currency || 'UZS';
+    const fmt = n => Number(n).toLocaleString('uz-UZ') + ' ' + curr;
+
+    summary.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Jami o'quvchilar</div><div class="stat-value">${d.total_students}</div></div>
+      <div class="stat-card"><div class="stat-label">Faol</div><div class="stat-value">${d.active_students}</div></div>
+      <div class="stat-card"><div class="stat-label">Davomat</div><div class="stat-value">${d.attendance_pct}%</div><div style="font-size:11px;color:var(--text3)">${d.total_present} / ${d.total_present + d.total_absent} kun</div></div>
+      <div class="stat-card"><div class="stat-label">Yig'ilgan</div><div class="stat-value" style="color:var(--success)">${fmt(d.total_collected)}</div></div>
+      <div class="stat-card"><div class="stat-label">Qarzdorlik</div><div class="stat-value" style="color:var(--danger)">${fmt(d.total_debt)}</div></div>
+      <div class="stat-card"><div class="stat-label">Qarzdorlar</div><div class="stat-value" style="color:var(--warning)">${d.debtor_count}</div></div>
+    `;
+
+    groupBody.innerHTML = d.groups.map(g => `<tr>
+      <td><strong>${g.name}</strong></td>
+      <td>${g.total}</td>
+      <td>${g.active}</td>
+      <td>${fmt(g.collected)}</td>
+      <td style="color:var(--danger)">${fmt(g.debt)}</td>
+      <td>${fmt(g.avg_fee)}</td>
+    </tr>`).join('');
+
+    detailBody.innerHTML = d.details.map(r => `<tr>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.group}</td>
+      <td>${fmt(r.fee)}</td>
+      <td>${fmt(r.payable)}</td>
+      <td style="color:var(--success)">${fmt(r.paid)}</td>
+      <td style="color:${r.debt > 0 ? 'var(--danger)' : 'var(--text3)'}">${fmt(r.debt)}</td>
+      <td>${r.attended}</td>
+      <td>${r.absent}</td>
+    </tr>`).join('');
+  } catch (e) {
+    summary.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger)">Xatolik yuz berdi</div>';
+  }
+}
+
+function downloadExcel() {
+  const ym = getYM();
+  const [y, m] = ym.split('-');
+  window.open(`/api/report/excel?year=${y}&month=${m}`, '_blank');
+}
+
+function downloadPdf() {
+  const ym = getYM();
+  const [y, m] = ym.split('-');
+  window.open(`/api/report/pdf?year=${y}&month=${m}`, '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const d = new Date();
+  document.getElementById('reportMonth').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  loadReport();
+});
+</script>
+{% endblock %}

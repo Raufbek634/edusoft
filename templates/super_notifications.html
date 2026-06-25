@@ -1,0 +1,35 @@
+{% extends "super_base.html" %}
+{% block title %}Xabarlar markazi — Raufbek{% endblock %}
+{% block page_title %}Xabarlar markazi{% endblock %}
+{% block content %}
+<div class="super-card rv">
+  <div class="super-card-header">
+    <span class="super-card-title"><i class="fas fa-bell" style="color:var(--warning)"></i> Xabarlar</span>
+    <button class="btn btn-outline btn-xs" onclick="location.reload()"><i class="fas fa-sync"></i> Yangilash</button>
+  </div>
+  <div class="super-card-body super-card-body-nopad">
+    {% if notifications %}
+      {% for n in notifications %}
+      <div class="super-notif-item {{ n.type }}">
+        <div class="super-notif-icon">
+          {% if n.type == 'danger' %}<i class="fas fa-bolt"></i>
+          {% elif n.type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+          {% else %}<i class="fas fa-info-circle"></i>{% endif %}
+        </div>
+        <div class="super-notif-content">
+          <div class="super-notif-kg">{{ n.kindergarten_name or '—' }}</div>
+          <div class="super-notif-type">{{ n.type }}</div>
+          <div class="super-notif-msg">{{ n.message }}</div>
+          <div class="super-notif-time"><i class="fas fa-clock"></i> {{ n.timestamp[:19] if n.timestamp else '' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:48px">
+      <div class="empty-icon"><i class="fas fa-bell-slash"></i></div>
+      <h3>Xabarlar mavjud emas</h3>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
