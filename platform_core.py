@@ -138,95 +138,107 @@ class PgStore:
 
 
 class SupabaseStore:
-    """Supabase REST-based JSON storage."""
+    """Supabase REST-based JSON storage (uses requests, no supabase-py dependency)."""
 
     def __init__(self, url=None, key=None):
-        self.url = url or os.environ.get('SUPABASE_URL', '')
+        self.url = (url or os.environ.get('SUPABASE_URL', '')).rstrip('/')
         self.key = key or os.environ.get('SUPABASE_SECRET_KEY', '')
-        self._client = None
+        self.anon_key = os.environ.get('SUPABASE_PUBLISHABLE_KEY', self.key)
+        self._headers = {
+            'apikey': self.anon_key,
+            'Authorization': f'Bearer {self.key}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
         self._table_ready = False
 
-    def _get_client(self):
-        if self._client is None:
-            from supabase import create_client
-            self._client = create_client(self.url, self.key)
-        return self._client
+    def _api(self, method, path, json=None):
+        import requests
+        url = f'{self.url}/rest/v1/{path}'
+        r = requests.request(method, url, headers=self._headers, json=json)
+        if r.status_code >= 400:
+            raise Exception(f'Supabase API error {r.status_code}: {r.text[:200]}')
+        if r.status_code == 204 or not r.text:
+            return None
+        return r.json()
 
     def _ensure_table(self):
         if self._table_ready:
-            return
+            return True
         try:
-            client = self._get_client()
-            # Try to query the table - if it fails, create it via SQL
-            client.table('jsondata').select('key').limit(1).execute()
+            self._api('GET', 'jsondata?select=key&limit=1')
             self._table_ready = True
+            return True
         except Exception:
-            # Create table via Supabase SQL API
-            import httpx
             sql = """
                 CREATE TABLE IF NOT EXISTS jsondata (
                     key TEXT PRIMARY KEY,
                     value JSONB NOT NULL
                 );
             """
-            headers = {
-                'apikey': os.environ.get('SUPABASE_PUBLISHABLE_KEY', self.key),
-                'Authorization': f'Bearer {self.key}',
-                'Content-Type': 'application/json'
-            }
-            r = httpx.post(
-                f'{self.url}/rest/v1/rpc/',
-                json={'query': sql},
-                headers=headers
-            )
-            # If the above fails, try the SQL endpoint
-            if r.status_code not in (200, 201, 204):
-                httpx.post(
-                    f'{self.url}/sql',
-                    json={'query': sql},
-                    headers=headers
-                )
-            self._table_ready = True
+            import requests
+            try:
+                requests.post(f'{self.url}/rest/v1/rpc/', json={'query': sql}, headers=self._headers)
+            except Exception:
+                pass
+            try:
+                requests.post(f'{self.url}/sql', json={'query': sql}, headers=self._headers)
+            except Exception:
+                pass
+            # Check if table exists now
+            try:
+                self._api('GET', 'jsondata?select=key&limit=1')
+                self._table_ready = True
+                return True
+            except Exception:
+                print("[Supabase] jsondata jadvali topilmadi. Supabase SQL Editor'da quyidagi SQL ni ishga tushiring:")
+                print("  CREATE TABLE jsondata (key TEXT PRIMARY KEY, value JSONB NOT NULL);")
+                print("  ALTER TABLE jsondata ENABLE ROW LEVEL SECURITY;")
+                print("  CREATE POLICY \"anon_all\" ON jsondata FOR ALL USING (true) WITH CHECK (true);")
+                return False
+
+    def _row_to_value(self, row):
+        if row is None:
+            return None
+        return row.get('value') if isinstance(row, dict) else row
 
     def get(self, key):
-        client = self._get_client()
         try:
-            res = client.table('jsondata').select('value').eq('key', key).execute()
-            if res.data and len(res.data) > 0:
-                return res.data[0]['value']
+            import json as _json
+            res = self._api('GET', f'jsondata?key=eq.{key}&select=value')
+            if res and len(res) > 0:
+                return self._row_to_value(res[0])
         except Exception:
             pass
         return None
 
     def set(self, key, data):
-        self._ensure_table()
-        client = self._get_client()
+        if not self._ensure_table():
+            return
         existing = self.get(key)
         if existing is not None:
-            client.table('jsondata').update({'value': data}).eq('key', key).execute()
+            self._api('PATCH', f'jsondata?key=eq.{key}', json={'value': data})
         else:
-            client.table('jsondata').insert({'key': key, 'value': data}).execute()
+            self._api('POST', 'jsondata', json={'key': key, 'value': data})
 
     def exists(self, key):
-        client = self._get_client()
         try:
-            res = client.table('jsondata').select('key').eq('key', key).execute()
-            return len(res.data) > 0
+            res = self._api('GET', f'jsondata?key=eq.{key}&select=key')
+            return bool(res and len(res) > 0)
         except Exception:
             return False
 
     def list_keys(self, prefix=''):
-        client = self._get_client()
         try:
-            res = client.table('jsondata').select('key').like('key', prefix + '%').execute()
-            return [row['key'] for row in (res.data or [])]
+            import json as _json
+            res = self._api('GET', f'jsondata?key=like.{prefix}%25&select=key')
+            return [row['key'] for row in (res or [])]
         except Exception:
             return []
 
     def delete_key(self, key):
-        client = self._get_client()
         try:
-            client.table('jsondata').delete().eq('key', key).execute()
+            self._api('DELETE', f'jsondata?key=eq.{key}')
         except Exception:
             pass
 
@@ -239,8 +251,10 @@ class SupabaseStore:
             fp = os.path.join(data_dir, fn)
             if os.path.exists(fp):
                 with open(fp, 'r', encoding='utf-8') as f:
-                    self.set(fn, json.load(f))
-        # Tenant data
+                    try:
+                        self.set(fn, json.load(f))
+                    except Exception:
+                        pass
         tenants_dir = os.path.join(data_dir, 'tenants')
         if os.path.isdir(tenants_dir):
             for kid in os.listdir(tenants_dir):
@@ -256,7 +270,7 @@ class SupabaseStore:
                         with open(fp, 'r', encoding='utf-8') as f:
                             try:
                                 self.set(key, json.load(f))
-                            except json.JSONDecodeError:
+                            except Exception:
                                 pass
 
 
@@ -267,7 +281,11 @@ class PlatformCtx:
         supabase_url = os.environ.get('SUPABASE_URL')
         supabase_key = os.environ.get('SUPABASE_SECRET_KEY')
         if supabase_url and supabase_key:
-            self.db = SupabaseStore(supabase_url, supabase_key)
+            try:
+                self.db = SupabaseStore(supabase_url, supabase_key)
+            except Exception as e:
+                print(f"[Supabase] ulanish xatosi: {e}")
+                self.db = None
         db_url = (os.environ.get('DATABASE_URL')
                   or os.environ.get('POSTGRES_URL')
                   or os.environ.get('POSTGRES_URL_NON_POOLING')
@@ -292,45 +310,50 @@ class PlatformCtx:
 
     def _seed_to_db(self):
         """Upload all local data files to PostgreSQL — only if key doesn't exist."""
-        for fn in PLATFORM_FILES:
-            if self.db.exists(fn):
-                continue
-            fp = os.path.join(self.data_dir, fn)
-            if os.path.exists(fp):
-                with open(fp, 'r', encoding='utf-8') as f:
-                    try:
-                        data = json.load(f)
-                    except Exception:
-                        data = []
-                self.db.set(fn, data)
-        tenant_root = os.path.join(self.data_dir, 'tenants')
-        if os.path.isdir(tenant_root):
-            for d in os.listdir(tenant_root):
-                tdir = os.path.join(tenant_root, d)
-                if not os.path.isdir(tdir):
+        try:
+            for fn in PLATFORM_FILES:
+                if self.db.exists(fn):
                     continue
-                for fn in os.listdir(tdir):
-                    fp = os.path.join(tdir, fn)
-                    if os.path.isfile(fp) and fn.endswith('.json'):
-                        key = self._db_key(fn, d)
-                        if self.db.exists(key):
-                            continue
-                        with open(fp, 'r', encoding='utf-8') as f:
-                            try:
-                                data = json.load(f)
-                            except Exception:
-                                data = [] if fn != 'settings.json' else {}
-                        self.db.set(key, data)
+                fp = os.path.join(self.data_dir, fn)
+                if os.path.exists(fp):
+                    with open(fp, 'r', encoding='utf-8') as f:
+                        try:
+                            data = json.load(f)
+                        except Exception:
+                            data = []
+                    self.db.set(fn, data)
+            tenant_root = os.path.join(self.data_dir, 'tenants')
+            if os.path.isdir(tenant_root):
+                for d in os.listdir(tenant_root):
+                    tdir = os.path.join(tenant_root, d)
+                    if not os.path.isdir(tdir):
+                        continue
+                    for fn in os.listdir(tdir):
+                        fp = os.path.join(tdir, fn)
+                        if os.path.isfile(fp) and fn.endswith('.json'):
+                            key = self._db_key(fn, d)
+                            if self.db.exists(key):
+                                continue
+                            with open(fp, 'r', encoding='utf-8') as f:
+                                try:
+                                    data = json.load(f)
+                                except Exception:
+                                    data = [] if fn != 'settings.json' else {}
+                            self.db.set(key, data)
+        except Exception:
+            pass  # Migration not critical, app works with files
 
     def load_json(self, filename, kg_id=None):
         if self.db:
             key = self._db_key(filename, kg_id)
-            data = self.db.get(key)
-            if data is not None:
-                if filename not in PLATFORM_FILES and filename != 'settings.json' and isinstance(data, dict):
-                    data = [data]
-                return data
-            return []
+            try:
+                data = self.db.get(key)
+                if data is not None:
+                    if filename not in PLATFORM_FILES and filename != 'settings.json' and isinstance(data, dict):
+                        data = [data]
+                    return data
+            except Exception:
+                pass  # Fall back to file
         path = self._path(filename, kg_id)
         if not os.path.exists(path):
             if kg_id in (None, 'default') and filename not in PLATFORM_FILES:
@@ -357,7 +380,11 @@ class PlatformCtx:
     def save_json(self, filename, data, kg_id=None):
         if self.db:
             key = self._db_key(filename, kg_id)
-            return self.db.set(key, data)
+            try:
+                self.db.set(key, data)
+                return
+            except Exception:
+                pass  # Fall back to file
         path = self._path(filename, kg_id)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         try:
