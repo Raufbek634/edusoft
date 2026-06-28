@@ -49,6 +49,24 @@
   [data-theme="dark"] .grade-cell.good{background:rgba(99,102,241,.1)}
   [data-theme="dark"] .grade-cell.ok{background:rgba(234,179,8,.1)}
   [data-theme="dark"] .grade-cell.bad{background:rgba(239,68,68,.1)}
+  @media(max-width:768px){
+    .excel-toolbar{flex-wrap:wrap;gap:6px;padding:10px 12px}
+    .excel-toolbar .form-control{min-width:100px;font-size:11px}
+    .excel-toolbar [data-range]{font-size:10px!important;padding:4px 7px!important}
+    .excel-toolbar #dateFrom,.excel-toolbar #dateTo{width:100px!important;font-size:10px!important}
+    .excel-table{font-size:11px!important}
+    .excel-table th{font-size:10px;padding:6px 4px}
+    .grade-input-cell{width:28px;height:28px;font-size:11px;border-radius:4px;padding:1px}
+    .date-col-header{font-size:9px!important;min-width:26px!important;padding:4px 2px!important;writing-mode:horizontal-tb!important;transform:none!important}
+    .excel-table td:first-child{min-width:120px!important}
+    .excel-table td:first-child span{font-size:11px!important}
+  }
+  @media(max-width:480px){
+    .excel-toolbar #dateFrom,.excel-toolbar #dateTo{width:80px!important;font-size:9px!important}
+    .grade-input-cell{width:24px;height:24px;font-size:10px}
+    .date-col-header{font-size:8px!important;min-width:22px!important}
+    .excel-table td:first-child{min-width:90px!important}
+  }
   .date-col-header{writing-mode:vertical-lr;transform:rotate(180deg);font-size:10px;font-weight:700;padding:6px 4px;min-width:32px;max-width:36px;color:var(--text2);text-align:center;letter-spacing:.3px;white-space:nowrap}
   .date-col-header.today{color:var(--primary)}
   .grade-input-cell{width:36px;height:36px;padding:2px;border:1.5px solid var(--border);border-radius:5px;text-align:center;font-weight:700;font-size:13px;outline:none;background:var(--surface);color:var(--text);transition:all .12s;cursor:text}
@@ -334,9 +352,10 @@ async function loadGrades() {
   // Build table
   let html = `<div style="overflow-x:auto;overflow-y:auto;max-height:540px"><table class="excel-table" style="font-size:12.5px"><thead><tr>
     <th style="min-width:180px;text-align:left"><i class="fas fa-user-graduate"></i> O'quvchi</th>`;
+  function fmtDate(d) { const p=d.split('-'); return p[2]+'/'+p[1]; }
   dates.forEach(d => {
     const isToday = d === today;
-    html += `<th class="${isToday?'date-col-header today':'date-col-header'}" title="${d}">${d.slice(5)}</th>`;
+    html += `<th class="${isToday?'date-col-header today':'date-col-header'}" title="${d}">${fmtDate(d)}</th>`;
   });
   html += `<th style="width:50px;color:var(--primary);text-align:center">O'rt.</th></tr></thead><tbody>`;
 
