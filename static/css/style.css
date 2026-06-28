@@ -411,6 +411,28 @@ textarea.form-control{resize:vertical;min-height:70px}
 [data-theme="dark"] .att-day.absent{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.08));border-color:rgba(239,68,68,.2)}
 [data-theme="dark"] .att-day.excused{background:linear-gradient(135deg,rgba(234,179,8,.15),rgba(234,179,8,.08));border-color:rgba(234,179,8,.2)}
 
+.att-student-badge{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-xs);margin-bottom:16px;border:1px solid var(--border)}
+.att-student-badge .att-student-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.att-student-badge .att-student-name{font-weight:700;font-size:14px;color:var(--text)}
+.att-student-badge .att-student-month{font-size:12px;color:var(--text3);margin-left:auto}
+
+.att-legend{display:flex;gap:14px;margin-top:16px;flex-wrap:wrap}
+.att-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border)}
+.att-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.att-legend-dot.present{background:#16a34a}
+.att-legend-dot.absent{background:#dc2626}
+.att-legend-dot.excused{background:#d97706}
+.att-legend-dot.weekend{background:var(--text3);opacity:.4}
+
+.att-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.att-stat-card{padding:14px;border-radius:var(--radius-xs);text-align:center;border:1px solid var(--border);background:var(--surface2);transition:all .2s ease}
+.att-stat-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.att-stat-card .stat-value{font-size:20px;font-weight:800}
+.att-stat-card .stat-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.att-stat-card.present{color:#16a34a;border-color:rgba(34,197,94,.2);background:var(--success-light)}
+.att-stat-card.absent{color:#dc2626;border-color:rgba(239,68,68,.2);background:var(--danger-light)}
+.att-stat-card.excused{color:#d97706;border-color:rgba(234,179,8,.2);background:var(--warning-light)}
+
 .payment-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
 .pay-box{padding:16px;border-radius:var(--radius-xs);text-align:center;border:2px solid transparent;transition:all .35s var(--spring);backdrop-filter:blur(var(--blur-sm));-webkit-backdrop-filter:blur(var(--blur-sm))}
 .pay-box:hover{box-shadow:var(--shadow);transform:translateY(-3px)}

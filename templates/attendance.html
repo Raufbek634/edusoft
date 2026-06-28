@@ -9,8 +9,11 @@
     <div class="section-sub" id="attSubtitle">{{ _('loading') }}</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <select class="form-control" id="courseFilterAtt" onchange="loadDayAttendance();loadCalStudents()" style="max-width:160px">
+    <select class="form-control" id="courseFilterAtt" onchange="onCourseChangeAtt()" style="max-width:160px">
       <option value="">{{ _('all') }} kurslar</option>
+    </select>
+    <select class="form-control" id="groupFilterAtt" onchange="loadDayAttendance();loadCalStudents()" style="max-width:160px">
+      <option value="">{{ _('all') }} guruhlar</option>
     </select>
     <input type="date" class="form-control" id="dateInput" style="max-width:160px" onchange="loadDayAttendance()">
     <button class="btn btn-primary" onclick="saveBulkAttendance()">💾 {{ _('save') }}</button>
@@ -75,6 +78,7 @@
 <script>
 let currency = 'UZS';
 let allStudents = [];
+let allCourses = [];
 let dayRecords = {}; // student_id -> status
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -89,7 +93,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('summaryMonth').value = today.slice(0,7);
 
     allStudents = await api('/api/students?status=active');
-    await loadCourses();
+    allCourses = await api('/api/courses');
+    loadCourses();
     loadCalStudents();
     await loadDayAttendance();
     await loadSummary();
@@ -102,23 +107,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 });
+  }
+});
 
-async function loadCourses() {
-  const courses = await api('/api/courses');
+function loadCourses() {
   const sel = document.getElementById('courseFilterAtt');
-  courses.filter(c => c.status === 'active').forEach(c => {
+  allCourses.filter(c => c.status === 'active').forEach(c => {
     const o = document.createElement('option');
     o.value = c.id; o.textContent = c.name; sel.appendChild(o);
   });
 }
 
-async function loadGroups() {
-  const groups = await api('/api/groups');
+function onCourseChangeAtt() {
+  const courseId = document.getElementById('courseFilterAtt').value;
   const sel = document.getElementById('groupFilterAtt');
-  groups.forEach(g => {
-    const o = document.createElement('option');
-    o.value = g; o.textContent = g; sel.appendChild(o);
-  });
+  sel.innerHTML = '<option value="">{{ _('all') }} guruhlar</option>';
+  if (courseId) {
+    const crs = allCourses.find(c => c.id === courseId);
+    if (crs && crs.groups) {
+      crs.groups.forEach(g => {
+        const name = typeof g === 'string' ? g : g.name;
+        const o = document.createElement('option');
+        o.value = name; o.textContent = name; sel.appendChild(o);
+      });
+    }
+  }
+  loadDayAttendance();
+  loadCalStudents();
 }
 
 function loadCalStudents() {
@@ -145,6 +160,7 @@ function switchTab(name, btn) {
 async function loadDayAttendance() {
   const dateVal = document.getElementById('dateInput').value;
   const courseId = document.getElementById('courseFilterAtt').value;
+  const groupName = document.getElementById('groupFilterAtt').value;
   if (!dateVal) return;
 
   const d = new Date(dateVal);
@@ -168,6 +184,7 @@ async function loadDayAttendance() {
 
   let students = allStudents;
   if (courseId) students = students.filter(s => s.course_id === courseId);
+  if (groupName) students = students.filter(s => s.group === groupName);
 
   if (!students.length) {
     document.getElementById('dayAttContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>{{ _('no_data') }}</p></div>`;
@@ -243,7 +260,15 @@ async function loadCalendar() {
   const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon-based
 
   const weekDays = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
-  let cal = `<div style="margin-bottom:12px"><b>${student?.first_name} ${student?.last_name}</b> — ${monthName(month)}</div>`;
+  const avatarLetter = (student?.first_name?.[0] || '?').toUpperCase();
+  let cal = `<div class="att-student-badge">
+    <div class="att-student-avatar">${avatarLetter}</div>
+    <div>
+      <div class="att-student-name">${student?.first_name} ${student?.last_name}</div>
+      <div style="font-size:11px;color:var(--text3)">${student?.group || '—'}</div>
+    </div>
+    <div class="att-student-month">${monthName(month)}</div>
+  </div>`;
   cal += `<div class="att-calendar">`;
   weekDays.forEach(d => { cal += `<div class="att-day header">${d}</div>`; });
 
@@ -252,7 +277,7 @@ async function loadCalendar() {
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const dow = new Date(y, m - 1, day).getDay(); // 0=Sun
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend = dow === 0;
     const isFuture = dateStr > todayStr;
     const isToday = dateStr === todayStr;
     const status = attMap[dateStr] || '';
@@ -270,21 +295,30 @@ async function loadCalendar() {
   cal += `</div>`;
 
   // Legend
-  cal += `<div style="display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;font-size:12px;font-weight:600">
-    <span><span class="badge badge-success">{{ _('present') }}</span></span>
-    <span><span class="badge badge-danger">{{ _('absent') }}</span></span>
-    <span><span class="badge badge-warning">{{ _('excused') }}</span></span>
-    <span><span class="badge badge-gray">{{ _('inactive') }}</span></span>
+  cal += `<div class="att-legend">
+    <span class="att-legend-item"><span class="att-legend-dot present"></span> {{ _('present') }}</span>
+    <span class="att-legend-item"><span class="att-legend-dot absent"></span> {{ _('absent') }}</span>
+    <span class="att-legend-item"><span class="att-legend-dot excused"></span> {{ _('excused') }}</span>
+    <span class="att-legend-item"><span class="att-legend-dot weekend"></span> {{ _('inactive') }}</span>
   </div>`;
 
   // Stats
   const present = attData.filter(a => a.status==='present').length;
   const absent = attData.filter(a => a.status==='absent').length;
   const excused = attData.filter(a => a.status==='excused').length;
-  cal += `<div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;display:flex;gap:20px;flex-wrap:wrap">
-    <span><i class="fas fa-check-circle"></i> {{ _('present') }}: <b>${present}</b></span>
-    <span><i class="fas fa-xmark"></i> {{ _('absent') }}: <b>${absent}</b></span>
-    <span><i class="fas fa-triangle-exclamation"></i> {{ _('excused') }}: <b>${excused}</b></span>
+  cal += `<div class="att-stats">
+    <div class="att-stat-card present">
+      <div class="stat-value">${present}</div>
+      <div class="stat-label"><i class="fas fa-check-circle"></i> {{ _('present') }}</div>
+    </div>
+    <div class="att-stat-card absent">
+      <div class="stat-value">${absent}</div>
+      <div class="stat-label"><i class="fas fa-xmark"></i> {{ _('absent') }}</div>
+    </div>
+    <div class="att-stat-card excused">
+      <div class="stat-value">${excused}</div>
+      <div class="stat-label"><i class="fas fa-triangle-exclamation"></i> {{ _('excused') }}</div>
+    </div>
   </div>`;
 
   document.getElementById('calContent').innerHTML = cal;
