@@ -90,18 +90,13 @@ async function loadKindergartenBranding() {
       const img = document.getElementById(id);
       const fallback = document.getElementById('sidebarLogoFallback');
       if (!img) return;
-      if (logoUrl) {
-        img.src = logoUrl;
-        img.style.display = '';
-        img.onerror = () => {
-          img.style.display = 'none';
-          if (fallback) fallback.style.display = '';
-        };
-        if (fallback) fallback.style.display = 'none';
-      } else {
+      if (logoUrl) img.src = logoUrl;
+      img.style.display = '';
+      img.onerror = () => {
         img.style.display = 'none';
         if (fallback) fallback.style.display = '';
-      }
+      };
+      if (fallback) fallback.style.display = 'none';
     });
   } catch (e) { console.warn('Branding yuklanmadi:', e); }
 }
