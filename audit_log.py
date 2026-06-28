@@ -127,7 +127,14 @@ def check_suspicious(pc, action, details='', **kw):
             except Exception:
                 pass
     if action == 'attendance_bulk_edit':
-        return True
+        # Only flag if editing more than 50 records at once
+        try:
+            count = int(details.split('—')[1].strip().split()[0])
+            if count > 50:
+                return True
+        except Exception:
+            pass
+        return False
     # SQL injection attempts
     if action == 'failed_login':
         sql_patterns = ["' or", "1=1", "admin'--", "select", "union", "drop ", "delete ", "insert ", "exec ", "xp_"]
