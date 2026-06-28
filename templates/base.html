@@ -119,11 +119,7 @@
   <header class="topbar">
     <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
     <div class="topbar-brand" id="topbarBrand">
-      {% if settings and settings.logo %}
-      <img class="topbar-logo" id="topbarLogo" src="{{ settings.logo }}" alt="">
-      {% else %}
-      <img class="topbar-logo" id="topbarLogo" src="" alt="" style="display:none">
-      {% endif %}
+      <img class="topbar-logo" id="topbarLogo" src="{{ settings.logo if settings and settings.logo else '/static/uploads/edusoft-192.png' }}" alt="">
       <div class="topbar-brand-text">
         <span class="topbar-kg-name" id="topbarKgName">{{ settings.name if settings else '' }}</span>
         <span class="topbar-page">{% block page_title %}{% endblock %}</span>
