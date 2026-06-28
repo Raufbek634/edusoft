@@ -3711,6 +3711,7 @@ def get_grades():
     student_id = request.args.get('student_id', '')
     course_id = request.args.get('course_id', '')
     group_name = request.args.get('group', '')
+    grade_type_id = request.args.get('grade_type_id', '')
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
 
@@ -3720,6 +3721,8 @@ def get_grades():
         grades = [g for g in grades if g.get('course_id') == course_id]
     if group_name:
         grades = [g for g in grades if g.get('group_name') == group_name]
+    if grade_type_id:
+        grades = [g for g in grades if g.get('grade_type_id') == grade_type_id]
     if date_from:
         grades = [g for g in grades if g.get('date', '') >= date_from]
     if date_to:

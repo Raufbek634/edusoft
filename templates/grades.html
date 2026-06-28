@@ -49,6 +49,21 @@
   [data-theme="dark"] .grade-cell.good{background:rgba(99,102,241,.1)}
   [data-theme="dark"] .grade-cell.ok{background:rgba(234,179,8,.1)}
   [data-theme="dark"] .grade-cell.bad{background:rgba(239,68,68,.1)}
+  .date-col-header{writing-mode:vertical-lr;transform:rotate(180deg);font-size:10px;font-weight:700;padding:6px 4px;min-width:32px;max-width:36px;color:var(--text2);text-align:center;letter-spacing:.3px;white-space:nowrap}
+  .date-col-header.today{color:var(--primary)}
+  .grade-input-cell{width:36px;height:36px;padding:2px;border:1.5px solid var(--border);border-radius:5px;text-align:center;font-weight:700;font-size:13px;outline:none;background:var(--surface);color:var(--text);transition:all .12s;cursor:text}
+  .grade-input-cell:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);background:#fff;transform:scale(1.08)}
+  .grade-input-cell.perfect{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#16a34a}
+  .grade-input-cell.good{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.3);color:#4f46e5}
+  .grade-input-cell.ok{background:rgba(234,179,8,.08);border-color:rgba(234,179,8,.3);color:#ca8a04}
+  .grade-input-cell.bad{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:#dc2626}
+  .grade-input-cell.dirty{border-color:var(--warning);box-shadow:0 0 0 2px rgba(234,179,8,.2)}
+  .grade-input-cell:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  [data-theme="dark"] .grade-input-cell:focus{background:#1e293b}
+  [data-theme="dark"] .grade-input-cell.perfect{background:rgba(34,197,94,.12)}
+  [data-theme="dark"] .grade-input-cell.good{background:rgba(99,102,241,.12)}
+  [data-theme="dark"] .grade-input-cell.ok{background:rgba(234,179,8,.12)}
+  [data-theme="dark"] .grade-input-cell.bad{background:rgba(239,68,68,.12)}
   .analysis-table td, .analysis-table th{padding:10px 14px;text-align:center;border-bottom:1px solid var(--border)}
   .analysis-table th{background:#f8fafc;font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:var(--text2);position:sticky;top:0;z-index:2}
   .analysis-table .name-cell{text-align:left;font-weight:600;cursor:pointer}
@@ -80,7 +95,16 @@
   <select class="form-control" id="groupFilter" onchange="loadGrades()">
     <option value="">Guruhni tanlang</option>
   </select>
-  <input type="date" class="form-control" id="dateFilter" onchange="loadGrades()">
+  <select class="form-control" id="gtFilter" onchange="loadGrades()" style="min-width:130px">
+    <option value="">Barcha turlar</option>
+  </select>
+  <div style="display:flex;gap:4px;align-items:center">
+    <button class="btn btn-sm" data-range="7" onclick="setDateRange(7)" style="padding:6px 10px;font-size:11px">7 kun</button>
+    <button class="btn btn-sm btn-active" data-range="14" onclick="setDateRange(14)" style="padding:6px 10px;font-size:11px">14 kun</button>
+    <button class="btn btn-sm" data-range="30" onclick="setDateRange(30)" style="padding:6px 10px;font-size:11px">30 kun</button>
+    <input type="date" class="form-control" id="dateFrom" onchange="onDateRangeCustom()" style="width:130px;padding:7px 10px;font-size:11px">
+    <input type="date" class="form-control" id="dateTo" onchange="onDateRangeCustom()" style="width:130px;padding:7px 10px;font-size:11px">
+  </div>
   <div style="flex:1"></div>
   <span id="unsavedBadge" style="display:none" class="unsaved-count">0</span>
   <button class="btn btn-primary" onclick="saveGrades()"><i class="fas fa-check"></i> Saqlash (Ctrl+S)</button>
@@ -144,6 +168,8 @@
 {% block scripts %}
 <script>
 let allStudents = [], allCourses = [], gradeTypes = [], gradesData = {}, dirty = {}, teachersCache = [];
+let dateRange = 14;
+let dateFromVal = null, dateToVal = null;
 
 function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 
@@ -155,8 +181,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._teachers = teachersCache;
   loadCourseFilter();
   loadGradeTypes();
+  populateGTFilter();
   document.addEventListener('keydown', e => { if ((e.ctrlKey||e.metaKey) && e.key==='s') { e.preventDefault(); saveGrades(); } });
 });
+
+function populateGTFilter() {
+  const sel = document.getElementById('gtFilter');
+  sel.innerHTML = '';
+  gradeTypes.forEach(gt => {
+    const o = document.createElement('option');
+    o.value = gt.id; o.textContent = `${gt.name} (1–${gt.max_score})`;
+    sel.appendChild(o);
+  });
+  if (gradeTypes.length) sel.value = gradeTypes[0].id;
+}
 
 function loadCourseFilter() {
   const sel = document.getElementById('courseFilter');
@@ -212,13 +250,42 @@ function updateUnsavedBadge() {
   else { el.style.display = 'none'; el.textContent = '0'; }
 }
 
-/* ─── Excel-grade entry ─── */
+/* ─── Excel-grade entry (date columns) ─── */
+
+function getWorkingDays(from, to) {
+  const days = [];
+  const d = new Date(from);
+  while (d <= new Date(to)) {
+    const dow = d.getDay();
+    if (dow !== 0) days.push(d.toISOString().split('T')[0]); // Mon–Sat
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function setDateRange(days) {
+  dateRange = days;
+  dateFromVal = null; dateToVal = null;
+  document.querySelectorAll('[data-range]').forEach(b => b.classList.toggle('btn-active', parseInt(b.dataset.range) === days));
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  loadGrades();
+}
+
+function onDateRangeCustom() {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  if (from && to && from <= to) {
+    dateFromVal = from; dateToVal = to; dateRange = 0;
+    document.querySelectorAll('[data-range]').forEach(b => b.classList.remove('btn-active'));
+    loadGrades();
+  }
+}
 
 async function loadGrades() {
   const courseId = document.getElementById('courseFilter').value;
   const groupName = document.getElementById('groupFilter').value;
-  const dateVal = document.getElementById('dateFilter').value || new Date().toISOString().split('T')[0];
-  document.getElementById('dateFilter').value = dateVal;
+  const gtId = document.getElementById('gtFilter').value;
   dirty = {}; updateUnsavedBadge();
 
   if (!courseId || !groupName) {
@@ -236,77 +303,95 @@ async function loadGrades() {
     return;
   }
 
-  const existing = await api(`/api/grades?course_id=${courseId}&group=${encodeURIComponent(groupName)}&date_from=${dateVal}&date_to=${dateVal}`);
+  // Determine date range
+  let dateFrom, dateTo;
+  const today = new Date().toISOString().split('T')[0];
+  if (dateFromVal && dateToVal) { dateFrom = dateFromVal; dateTo = dateToVal; }
+  else {
+    dateTo = today;
+    const d = new Date(); d.setDate(d.getDate() - dateRange * 1.5);
+    dateFrom = d.toISOString().split('T')[0];
+  }
+
+  const dates = getWorkingDays(dateFrom, dateTo);
+  if (dates.length > 40) dates.splice(0, dates.length - 40); // cap at 40 days
+
+  // Fetch grades for this course+group+type
+  const url = `/api/grades?course_id=${courseId}&group=${encodeURIComponent(groupName)}&grade_type_id=${gtId}&date_from=${dates[0]}&date_to=${dates[dates.length-1]}`;
+  const existing = await api(url);
   if (!Array.isArray(existing)) {
     document.getElementById('entryContent').innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="empty-icon"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div><p>Ma\'lumot yuklanmadi</p></div>';
     return;
   }
   gradesData = {};
-  existing.forEach(g => { gradesData[g.student_id + '_' + g.grade_type_id] = g; });
+  existing.forEach(g => { gradesData[g.student_id + '_' + g.date] = g; });
 
-  let sumRow = {};
-  let countRow = {};
-  gradeTypes.forEach(gt => { sumRow[gt.id] = 0; countRow[gt.id] = 0; });
+  const gt = gradeTypes.find(t => t.id === gtId);
+  const maxScore = gt ? gt.max_score || 5 : 5;
+  const gtName = gt ? gt.name : 'Baho';
+  const gtColor = gt ? gt.color : '#4f46e5';
 
-  let html = `<table class="excel-table"><thead><tr>
-    <th style="min-width:200px"><i class="fas fa-user-graduate"></i> O'quvchi</th>`;
-  gradeTypes.forEach(gt => {
-    html += `<th><span style="color:${gt.color||'var(--text)'}">${esc(gt.name)}</span><br><small style="font-weight:400;color:var(--text3);font-size:10px">1–${gt.max_score||5}</small></th>`;
+  // Build table
+  let html = `<div style="overflow-x:auto;overflow-y:auto;max-height:540px"><table class="excel-table" style="font-size:12.5px"><thead><tr>
+    <th style="min-width:180px;text-align:left"><i class="fas fa-user-graduate"></i> O'quvchi</th>`;
+  dates.forEach(d => {
+    const isToday = d === today;
+    html += `<th class="${isToday?'date-col-header today':'date-col-header'}" title="${d}">${d.slice(5)}</th>`;
   });
-  html += `<th style="width:60px;color:var(--primary)">O'rt.</th></tr></thead><tbody>`;
+  html += `<th style="width:50px;color:var(--primary);text-align:center">O'rt.</th></tr></thead><tbody>`;
 
-  students.forEach((s, idx) => {
+  students.forEach((s) => {
     html += `<tr>
-      <td><div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${(s.first_name||'?')[0].toUpperCase()}</span>
-        <span><b>${esc(s.first_name)} ${esc(s.last_name)}</b></span>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${gtColor};color:#fff;font-size:10px;font-weight:700;flex-shrink:0">${(s.first_name||'?')[0].toUpperCase()}</span>
+        <span style="font-weight:600;font-size:12.5px">${esc(s.first_name)} ${esc(s.last_name)}</span>
       </div></td>`;
     let sum = 0, cnt = 0;
-    gradeTypes.forEach(gt => {
-      const key = s.id + '_' + gt.id;
+    dates.forEach(d => {
+      const key = s.id + '_' + d;
       const g = gradesData[key];
       const val = g ? parseInt(g.score) : 0;
-      if (val > 0) { sum += val; cnt++; sumRow[gt.id] += val; countRow[gt.id]++; }
-      const baseCls = gradeCellClass(val, gt.max_score);
+      if (val > 0) { sum += val; cnt++; }
+      const cellCls = gradeCellClass(val, maxScore);
       const dirtyCls = dirty[key] !== undefined ? ' dirty' : '';
-      html += `<td>
-        <div class="grade-cell ${baseCls}${dirtyCls}" data-sid="${s.id}" data-gtid="${gt.id}" data-max="${gt.max_score}">
-          <input type="number" min="0" max="${gt.max_score}" value="${val||''}" placeholder="—"
-            onfocus="onCellFocus(this)" onblur="onCellBlur(this,'${s.id}','${gt.id}',${gt.max_score})"
-            onkeydown="onCellKeydown(event,'${s.id}','${gt.id}',${gt.max_score})">
-        </div>
+      html += `<td style="padding:4px 3px;text-align:center">
+        <input class="grade-input-cell ${cellCls}${dirtyCls}" type="number" min="0" max="${maxScore}" value="${val||''}" placeholder="—"
+          data-sid="${s.id}" data-date="${d}" data-max="${maxScore}"
+          onfocus="this.select()" onblur="onGradeBlur(this)" onkeydown="onGradeKeydown(event)">
       </td>`;
     });
     const avg = cnt > 0 ? (sum/cnt).toFixed(1) : '—';
-    html += `<td class="avg-cell">${avg}</td></tr>`;
+    html += `<td class="avg-cell" style="text-align:center">${avg}</td></tr>`;
   });
 
-  // Average row
+  // Summary row
   html += `<tr style="background:rgba(99,102,241,.04);font-weight:700">
-    <td style="position:sticky;left:0;background:rgba(99,102,241,.04);z-index:2"><i class="fas fa-calculator"></i> O'rtacha</td>`;
-  gradeTypes.forEach(gt => {
-    const avg = countRow[gt.id] > 0 ? (sumRow[gt.id]/countRow[gt.id]).toFixed(1) : '—';
-    html += `<td style="font-weight:800;color:var(--primary);font-size:15px">${avg}</td>`;
+    <td style="padding:8px 12px"><i class="fas fa-calculator" style="margin-right:6px"></i>${esc(gtName)} o'rt.</td>`;
+  let gSum = 0, gCnt = 0;
+  students.forEach(s => {
+    dates.forEach(d => {
+      const key = s.id + '_' + d;
+      const g = gradesData[key];
+      const val = g ? parseInt(g.score) : 0;
+      if (val > 0) { gSum += val; gCnt++; }
+    });
   });
-  html += `<td style="font-weight:800;color:var(--primary)">—</td></tr>`;
+  dates.forEach(() => { html += `<td style="text-align:center">—</td>`; });
+  const gAvg = gCnt > 0 ? (gSum/gCnt).toFixed(1) : '—';
+  html += `<td style="text-align:center;color:${gtColor};font-weight:800">${gAvg}</td></tr>`;
 
-  html += `</tbody></table>`;
+  html += `</tbody></table></div>`;
   document.getElementById('entryContent').innerHTML = html;
 }
 
-function onCellFocus(input) {
-  input.select();
-  const cell = input.closest('.grade-cell');
-  if (cell) cell.style.transform = 'scale(1.05)';
-}
-
-function onCellBlur(input, sid, gtid, maxScore) {
-  const cell = input.closest('.grade-cell');
-  if (cell) cell.style.transform = '';
+function onGradeBlur(input) {
+  const sid = input.dataset.sid;
+  const date = input.dataset.date;
+  const maxScore = parseInt(input.dataset.max) || 5;
   const val = input.value.trim();
   const score = val === '' ? 0 : Math.min(Math.max(parseInt(val) || 0, 0), maxScore);
   input.value = score > 0 ? score : '';
-  const key = sid + '_' + gtid;
+  const key = sid + '_' + date;
   const existing = gradesData[key];
   const oldVal = existing ? parseInt(existing.score) : 0;
   if (score !== oldVal) {
@@ -316,47 +401,35 @@ function onCellBlur(input, sid, gtid, maxScore) {
     delete dirty[key];
     updateUnsavedBadge();
   }
-  updateCellStyle(cell, score, maxScore);
+  input.className = 'grade-input-cell ' + gradeCellClass(score, maxScore);
+  if (dirty[key] !== undefined) input.classList.add('dirty');
 }
 
-function updateCellStyle(cell, score, maxScore) {
-  if (!cell) return;
-  cell.className = 'grade-cell ' + gradeCellClass(score, maxScore);
-  const key = cell.dataset.sid + '_' + cell.dataset.gtid;
-  if (dirty[key] !== undefined) cell.classList.add('dirty');
-}
-
-function onCellKeydown(e, sid, gtid, maxScore) {
+function onGradeKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
-    const input = e.target;
-    onCellBlur(input, sid, gtid, maxScore);
-    const td = input.closest('td');
-    const tr = td.closest('tr');
-    const cellIndex = Array.from(tr.children).indexOf(td);
-    let next = tr.nextElementSibling;
-    while (next) {
-      const nextCell = next.children[cellIndex];
-      const nextInput = nextCell?.querySelector('.grade-cell input');
-      if (nextInput) { nextInput.focus(); break; }
-      next = next.nextElementSibling;
-    }
+    onGradeBlur(e.target);
+    // Move to next row same column
+    const inputs = Array.from(document.querySelectorAll('.grade-input-cell'));
+    const idx = inputs.indexOf(e.target);
+    if (idx >= 0 && idx + 1 < inputs.length) inputs[idx + 1].focus();
   } else if (e.key === 'Tab') {
-    const input = e.target;
-    onCellBlur(input, sid, gtid, maxScore);
+    onGradeBlur(e.target);
   }
 }
 
 async function saveGrades() {
   const courseId = document.getElementById('courseFilter').value;
   const groupName = document.getElementById('groupFilter').value;
-  const dateVal = document.getElementById('dateFilter').value;
-  if (!courseId || !groupName || !dateVal) return toast('Kurs, guruh va sanani tanlang', 'error');
+  const gtId = document.getElementById('gtFilter').value;
+  if (!courseId || !groupName || !gtId) return toast('Kurs, guruh va baho turini tanlang', 'error');
   const records = [];
   Object.keys(dirty).forEach(key => {
-    const [studentId, gradeTypeId] = key.split('_');
+    const sep = key.lastIndexOf('_');
+    const studentId = key.slice(0, sep);
+    const date = key.slice(sep + 1);
     const score = dirty[key];
-    records.push({ student_id: studentId, grade_type_id: gradeTypeId, course_id: courseId, group_name: groupName, score, date: dateVal });
+    records.push({ student_id: studentId, grade_type_id: gtId, course_id: courseId, group_name: groupName, score, date });
   });
   if (!records.length) return toast('O\'zgartirilgan baho yo\'q', 'warning');
   const res = await api('/api/grades/bulk', 'POST', { records });
