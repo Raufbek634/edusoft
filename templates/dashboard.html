@@ -196,25 +196,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function checkAlerts() {
-  const alerts = await api('/api/notifications/smart-check');
-  if (!alerts.length) { toast('{{ _('all_good')|e }} <i class="fas fa-check-circle"></i>', 'success'); return; }
+  let alerts = [];
+  try {
+    alerts = await api('/api/notifications/smart-check');
+  } catch(e) {
+    console.error('Smart check xatosi:', e);
+  }
   let html = `<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">`;
+  const colors = {birthday:'var(--warning-light)',debt:'var(--danger-light)',absent:'var(--danger-light)'};
   alerts.forEach(a => {
-    const colors = {birthday:'var(--warning-light)',debt:'var(--danger-light)',absent:'var(--danger-light)'};
     html += `<div style="padding:10px 14px;border-radius:8px;background:${colors[a.type]||'var(--surface2)'};font-size:13.5px;font-weight:600">${escapeHtml(a.message)}</div>`;
   });
+  try {
+    const mg = await api('/api/grades/check-missing?days=7');
+    if (mg.length) {
+      html += `<div style="padding:10px 14px;border-radius:8px;background:var(--danger-light);font-size:13.5px">
+        <div style="font-weight:700;margin-bottom:6px">⚠️ ${mg.length} ta o'quvchiga baho qo'yilmagan</div>
+        <div style="font-size:12px;color:var(--text2)">
+          ${mg.slice(0,8).map(x => `${escapeHtml(x.student_name)} (${escapeHtml(x.group)})`).join(', ')}
+          ${mg.length > 8 ? `+ ${mg.length-8} ta...` : ''}
+        </div>
+        <button class="btn btn-primary btn-sm mt-8" onclick="sendGradeReminders()"><i class="fas fa-bell"></i> Eslatma yuborish</button>
+      </div>`;
+    }
+  } catch {}
+  if (!html.includes('style="padding')) {
+    toast('{{ _('all_good')|e }} <i class="fas fa-check-circle"></i>', 'success');
+    return;
+  }
   html += '</div>';
-  openModal(`<i class="fas fa-triangle-exclamation"></i> ${alerts.length} ta {{ _('alerts') }}`, html);
+  openModal(`<i class="fas fa-triangle-exclamation"></i> ${alerts.length + (mg?.length?1:0)} ta {{ _('alerts') }}`, html);
+}
+
+async function sendGradeReminders() {
+  const r = await api('/api/grades/check-missing/notify', { method:'POST' });
+  if (r.success) toast(r.message, 'info');
+  else toast('Xatolik', 'error');
 }
 
 async function loadDashboardChecks() {
   try {
     const d = await api('/api/payment-checks?status=pending');
     const el = document.getElementById('dashboardCheckAlert');
-    if (!d.length) { el.style.display = 'none'; return; }
-    el.style.display = '';
-    el.innerHTML = `
-      <div class="card" style="border-left:4px solid var(--warning);background:var(--warning-light);padding:14px 18px">
+    let html = '';
+    if (d.length) {
+      html += `
+      <div class="card" style="border-left:4px solid var(--warning);background:var(--warning-light);padding:14px 18px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:12px">
           <span style="font-size:24px"><i class="fas fa-paper-plane"></i></span>
           <div style="flex:1">
@@ -224,6 +251,32 @@ async function loadDashboardChecks() {
           <a href="/payments" class="btn btn-primary btn-sm">{{ _('view')|e }} →</a>
         </div>
       </div>`;
+    }
+    try {
+      const mg = await api('/api/grades/check-missing?days=7');
+      if (mg.length) {
+        html += `
+        <div class="card" style="border-left:4px solid var(--danger);background:var(--danger-light);padding:14px 18px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:24px"><i class="fas fa-star"></i></span>
+            <div style="flex:1">
+              <div style="font-weight:800;font-size:14px">⚠️ ${mg.length} ta o'quvchiga baho qo'yilmagan (7 kun)</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px">
+                ${mg.slice(0,10).map(x => `<span style="display:inline-block;background:var(--surface);padding:2px 8px;border-radius:12px;margin:2px">${escapeHtml(x.student_name)} (${escapeHtml(x.group)})</span>`).join('')}
+                ${mg.length > 10 ? `+ ${mg.length-10} ta...` : ''}
+              </div>
+            </div>
+            <a href="/grades" class="btn btn-primary btn-sm">Baholash →</a>
+          </div>
+        </div>`;
+      }
+    } catch {}
+    if (html) {
+      el.style.display = '';
+      el.innerHTML = html;
+    } else {
+      el.style.display = 'none';
+    }
   } catch {}
 }
 </script>

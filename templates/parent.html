@@ -146,12 +146,27 @@
           <div style="flex:1"><div style="font-size:18px;font-weight:800" id="p_name">—</div><div style="font-size:13px;color:var(--text2)" id="p_group">—</div></div>
           <div id="p_status">—</div>
         </div>
-        <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
-          <div><span style="color:var(--text3)"><i class="fas fa-id-card"></i> ID</span><br><span id="p_id">—</span></div>
-          <div><span style="color:var(--text3)"><i class="fas fa-cake-candles"></i> {{ _('birth_date') }}</span><br><span id="p_birth">—</span></div>
-          <div><span style="color:var(--text3)"><i class="fas fa-calendar-days"></i> {{ _('join_date') }}</span><br><span id="p_join">—</span></div>
-          <div><span style="color:var(--text3)"><i class="fas fa-users"></i> Ota-ona</span><br><span id="p_parent">—</span></div>
-          <div style="grid-column:1/3"><span style="color:var(--text3)"><i class="fas fa-phone"></i> {{ _('phone') }}</span><br><span id="p_phone">—</span></div>
+        <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:8px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-id-card"></i></span>
+            <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px">ID</div><div style="font-weight:700;color:var(--text);font-size:13px;font-family:var(--mono)" id="p_id">—</div></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-cake-candles"></i></span>
+            <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px">{{ _('birth_date') }}</div><div style="font-weight:700;color:var(--text);font-size:14px" id="p_birth">—</div></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-calendar-days"></i></span>
+            <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px">{{ _('join_date') }}</div><div style="font-weight:700;color:var(--text);font-size:14px" id="p_join">—</div></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-users"></i></span>
+            <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px">Ota-ona</div><div style="font-weight:700;color:var(--text);font-size:13px" id="p_parent">—</div></div>
+          </div>
+          <div style="grid-column:1/3;background:var(--surface2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+            <span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#06b6d4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-phone"></i></span>
+            <div><div style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px">{{ _('phone') }}</div><div style="font-weight:700;color:var(--text);font-size:13px" id="p_phone">—</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -236,6 +251,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="switchPortalTab('payments',this)"><i class="fas fa-credit-card"></i> {{ _('payment_history') }}</button>
       <button class="tab-btn" onclick="switchPortalTab('attendance',this)"><i class="fas fa-calendar-days"></i> {{ _('attendance_log') }}</button>
+      <button class="tab-btn" onclick="switchPortalTab('grades',this)"><i class="fas fa-star"></i> Baholar</button>
       <button class="tab-btn" onclick="switchPortalTab('events',this)"><i class="fas fa-star"></i> Tadbirlar</button>
       <button class="tab-btn" onclick="switchPortalTab('notifs',this)"><i class="fas fa-bell"></i> Xabarlar</button>
       <button class="tab-btn" onclick="switchPortalTab('feedback',this)"><i class="fas fa-paper-plane"></i> {{ _('complaint') }}</button>
@@ -248,6 +264,11 @@
     </div>
     <div id="ptab-attendance" class="card" style="display:none">
       <div class="card-body" style="padding:0" id="p_att_content">
+        <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
+      </div>
+    </div>
+    <div id="ptab-grades" class="card" style="display:none">
+      <div class="card-body" style="padding:0" id="p_grades_content">
         <div class="loading"><div class="spinner"></div>{{ _('loading') }}</div>
       </div>
     </div>
@@ -334,12 +355,13 @@ function switchLoginTab(tab, btn) {
 }
 
 function switchPortalTab(tab, btn) {
-  ['payments','attendance','notifs','events','feedback'].forEach(t => {
+  ['payments','attendance','grades','notifs','events','feedback'].forEach(t => {
     document.getElementById('ptab-'+t).style.display = t===tab ? '' : 'none';
   });
   document.querySelectorAll('#portalSection .tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   if (tab === 'events') loadEventsPortal();
+  if (tab === 'grades') loadGradesPortal();
 }
 
 async function doLookup() {
@@ -492,6 +514,33 @@ async function loadEventsPortal() {
           ${e.description ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">${escapeHtml(e.description)}</div>` : ''}
         </div>
       </div>`).join('');
+  } catch (er) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-triangle-exclamation"></i></div><p>Xatolik yuz berdi</p></div>';
+  }
+}
+
+async function loadGradesPortal() {
+  const el = document.getElementById('p_grades_content');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>Yuklanmoqda...</div>';
+  try {
+    const studentId = portalData?.student?.id;
+    if (!studentId) { el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>O\'quvchi topilmadi</p></div>'; return; }
+    const d = await api(`/api/parent/grades?student_id=${encodeURIComponent(studentId)}&kg_id=${encodeURIComponent(kg_id)}`);
+    if (!d.success || !d.grades.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Baholar hali qo\'yilmagan</p></div>';
+      return;
+    }
+    let html = `<table class="data-table"><thead><tr><th>Sana</th><th>Baho turi</th><th>Baho</th><th>O\'qituvchi</th></tr></thead><tbody>`;
+    for (const g of d.grades) {
+      html += `<tr>
+        <td>${fmtDate(g.date)}</td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:20px;background:${g._type_color}22;color:${g._type_color};font-size:11px;font-weight:700">${escapeHtml(g._type_name)}</span></td>
+        <td style="font-weight:800;font-size:16px">${g.grade}/5</td>
+        <td style="font-size:12px;color:var(--text2)">${g.teacher_name || '—'}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
   } catch (er) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-triangle-exclamation"></i></div><p>Xatolik yuz berdi</p></div>';
   }

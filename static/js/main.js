@@ -27,7 +27,7 @@ function toast(msg, type = 'info') {
   iconSpan.textContent = icons[type] || 'ℹ️';
   const msgSpan = document.createElement('span');
   msgSpan.style.flex = '1';
-  msgSpan.textContent = msg;
+  msgSpan.innerHTML = msg;
   const close = document.createElement('span');
   close.className = 'toast-close';
   close.textContent = '✕';
@@ -255,13 +255,14 @@ function monthName(ym) {
 
 // ─── Avatar initials ──────────────────────────────────────────────────────────
 function avatarHtml(student) {
+  if (!student) return '<div class="student-avatar" style="background:#6366f120;color:#6366f1">?</div>';
   if (student.image) {
-    const initial = escapeHtml(student.first_name.charAt(0) || '?');
-    return `<div class="student-avatar"><img src="${escapeHtml(student.image)}" alt="${escapeHtml(student.first_name)}" data-initial="${initial}"></div>`;
+    const initial = escapeHtml((student.first_name||'?').charAt(0));
+    return `<div class="student-avatar"><img src="${escapeHtml(student.image)}" alt="${escapeHtml(student.first_name||'')}" data-initial="${initial}"></div>`;
   }
   const colors = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#a855f7'];
-  const color = colors[(student.first_name.charCodeAt(0) || 0) % colors.length];
-  return `<div class="student-avatar" style="background:${color}20;color:${color}">${escapeHtml(student.first_name[0] || '?')}</div>`;
+  const color = colors[((student.first_name||'?').charCodeAt(0) || 0) % colors.length];
+  return `<div class="student-avatar" style="background:${color}20;color:${color}">${escapeHtml((student.first_name||'?')[0] || '?')}</div>`;
 }
 
 // ─── Image upload ─────────────────────────────────────────────────────────────

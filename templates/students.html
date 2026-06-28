@@ -101,12 +101,16 @@ let currentView = 'cards';
 let currency = 'UZS';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const settings = await api('/api/settings');
-  currency = settings.currency || 'UZS';
-  window._courses = await api('/api/courses');
-  await loadPendingRegistrations();
-  await loadStudents();
-  await loadGroups();
+  try {
+    const settings = await api('/api/settings');
+    currency = settings.currency || 'UZS';
+    window._courses = await api('/api/courses');
+    await loadPendingRegistrations();
+    await loadStudents();
+    await loadGroups();
+  } catch(e) {
+    console.error('Init xatosi:', e);
+  }
 });
 
 async function loadPendingRegistrations() {

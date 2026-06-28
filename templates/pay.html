@@ -159,7 +159,7 @@ function submitPay(){
           result.innerHTML='<div class="result-msg success"><i class="fas fa-check-circle"></i> Chek yuborildi! Admin tasdiqlashini kuting.</div>';
           document.getElementById('paySection').innerHTML='<div class="success-page"><div class="success-icon"><i class="fas fa-clock"></i></div><div class="loading-text"><i class="fas fa-check-circle" style="margin-right:6px"></i>Chek tekshirilmoqda</div><div class="wait-text">Admin tasdiqlashini kuting</div></div>';
         }else{
-          result.innerHTML='<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> '+d.message+'</div>';
+          result.innerHTML='<div class="result-msg error"><i class="fas fa-exclamation-circle"></i> '+escapeHtml(d.message)+'</div>';
         }
       }).catch(()=>{
         loading.style.display='none';btn.disabled=false;

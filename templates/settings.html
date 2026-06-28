@@ -589,7 +589,7 @@ async function saveReminderSettings() {
   else toast('Xatolik', 'error');
 }
 
-async function sendDebtReminders() {
+async function sendDebtReminders(event) {
   const btn = event.target;
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
   try {
@@ -601,7 +601,7 @@ async function sendDebtReminders() {
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-bell"></i> Barcha qarzdorlarga yuborish';
 }
 
-async function sendTestReminder() {
+async function sendTestReminder(event) {
   const btn = event.target;
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
   try {

@@ -543,7 +543,7 @@ TEACHER_ALLOWED_PATHS = [
     '/dashboard', '/api/dashboard',
     '/attendance', '/api/attendance',
     '/grades', '/api/grades', '/api/grade-types',
-    '/api/students?status=active', '/api/students?status=active',
+    '/api/students',
     '/api/courses', '/api/groups', '/api/search',
     '/api/settings', '/api/notifications', '/api/teachers',
     '/api/parent-portfolios',
@@ -669,38 +669,38 @@ def send_parent_payment_reminders(kg_id=None):
 # ─── Attendance helpers ────────────────────────────────────────────────────────
 
 def get_working_days(year, month):
-    """Return count of working (Mon–Fri) days in a month."""
+    """Return count of working (Mon–Sat) days in a month."""
     cal = calendar.monthcalendar(year, month)
     days = 0
     for week in cal:
         for i, d in enumerate(week):
-            if d != 0 and i < 5:  # Mon=0 … Fri=4
+            if d != 0 and i < 6:  # Mon=0 … Sat=5
                 days += 1
     return days
 
 def get_attended_days(student_id, year, month, kg_id=None):
-    attendance = load_json('attendance.json', kg_id)
+    attendance = load_json('attendance.json', kg_id) or []
     count = 0
     for rec in attendance:
-        if rec['student_id'] != student_id:
+        if rec.get('student_id') != student_id:
             continue
         try:
-            d = datetime.strptime(rec['date'], '%Y-%m-%d')
-            if d.year == year and d.month == month and rec['status'] == 'present':
+            d = datetime.strptime(rec.get('date', ''), '%Y-%m-%d')
+            if d.year == year and d.month == month and rec.get('status') == 'present':
                 count += 1
         except Exception:
             pass
     return count
 
 def get_absent_days(student_id, year, month, kg_id=None):
-    attendance = load_json('attendance.json', kg_id)
+    attendance = load_json('attendance.json', kg_id) or []
     count = 0
     for rec in attendance:
-        if rec['student_id'] != student_id:
+        if rec.get('student_id') != student_id:
             continue
         try:
-            d = datetime.strptime(rec['date'], '%Y-%m-%d')
-            if d.year == year and d.month == month and rec['status'] == 'absent':
+            d = datetime.strptime(rec.get('date', ''), '%Y-%m-%d')
+            if d.year == year and d.month == month and rec.get('status') == 'absent':
                 count += 1
         except Exception:
             pass
@@ -708,9 +708,9 @@ def get_absent_days(student_id, year, month, kg_id=None):
 
 def calc_payable_amount(student, year, month, kg_id=None):
     working = get_working_days(year, month)
-    absent = get_absent_days(student['id'], year, month, kg_id)
+    absent = get_absent_days(student.get('id', ''), year, month, kg_id)
     payable_days = max(working - absent, 0)
-    daily = student['monthly_fee'] / working if working else 0
+    daily = safe_int(student.get('monthly_fee'), 0) / working if working else 0
     payable = round(daily * payable_days)
     discount = safe_int(student.get('discount_percent'), 0)
     if discount > 0:
@@ -721,14 +721,14 @@ def calc_payable_amount(student, year, month, kg_id=None):
     return payable
 
 def get_paid_amount(student_id, year, month, kg_id=None):
-    payments = load_json('payments.json', kg_id)
+    payments = load_json('payments.json', kg_id) or []
     total = 0
     prefix = f"{year}-{month:02d}"
     for p in payments:
         if p.get('student_id') != student_id:
             continue
         if p.get('month', '') == prefix and p.get('status', 'paid') != 'cancelled':
-            total += p['amount']
+            total += safe_int(p.get('amount'), 0)
     return total
 
 # ─── Auth routes ──────────────────────────────────────────────────────────────
@@ -958,7 +958,8 @@ def login():
     plans = pc.load_platform().get('plans', [])
     settings = load_settings()
     hcaptcha_sitekey = settings.get('hcaptcha_sitekey', '')
-    return render_template('login.html', plans=plans, hcaptcha_sitekey=hcaptcha_sitekey)
+    site_name = os.environ.get('SITE_NAME', 'EduSoft')
+    return render_template('login.html', plans=plans, hcaptcha_sitekey=hcaptcha_sitekey, site_name=site_name)
 
 # ─── Forgot Password / Reset ─────────────────────────────────────────────────
 
@@ -1229,6 +1230,15 @@ def dashboard_stats_api():
     kg_id = _current_kg_id() or 'default'
     students = load_json('students.json')
     payments = load_json('payments.json')
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            sids = {s['id'] for s in students if s.get('group', '') in tgroups}
+            students = [s for s in students if s['id'] in sids]
+            payments = [p for p in payments if p['student_id'] in sids]
+        else:
+            students = []
+            payments = []
     today = date.today()
     this_month = today.strftime('%Y-%m')
     # Active students
@@ -1243,6 +1253,13 @@ def dashboard_stats_api():
     debtors = [s for s in students if s.get('status', 'active') == 'active' and s['id'] not in paid_ids]
     # This week attendance
     attendance = load_json('attendance.json')
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            sids = {s['id'] for s in load_json('students.json', kg_id) if s.get('group', '') in tgroups}
+            attendance = [a for a in attendance if a['student_id'] in sids]
+        else:
+            attendance = []
     week_start = (today - timedelta(days=today.weekday())).isoformat()
     week_att = [a for a in attendance if a.get('date', '') >= week_start]
     present = sum(1 for a in week_att if a.get('status') == 'present')
@@ -1251,12 +1268,14 @@ def dashboard_stats_api():
     # Monthly trend (last 6 months)
     trend = []
     for i in range(5, -1, -1):
-        m = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-        today = today.replace(day=1)
+        ref = date.today()
+        if i > 0:
+            ref = ref.replace(day=1) - timedelta(days=1)
+            for _ in range(i - 1):
+                ref = ref.replace(day=1) - timedelta(days=1)
+        m = ref.strftime('%Y-%m')
         m_pays = [p for p in payments if p.get('month') == m and p.get('status') == 'paid']
         trend.append({'month': m, 'total': sum(p.get('amount', 0) for p in m_pays), 'count': len(m_pays)})
-        today = today - timedelta(days=1)
-    today = date.today()
     return jsonify({
         'active_students': active,
         'month_total': month_total,
@@ -2692,6 +2711,18 @@ def dashboard_stats():
     payments = load_json('payments.json')
     attendance = load_json('attendance.json')
 
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(_current_kg_id(), session.get('admin_id', ''))
+        if tgroups:
+            sids = {s['id'] for s in students if s.get('group', '') in tgroups}
+            students = [s for s in students if s['id'] in sids]
+            payments = [p for p in payments if p['student_id'] in sids]
+            attendance = [a for a in attendance if a['student_id'] in sids]
+        else:
+            students = []
+            payments = []
+            attendance = []
+
     now = datetime.now()
     y, m = now.year, now.month
     today_str = now.strftime('%Y-%m-%d')
@@ -2780,6 +2811,12 @@ def get_students():
     course_id = request.args.get('course_id', '')
 
     result = students
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(_current_kg_id(), session.get('admin_id', ''))
+        if tgroups:
+            result = [s for s in result if s.get('group', '') in tgroups]
+        else:
+            result = []
     if group:
         result = [s for s in result if s.get('group', '') == group]
     if status:
@@ -2799,6 +2836,8 @@ def get_students():
 @app.route('/api/students', methods=['POST'])
 @login_required
 def add_student():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     students = load_json('students.json')
 
@@ -2846,6 +2885,8 @@ def add_student():
 @app.route('/api/students/bulk-import', methods=['POST'])
 @login_required
 def bulk_import_students():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'Fayl topilmadi'})
     file = request.files['file']
@@ -2910,16 +2951,21 @@ def bulk_import_students():
 @login_required
 def get_student(student_id):
     students = load_json('students.json')
-    s = next((s for s in students if s['id'] == student_id), None)
+    s = next((s for s in students if s.get('id') == student_id), None)
     if not s:
         return jsonify({'success': False, 'message': 'Ўқувчи топилмади'}), 404
-    courses_map = {c['id']: c['name'] for c in load_json('courses.json')}
+    courses = load_json('courses.json')
+    courses_map = {}
+    if isinstance(courses, list):
+        courses_map = {c.get('id', ''): c.get('name', '') for c in courses}
     s['course_name'] = courses_map.get(s.get('course_id', ''), '')
     return jsonify(s)
 
 @app.route('/api/students/<student_id>', methods=['PUT'])
 @login_required
 def update_student(student_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     students = load_json('students.json')
 
@@ -2931,7 +2977,7 @@ def update_student(student_id):
         return jsonify({'success': False, 'message': 'Familiya 2-50 harf va faqat harflar'})
 
     for i, s in enumerate(students):
-        if s['id'] == student_id:
+        if s.get('id') == student_id:
             students[i].update({
                 'first_name': fname or s['first_name'],
                 'last_name': lname or s['last_name'],
@@ -2957,6 +3003,8 @@ def update_student(student_id):
 @app.route('/api/students/<student_id>', methods=['DELETE'])
 @login_required
 def delete_student(student_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     students = load_json('students.json')
     student = next((s for s in students if s['id'] == student_id), None)
     if not student:
@@ -3011,6 +3059,9 @@ def delete_student(student_id):
 @login_required
 def get_groups():
     students = load_json('students.json')
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(_current_kg_id(), session.get('admin_id', ''))
+        return jsonify(sorted(tgroups))
     groups = list(set(s.get('group', '') for s in students if s.get('group')))
     return jsonify(sorted(groups))
 
@@ -3024,6 +3075,13 @@ def global_search():
 
     students = load_json('students.json')
     portfolios = load_json('parent_portfolios.json')
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(_current_kg_id(), session.get('admin_id', ''))
+        if tgroups:
+            sids = {s['id'] for s in students if s.get('group', '') in tgroups}
+            students = [s for s in students if s['id'] in sids]
+        else:
+            students = []
 
     phone_norm = ''
     if q.replace('+', '').isdigit():
@@ -3145,14 +3203,31 @@ def courses_page():
 def get_courses():
     courses = load_json('courses.json')
     students = load_json('students.json')
+    role = session.get('role', 'admin')
+    admin_id = session.get('admin_id', '')
+    result = []
     for c in courses:
         c['student_count'] = len([s for s in students if s.get('course_id') == c['id'] and s.get('status') == 'active'])
         c['groups'] = c.get('groups', [])
-    return jsonify(courses)
+        if role == 'teacher':
+            teacher_groups = []
+            for g in c['groups']:
+                if isinstance(g, dict):
+                    if g.get('main_teacher_id') == admin_id or g.get('support_teacher_id') == admin_id:
+                        teacher_groups.append(g)
+                else:
+                    teacher_groups.append(g)
+            c['groups'] = teacher_groups
+            if not teacher_groups:
+                continue
+        result.append(c)
+    return jsonify(result)
 
 @app.route('/api/courses', methods=['POST'])
 @login_required
 def create_course():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     name = sanitize_html(data.get('name', '')).strip()
     if not name:
@@ -3179,6 +3254,8 @@ def create_course():
 @app.route('/api/courses/<course_id>', methods=['PUT'])
 @login_required
 def update_course(course_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     courses = load_json('courses.json')
     for c in courses:
@@ -3201,6 +3278,8 @@ def update_course(course_id):
 @app.route('/api/courses/<course_id>', methods=['DELETE'])
 @login_required
 def delete_course(course_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     courses = load_json('courses.json')
     courses = [c for c in courses if c['id'] != course_id]
     save_json('courses.json', courses)
@@ -3210,6 +3289,8 @@ def delete_course(course_id):
 @app.route('/api/courses/<course_id>/groups', methods=['POST'])
 @login_required
 def create_group(course_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     name = sanitize_html(data.get('name', '')).strip()
     if not name:
@@ -3239,6 +3320,8 @@ def create_group(course_id):
 @app.route('/api/courses/<course_id>/groups/<group_id>', methods=['PUT'])
 @login_required
 def update_group(course_id, group_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     courses = load_json('courses.json')
     for c in courses:
@@ -3263,6 +3346,8 @@ def update_group(course_id, group_id):
 @app.route('/api/courses/<course_id>/groups/<group_id>', methods=['DELETE'])
 @login_required
 def delete_group(course_id, group_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     courses = load_json('courses.json')
     for c in courses:
         if c['id'] == course_id:
@@ -3295,6 +3380,8 @@ def get_teachers():
 @app.route('/api/teachers', methods=['POST'])
 @login_required
 def create_teacher():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     name = sanitize_html(data.get('name', '')).strip()
     login = sanitize_html(data.get('login', '')).strip()
@@ -3324,6 +3411,8 @@ def create_teacher():
 @app.route('/api/teachers/<teacher_id>', methods=['PUT'])
 @login_required
 def update_teacher(teacher_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     teachers = load_json('teachers.json')
     for t in teachers:
@@ -3353,11 +3442,23 @@ def update_teacher(teacher_id):
 @app.route('/api/teachers/<teacher_id>', methods=['DELETE'])
 @login_required
 def delete_teacher(teacher_id):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     teachers = load_json('teachers.json')
     teachers = [t for t in teachers if t['id'] != teacher_id]
     save_json('teachers.json', teachers)
     _audit('teacher_deleted', f"O'qituvchi ID: {teacher_id}")
     return jsonify({'success': True})
+
+def _teacher_group_names(kg_id, admin_id):
+    """Return set of group names assigned to this teacher."""
+    names = set()
+    for c in load_json('courses.json', kg_id):
+        for g in c.get('groups', []):
+            if isinstance(g, dict):
+                if g.get('main_teacher_id') == admin_id or g.get('support_teacher_id') == admin_id:
+                    names.add(g.get('name', ''))
+    return names
 
 # ─── Attendance ───────────────────────────────────────────────────────────────
 
@@ -3371,6 +3472,14 @@ def attendance_page():
 @login_required
 def get_attendance():
     att = load_json('attendance.json')
+    kg_id = _current_kg_id()
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            student_ids = {s['id'] for s in load_json('students.json', kg_id) if s.get('group', '') in tgroups}
+            att = [a for a in att if a.get('student_id', '') in student_ids]
+        else:
+            att = []
     date_filter = request.args.get('date', '')
     student_id = request.args.get('student_id', '')
     month = request.args.get('month', '')
@@ -3399,6 +3508,13 @@ def mark_attendance():
     status = data.get('status', 'present')
     if not student_id or not att_date:
         return jsonify({'success': False, 'message': 'student_id va date majburiy'}), 400
+    if session.get('role') == 'teacher':
+        kg_id = _current_kg_id()
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        students = load_json('students.json', kg_id)
+        s = next((s for s in students if s.get('id') == student_id), None)
+        if not s or s.get('group', '') not in tgroups:
+            return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
 
     # Update or insert
     found = False
@@ -3430,6 +3546,15 @@ def bulk_attendance():
     records = data.get('records', [])
     if not att_date or not records:
         return jsonify({'success': False, 'message': 'date va records majburiy'}), 400
+
+    if session.get('role') == 'teacher':
+        kg_id = _current_kg_id()
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        students_map = {s['id']: s for s in load_json('students.json', kg_id)}
+        for rec in records:
+            s = students_map.get(rec.get('student_id', ''))
+            if not s or s.get('group', '') not in tgroups:
+                return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
 
     att = load_json('attendance.json')
     absent_students = []
@@ -3481,6 +3606,11 @@ def month_summary():
     year = safe_int(request.args.get('year'), datetime.now().year)
     month = safe_int(request.args.get('month'), datetime.now().month)
     students = load_json('students.json')
+    kg_id = _current_kg_id()
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            students = [s for s in students if s.get('group', '') in tgroups]
 
     result = []
     working_days = get_working_days(year, month)
@@ -3519,6 +3649,8 @@ def get_grade_types():
 @app.route('/api/grade-types', methods=['POST'])
 @login_required
 def create_grade_type():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     name = sanitize_html(data.get('name', '')).strip()
     if not name:
@@ -3539,6 +3671,8 @@ def create_grade_type():
 @app.route('/api/grade-types/<gtid>', methods=['PUT'])
 @login_required
 def update_grade_type(gtid):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     types = load_json('grade_types.json')
     for gt in types:
@@ -3554,6 +3688,8 @@ def update_grade_type(gtid):
 @app.route('/api/grade-types/<gtid>', methods=['DELETE'])
 @login_required
 def delete_grade_type(gtid):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     types = load_json('grade_types.json')
     types = [gt for gt in types if gt['id'] != gtid]
     save_json('grade_types.json', types)
@@ -3564,6 +3700,14 @@ def delete_grade_type(gtid):
 @login_required
 def get_grades():
     grades = load_json('grades.json')
+    if session.get('role') == 'teacher':
+        kg_id = _current_kg_id()
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            student_ids = {s['id'] for s in load_json('students.json', kg_id) if s.get('group', '') in tgroups}
+            grades = [g for g in grades if g.get('student_id', '') in student_ids]
+        else:
+            grades = []
     student_id = request.args.get('student_id', '')
     course_id = request.args.get('course_id', '')
     group_name = request.args.get('group', '')
@@ -3581,13 +3725,13 @@ def get_grades():
     if date_to:
         grades = [g for g in grades if g.get('date', '') <= date_to]
 
-    students = {s['id']: s for s in load_json('students.json')}
-    grade_types = {gt['id']: gt for gt in load_json('grade_types.json')}
+    students = {s.get('id', ''): s for s in load_json('students.json')}
+    grade_types = {gt.get('id', ''): gt for gt in load_json('grade_types.json')}
     for g in grades:
-        s = students.get(g['student_id'])
-        g['_student_name'] = f"{s['first_name']} {s['last_name']}" if s else '—'
-        gt = grade_types.get(g['grade_type_id'])
-        g['_grade_type_name'] = gt['name'] if gt else '—'
+        s = students.get(g.get('student_id', ''))
+        g['_student_name'] = f"{s.get('first_name', '')} {s.get('last_name', '')}" if s else '—'
+        gt = grade_types.get(g.get('grade_type_id', ''))
+        g['_grade_type_name'] = gt.get('name', '—') if gt else '—'
 
     return jsonify(sorted(grades, key=lambda x: x.get('date', ''), reverse=True))
 
@@ -3598,6 +3742,14 @@ def bulk_grades():
     records = data.get('records', [])
     if not records:
         return jsonify({'success': False, 'message': 'Ma\'lumot yo\'q'}), 400
+    if session.get('role') == 'teacher':
+        kg_id = _current_kg_id()
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        student_map = {s['id']: s for s in load_json('students.json', kg_id)}
+        for rec in records:
+            s = student_map.get(rec.get('student_id', ''))
+            if not s or s.get('group', '') not in tgroups:
+                return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     grades = load_json('grades.json')
     saved = 0
     for rec in records:
@@ -3638,9 +3790,182 @@ def bulk_grades():
 @login_required
 def delete_grade(gid):
     grades = load_json('grades.json')
+    target = next((g for g in grades if g.get('id') == gid), None)
+    if not target:
+        return jsonify({'success': False, 'message': 'Baho topilmadi'}), 404
+    if session.get('role') == 'teacher':
+        kg_id = _current_kg_id()
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        students_map = {s['id']: s for s in load_json('students.json', kg_id)}
+        s = students_map.get(target.get('student_id', ''))
+        if not s or s.get('group', '') not in tgroups:
+            return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     grades = [g for g in grades if g['id'] != gid]
     save_json('grades.json', grades)
     return jsonify({'success': True})
+
+@app.route('/api/grades/analysis')
+@login_required
+def grades_analysis():
+    course_id = request.args.get('course_id', '')
+    group_name = request.args.get('group', '')
+    kg_id = _current_kg_id()
+    students = load_json('students.json', kg_id)
+    all_grades = load_json('grades.json', kg_id)
+    gtypes = {gt['id']: gt for gt in load_json('grade_types.json', kg_id)}
+
+    if session.get('role') == 'teacher':
+        tgroups = _teacher_group_names(kg_id, session.get('admin_id', ''))
+        if tgroups:
+            sids = {s['id'] for s in students if s.get('group', '') in tgroups}
+            students = [s for s in students if s['id'] in sids]
+        else:
+            students = []
+
+    if course_id:
+        students = [s for s in students if s.get('course_id') == course_id]
+    if group_name:
+        students = [s for s in students if s.get('group') == group_name]
+
+    active_sids = {s['id'] for s in students if s.get('status') == 'active'}
+    grades = [g for g in all_grades if g.get('student_id', '') in active_sids]
+
+    student_stats = []
+    for s in students:
+        if s.get('status') != 'active':
+            continue
+        sgrades = [g for g in grades if g['student_id'] == s['id']]
+        per_type = {}
+        total_sum = 0
+        total_cnt = 0
+        for g in sgrades:
+            gtid = g.get('grade_type_id', '')
+            score = safe_int(g.get('score', 0), 0)
+            if score <= 0:
+                continue
+            if gtid not in per_type:
+                gt = gtypes.get(gtid, {})
+                per_type[gtid] = {'name': gt.get('name', '?'), 'max': gt.get('max_score', 5), 'color': gt.get('color', '#6366f1'), 'sum': 0, 'count': 0}
+            per_type[gtid]['sum'] += score
+            per_type[gtid]['count'] += 1
+            total_sum += score
+            total_cnt += 1
+
+        per_type_clean = {}
+        for gtid, pt in per_type.items():
+            per_type_clean[gtid] = {'name': pt['name'], 'max': pt['max'], 'color': pt['color'], 'avg': round(pt['sum']/pt['count'], 1) if pt['count'] else 0, 'count': pt['count']}
+
+        now = datetime.now()
+        trend = []
+        for i in range(5, -1, -1):
+            ref = now.replace(day=1)
+            for _ in range(i):
+                ref = (ref.replace(day=1) - timedelta(days=1)).replace(day=1)
+            month_str = ref.strftime('%Y-%m')
+            m_scores = [safe_int(g.get('score', 0), 0) for g in sgrades if g.get('date', '').startswith(month_str) and safe_int(g.get('score', 0), 0) > 0]
+            trend.append({'month': month_str, 'avg': round(sum(m_scores)/len(m_scores), 1) if m_scores else 0, 'count': len(m_scores)})
+
+        student_stats.append({
+            'id': s['id'],
+            'name': f"{s.get('first_name','')} {s.get('last_name','')}",
+            'overall_avg': round(total_sum/total_cnt, 1) if total_cnt else 0,
+            'grade_count': total_cnt,
+            'per_type': per_type_clean,
+            'trend': trend
+        })
+
+    student_stats.sort(key=lambda x: x['overall_avg'], reverse=True)
+
+    group_per_type = {}
+    group_total_sum = 0
+    group_total_cnt = 0
+    for ss in student_stats:
+        for gtid, pt in ss['per_type'].items():
+            if gtid not in group_per_type:
+                gt = gtypes.get(gtid, {})
+                group_per_type[gtid] = {'name': gt.get('name', '?'), 'max': gt.get('max_score', 5), 'color': gt.get('color', '#6366f1'), 'sum': 0, 'count': 0}
+            group_per_type[gtid]['sum'] += pt['avg'] * pt['count']
+            group_per_type[gtid]['count'] += pt['count']
+        group_total_sum += ss['overall_avg'] * ss['grade_count']
+        group_total_cnt += ss['grade_count']
+
+    group_per_type_clean = {}
+    for gtid, pt in group_per_type.items():
+        group_per_type_clean[gtid] = {'name': pt['name'], 'max': pt['max'], 'color': pt['color'], 'avg': round(pt['sum']/pt['count'], 1) if pt['count'] else 0}
+
+    return jsonify({
+        'students': student_stats,
+        'group_avg': round(group_total_sum/group_total_cnt, 1) if group_total_cnt else 0,
+        'group_per_type': group_per_type_clean,
+        'group_student_count': len(student_stats)
+    })
+
+def _missing_grades_list(kg_id, role, admin_id, days=7):
+    """Return list of students without recent grades."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    students = load_json('students.json', kg_id)
+    grades = load_json('grades.json', kg_id)
+    courses = load_json('courses.json', kg_id)
+    result = []
+    teacher_group_names = set()
+    if role == 'teacher':
+        for c in courses:
+            for g in c.get('groups', []):
+                if isinstance(g, dict):
+                    if g.get('main_teacher_id') == admin_id or g.get('support_teacher_id') == admin_id:
+                        teacher_group_names.add(g.get('name', ''))
+    for s in students:
+        if s.get('status') != 'active':
+            continue
+        group_name = s.get('group', '')
+        if role == 'teacher' and group_name not in teacher_group_names:
+            continue
+        if not group_name:
+            continue
+        has_recent = any(
+            g['student_id'] == s['id'] and g.get('date', '') >= cutoff
+            for g in grades
+        )
+        if not has_recent:
+            result.append({
+                'student_id': s['id'],
+                'student_name': f"{s.get('first_name','')} {s.get('last_name','')}",
+                'group': group_name,
+            })
+    result.sort(key=lambda x: (x['group'], x['student_name']))
+    return result
+
+@app.route('/api/grades/check-missing')
+@login_required
+def check_missing_grades():
+    days = safe_int(request.args.get('days', 7), 7)
+    kg_id = _current_kg_id()
+    role = session.get('role', 'admin')
+    admin_id = session.get('admin_id', '')
+    result = _missing_grades_list(kg_id, role, admin_id, days)
+    return jsonify(result)
+
+@app.route('/api/grades/check-missing/notify', methods=['POST'])
+@login_required
+def notify_missing_grades():
+    kg_id = _current_kg_id()
+    role = session.get('role', 'admin')
+    admin_id = session.get('admin_id', '')
+    result = _missing_grades_list(kg_id, role, admin_id, 7)
+    if not result:
+        return jsonify({'success': True, 'message': 'Barcha o\'quvchilarga baho qo\'yilgan', 'count': 0})
+    groups = {}
+    for item in result:
+        g = item['group']
+        if g not in groups:
+            groups[g] = []
+        groups[g].append(item['student_name'])
+    for group_name, names in groups.items():
+        msg = f"⚠️ {len(names)} o'quvchiga (guruh: {group_name}) 7 kun ichida baho qo'yilmagan: {', '.join(names[:5])}"
+        if len(names) > 5:
+            msg += f" va yana {len(names)-5} ta"
+        add_notification(msg, notif_type='warning', target='all', kg_id=kg_id)
+    return jsonify({'success': True, 'message': f'{len(result)} ta o\'quvchi uchun eslatma yuborildi', 'count': len(result)})
 
 # ─── Payments ─────────────────────────────────────────────────────────────────
 
@@ -3696,6 +4021,8 @@ def get_payments():
 @app.route('/api/payments', methods=['POST'])
 @login_required
 def add_payment():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     payments = load_json('payments.json')
     students = load_json('students.json')
@@ -3749,7 +4076,9 @@ def add_payment():
 
 @app.route('/api/payments/bulk', methods=['POST'])
 @login_required
-def bulk_create_payments():
+def bulk_add_payments():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     student_ids = data.get('student_ids', [])
     amount = data.get('amount', 0)
@@ -3930,64 +4259,83 @@ def parent_portal(kg_id):
 
 @app.route('/api/parent/lookup')
 def parent_lookup():
-    phone = request.args.get('phone', '').strip()
+    try:
+        phone = request.args.get('phone', '').strip()
+        student_id = request.args.get('student_id', '').strip()
+        filter_kg = request.args.get('kg_id', '').strip()
+        kg_id = None
+        student = None
+
+        if student_id:
+            if filter_kg:
+                students = pc.load_json('students.json', filter_kg)
+                student = next((s for s in students if s.get('id') == student_id), None)
+                if student:
+                    kg_id = filter_kg
+            else:
+                for kg in pc.load_kindergartens():
+                    students = pc.load_json('students.json', kg.get('id', ''))
+                    student = next((s for s in students if s.get('id') == student_id), None)
+                    if student:
+                        kg_id = kg.get('id', '')
+                        break
+        elif phone:
+            student, kg_id = find_student_by_phone(phone, filter_kg if filter_kg else None)
+
+        if not student:
+            return jsonify({'success': False, 'message': 'O\'quvchi topilmadi'})
+
+        now = datetime.now()
+        y, m = now.year, now.month
+
+        payments = load_json('payments.json', kg_id) or []
+        student_payments = [p for p in payments if p.get('student_id') == student.get('id')]
+        student_payments = sorted(student_payments, key=lambda x: x.get('date',''), reverse=True)
+
+        att = load_json('attendance.json', kg_id) or []
+        student_att = [a for a in att if a.get('student_id') == student.get('id')]
+
+        payable = calc_payable_amount(student, y, m, kg_id)
+        paid = get_paid_amount(student.get('id', ''), y, m, kg_id)
+
+        notifications = load_json('notifications.json', kg_id) or []
+        student_notifs = [n for n in notifications if n.get('target') in ['all', student.get('id', '')]][-10:]
+
+        discount = safe_int(student.get('discount_percent'), 0)
+        subsidy = safe_int(student.get('subsidy_amount'), 0)
+
+        return jsonify({
+            'success': True,
+            'student': {k: v for k, v in student.items() if k != 'telegram_chat_id'},
+            'payments': student_payments[:20],
+            'attendance': student_att[-30:],
+            'current_month': {
+                'payable': payable,
+                'paid': paid,
+                'debt': max(payable - paid, 0),
+                'discount_percent': discount,
+                'subsidy_amount': subsidy
+            },
+            'notifications': student_notifs
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Server xatosi: ' + str(e)}), 500
+
+@app.route('/api/parent/grades')
+def parent_grades():
     student_id = request.args.get('student_id', '').strip()
     filter_kg = request.args.get('kg_id', '').strip()
-    kg_id = None
-    student = None
-
-    if student_id:
-        if filter_kg:
-            students = pc.load_json('students.json', filter_kg)
-            student = next((s for s in students if s['id'] == student_id), None)
-            if student:
-                kg_id = filter_kg
-        else:
-            for kg in pc.load_kindergartens():
-                students = pc.load_json('students.json', kg['id'])
-                student = next((s for s in students if s['id'] == student_id), None)
-                if student:
-                    kg_id = kg['id']
-                    break
-    elif phone:
-        student, kg_id = find_student_by_phone(phone, filter_kg if filter_kg else None)
-
-    if not student:
-        return jsonify({'success': False, 'message': 'O\'quvchi topilmadi'})
-
-    now = datetime.now()
-    y, m = now.year, now.month
-
-    payments = load_json('payments.json', kg_id)
-    student_payments = [p for p in payments if p['student_id'] == student['id']]
-    student_payments = sorted(student_payments, key=lambda x: x.get('date',''), reverse=True)
-
-    att = load_json('attendance.json', kg_id)
-    student_att = [a for a in att if a['student_id'] == student['id']]
-
-    payable = calc_payable_amount(student, y, m, kg_id)
-    paid = get_paid_amount(student['id'], y, m, kg_id)
-
-    notifications = load_json('notifications.json', kg_id)
-    student_notifs = [n for n in notifications if n.get('target') in ['all', student['id']]][-10:]
-
-    discount = safe_int(student.get('discount_percent'), 0)
-    subsidy = safe_int(student.get('subsidy_amount'), 0)
-
-    return jsonify({
-        'success': True,
-        'student': {k: v for k, v in student.items() if k != 'telegram_chat_id'},
-        'payments': student_payments[:20],
-        'attendance': student_att[-30:],
-        'current_month': {
-            'payable': payable,
-            'paid': paid,
-            'debt': max(payable - paid, 0),
-            'discount_percent': discount,
-            'subsidy_amount': subsidy
-        },
-        'notifications': student_notifs
-    })
+    if not student_id or not filter_kg:
+        return jsonify({'success': False, 'message': 'student_id va kg_id kerak'})
+    grades = load_json('grades.json', filter_kg)
+    student_grades = [g for g in grades if g['student_id'] == student_id]
+    grade_types = {gt['id']: gt for gt in load_json('grade_types.json', filter_kg)}
+    for g in student_grades:
+        gt = grade_types.get(g['grade_type_id'])
+        g['_type_name'] = gt['name'] if gt else '—'
+        g['_type_color'] = gt.get('color', '#6366f1') if gt else '#6366f1'
+    student_grades.sort(key=lambda x: x.get('date', ''), reverse=True)
+    return jsonify({'success': True, 'grades': student_grades[:50]})
 
 # ─── Notifications ────────────────────────────────────────────────────────────
 
@@ -5204,11 +5552,16 @@ def debug_checkout_test():
 @app.route('/api/settings', methods=['GET'])
 @login_required
 def get_settings():
-    return jsonify(load_settings())
+    s = load_settings()
+    if session.get('role') == 'teacher':
+        s = {k: v for k, v in s.items() if k not in ('bot_token', 'payment_card', 'payment_merchant_id', 'payment_service_id', 'admin_telegram_chat_id')}
+    return jsonify(s)
 
 @app.route('/api/settings', methods=['POST'])
 @login_required
 def update_settings():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     settings = load_settings()
     for k in ['name', 'currency', 'bot_token', 'required_channels', 'logo',
@@ -5384,6 +5737,8 @@ def list_parent_portfolios():
 @app.route('/api/parent-portfolios', methods=['POST'])
 @login_required
 def create_parent_portfolio():
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     phone = normalize_phone(data.get('phone', ''))
     if not phone or len(phone) < 9:
@@ -5413,6 +5768,8 @@ def create_parent_portfolio():
 @app.route('/api/parent-portfolios/<pid>', methods=['PUT'])
 @login_required
 def update_parent_portfolio(pid):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     data = request.get_json() or {}
     portfolios = load_json('parent_portfolios.json')
     for i, p in enumerate(portfolios):
@@ -5434,6 +5791,8 @@ def update_parent_portfolio(pid):
 @app.route('/api/parent-portfolios/<pid>', methods=['DELETE'])
 @login_required
 def delete_parent_portfolio(pid):
+    if session.get('role') == 'teacher':
+        return jsonify({'success': False, 'message': 'Ruxsat yo\'q'}), 403
     portfolios = load_json('parent_portfolios.json')
     portfolios = [p for p in portfolios if p['id'] != pid]
     save_json('parent_portfolios.json', portfolios)

@@ -172,6 +172,9 @@ def handle_update(update, app_context, bot_kg_id=None):
         return
 
     if step == 'pay_await_amount':
+        if not student:
+            send_message(token, chat_id, "❌ Farzandingiz topilmadi. /start bosing va qayta ulaning.")
+            return
         handle_pay_amount(chat_id, text, student, found_kg_id, app_context, token, settings)
         return
 
@@ -309,7 +312,7 @@ def find_student(phone, app_context, kg_id=None):
     if not norm:
         return None, None
     students_data = find_student_by_phone_all(norm, app_context, kg_id)
-    if students_data:
+    if isinstance(students_data, (list, tuple)) and len(students_data) >= 2:
         return students_data[0], students_data[1]
     return None, None
 
@@ -665,7 +668,6 @@ def show_payment_history(chat_id, student, kg_id, app_context, token):
     try:
         from app import load_json
         payments = load_json('payments.json', kg_id)
-        print(f"[DEBUG] show_payment_history: kg_id={kg_id}, total_payments={len(payments)}, student_id={student['id']}")
         student_pay = [p for p in payments if p['student_id'] == student['id'] and p.get('status', 'paid') != 'cancelled']
         student_pay = sorted(student_pay, key=lambda x: x.get('date', ''), reverse=True)[:10]
         if not student_pay:
@@ -759,11 +761,6 @@ def handle_callback_query(cb, app_context, bot_kg_id=None):
     token = get_token(settings)
     if not token:
         print(f"[WARN] callback token topilmadi: cb_kg_id={cb_kg_id}")
-        try:
-            tg_call(token or cb_kg_id, 'answerCallbackQuery', callback_query_id=cb_id,
-                text="Bot sozlanmagan. Admin bilan bog'laning.")
-        except Exception:
-            pass
         return
 
     if data.startswith('approve_pay_') or data.startswith('reject_pay_'):
@@ -1041,10 +1038,11 @@ def _handle_super_message(token, chat_id, text, first_name, authorized_chat_id, 
     is_super = (chat_id == authorized_chat_id)
     lower = text.strip().lower()
 
+    BASE_URL = 'https://sofgardercrm.vercel.app'
+
     # ── Super admin commands ──
     if is_super:
         if lower in ('/start', '/help', 'start', 'boshlash', 'salom'):
-            BASE_URL = 'https://sofgardercrm.vercel.app'
             # Generate public stats token
             pub_token = os.environ.get('PUBLIC_STATS_TOKEN', '').strip()
             if not pub_token:
@@ -1070,7 +1068,6 @@ def _handle_super_message(token, chat_id, text, first_name, authorized_chat_id, 
                 [{'text': '📊 1 oy', 'callback_data': 'super_stats_1m'}],
                 [{'text': '📊 1 yil', 'callback_data': 'super_stats_1y'}],
             ]}
-            BASE_URL = 'https://sofgardercrm.vercel.app'
             return send_message(token, chat_id,
                 f"📊 <b>Statistika</b>\n\n"
                 f"Davrni tanlang yoki to'liq statistika uchun havola:\n"
@@ -1153,7 +1150,7 @@ def _handle_super_message(token, chat_id, text, first_name, authorized_chat_id, 
 
     # ── Login flow (phone → password → authenticate) ──
     if auth and auth.get('step') == 'await_complaint':
-        AUTH_SESSIONS.pop(chat_id, None)
+        auth['step'] = None
         pc = (app_context or {}).get('pc')
         plat = pc.load_platform() if pc else {}
         st = plat.get('super_bot_token', '').strip()

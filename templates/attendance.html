@@ -78,22 +78,29 @@ let allStudents = [];
 let dayRecords = {}; // student_id -> status
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const settings = await api('/api/settings');
-  currency = settings.currency || 'UZS';
+  try {
+    const settings = await api('/api/settings');
+    currency = settings.currency || 'UZS';
 
-  // Set today
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('dateInput').value = today;
-  document.getElementById('calMonth').value = today.slice(0,7);
-  document.getElementById('summaryMonth').value = today.slice(0,7);
+    // Set today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+    document.getElementById('calMonth').value = today.slice(0,7);
+    document.getElementById('summaryMonth').value = today.slice(0,7);
 
-  allStudents = await api('/api/students?status=active');
-  loadCourses();
-  loadCalStudents();
-  loadDayAttendance();
-  loadSummary();
+    allStudents = await api('/api/students?status=active');
+    await loadCourses();
+    loadCalStudents();
+    await loadDayAttendance();
+    await loadSummary();
 
-  document.getElementById('attSubtitle').textContent = `{{ _('active') }}: ${allStudents.length}`;
+    document.getElementById('attSubtitle').textContent = `{{ _('active') }}: ${allStudents.length}`;
+  } catch (er) {
+    console.error('Attendance init xato:', er);
+    document.querySelectorAll('.loading').forEach(el => {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div><p>Yuklashda xatolik: ${er.message}</p></div>`;
+    });
+  }
 });
 
 async function loadCourses() {
@@ -144,7 +151,7 @@ async function loadDayAttendance() {
   const dow = d.getDay(); // 0=Sun, 6=Sat
   document.getElementById('dayTitle').textContent = `${dateVal} — {{ _('mark') }}`;
 
-  if (dow === 0 || dow === 6) {
+  if (dow === 0) {
     document.getElementById('dayAttContent').innerHTML = `
       <div class="empty-state"><div class="empty-icon">🏖️</div><h3>{{ _('inactive') }}</h3><p>{{ _('date') }}</p></div>`;
     return;
@@ -152,6 +159,10 @@ async function loadDayAttendance() {
 
   // Load existing attendance for this date
   const existing = await api(`/api/attendance?date=${dateVal}`);
+  if (!Array.isArray(existing)) {
+    document.getElementById('dayAttContent').innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div><p>Ma'lumot yuklanmadi</p></div>`;
+    return;
+  }
   dayRecords = {};
   existing.forEach(a => { dayRecords[a.student_id] = { status: a.status, note: a.note || '' }; });
 

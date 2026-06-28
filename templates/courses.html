@@ -387,7 +387,13 @@ async function deleteOldGroup(name) {
   }
 }
 
-loadCourses();
-loadTeachersForGroups();
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    loadCourses();
+    loadTeachersForGroups();
+  } catch(e) {
+    console.error('Init xatosi:', e);
+  }
+});
 </script>
 {% endblock %}

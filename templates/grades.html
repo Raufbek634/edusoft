@@ -1,53 +1,107 @@
 {% extends "base.html" %}
-{% block title %}Baholar — EduSoft{% endblock %}
-{% block page_title %}<i class="fas fa-star"></i> Baholar{% endblock %}
+{% block title %}Baholar — {{ settings.name }}{% endblock %}
+{% block page_title %}<i class="fas fa-table"></i> Baholar{% endblock %}
 
 {% block content %}
 <style>
-.grade-types-list{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.grade-type-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;background:var(--surface2);border:1px solid var(--border)}
-.grade-type-tag .remove-btn{width:18px;height:18px;border:none;background:rgba(0,0,0,.15);border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;color:inherit;opacity:.6}
-.grade-type-tag .remove-btn:hover{opacity:1}
-.grade-input{width:52px;padding:6px;text-align:center;font-weight:700;border-radius:6px;border:1px solid var(--border);font-size:14px}
-.grade-input:focus{border-color:var(--primary);outline:none}
-.grade-input.perfect{background:rgba(34,197,94,.12);border-color:var(--success);color:var(--success)}
-.grade-input.good{background:rgba(99,102,241,.12);border-color:var(--primary);color:var(--primary)}
-.grade-input.ok{background:rgba(234,179,8,.12);border-color:var(--warning);color:var(--warning)}
-.grade-input.bad{background:rgba(239,68,68,.12);border-color:var(--danger);color:var(--danger)}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+  .excel-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:16px}
+  .excel-toolbar .form-control{min-width:140px}
+  .excel-wrapper{overflow:auto;border-radius:10px;border:1px solid var(--border);background:var(--surface);position:relative}
+  .excel-table{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap}
+  .excel-table th{position:sticky;top:0;z-index:3;background:#f8fafc;padding:10px 12px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.3px;border-bottom:2px solid var(--border);color:var(--text2);text-align:center}
+  .excel-table th:first-child{position:sticky;left:0;z-index:4;background:#f8fafc;text-align:left;min-width:180px;box-shadow:2px 0 6px rgba(0,0,0,.04)}
+  .excel-table td{padding:4px 6px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:center;vertical-align:middle;transition:background .1s}
+  .excel-table tr:last-child td{border-bottom:none}
+  .excel-table tr:hover td{background:rgba(99,102,241,.035)}
+  .excel-table td:first-child{position:sticky;left:0;z-index:2;background:var(--surface);text-align:left;padding:8px 12px;font-weight:600;font-size:13px;box-shadow:2px 0 6px rgba(0,0,0,.04);border-right:2px solid var(--border)}
+  .excel-table tr:nth-child(even) td:first-child{background:#fafbfc}
+  .excel-table tr:nth-child(even) td{background:#fafbfc}
+  .excel-table tr:hover td:first-child{background:rgba(99,102,241,.06)}
+  .grade-cell{display:inline-flex;align-items:center;justify-content:center;width:52px;height:42px;border-radius:6px;border:2px solid transparent;font-weight:800;font-size:15px;cursor:text;transition:all .12s;background:var(--surface);position:relative}
+  .grade-cell:hover{border-color:var(--border);background:rgba(99,102,241,.04)}
+  .grade-cell:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);background:#fff;transform:scale(1.05)}
+  .grade-cell input{width:100%;height:100%;border:none;background:transparent;text-align:center;font-weight:800;font-size:15px;outline:none;padding:0;color:var(--text);border-radius:4px}
+  .grade-cell input::selection{background:var(--primary);color:#fff}
+  .grade-cell.perfect{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.07)}
+  .grade-cell.perfect input{color:#16a34a}
+  .grade-cell.good{border-color:rgba(99,102,241,.3);background:rgba(99,102,241,.07)}
+  .grade-cell.good input{color:#4f46e5}
+  .grade-cell.ok{border-color:rgba(234,179,8,.3);background:rgba(234,179,8,.07)}
+  .grade-cell.ok input{color:#ca8a04}
+  .grade-cell.bad{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.07)}
+  .grade-cell.bad input{color:#dc2626}
+  .grade-cell.empty{border-color:transparent;background:transparent}
+  .grade-cell.empty input{color:var(--text3)}
+  .grade-cell.dirty{border-color:var(--warning);background:rgba(234,179,8,.08)}
+  .grade-cell.dirty input{color:var(--warning)}
+  .grade-cell.dirty::after{content:'';position:absolute;top:-2px;right:-2px;width:8px;height:8px;background:var(--warning);border-radius:50%;border:2px solid var(--surface)}
+  .avg-cell{font-weight:800;font-size:15px;color:var(--primary);padding:8px}
+  .status-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);font-size:12px;color:var(--text3);border-radius:0 0 10px 10px}
+  .status-bar .badge{font-size:11px;padding:3px 10px}
+  .unsaved-count{background:var(--warning);color:#fff;padding:2px 10px;border-radius:20px;font-weight:700;font-size:12px}
+  [data-theme="dark"] .excel-table th{background:#1e293b}
+  [data-theme="dark"] .excel-table th:first-child{background:#1e293b}
+  [data-theme="dark"] .excel-table td:first-child{background:#1a1f2e}
+  [data-theme="dark"] .excel-table tr:nth-child(even) td{background:#151926}
+  [data-theme="dark"] .excel-table tr:nth-child(even) td:first-child{background:#151926}
+  [data-theme="dark"] .grade-cell:focus-within{background:#1e293b}
+  [data-theme="dark"] .grade-cell.perfect{background:rgba(34,197,94,.1)}
+  [data-theme="dark"] .grade-cell.good{background:rgba(99,102,241,.1)}
+  [data-theme="dark"] .grade-cell.ok{background:rgba(234,179,8,.1)}
+  [data-theme="dark"] .grade-cell.bad{background:rgba(239,68,68,.1)}
+  .analysis-table td, .analysis-table th{padding:10px 14px;text-align:center;border-bottom:1px solid var(--border)}
+  .analysis-table th{background:#f8fafc;font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:var(--text2);position:sticky;top:0;z-index:2}
+  .analysis-table .name-cell{text-align:left;font-weight:600;cursor:pointer}
+  .analysis-table .name-cell:hover{color:var(--primary)}
+  .analysis-table tr:hover td{background:rgba(99,102,241,.035)}
+  .analysis-table tr.active-row{background:rgba(99,102,241,.08);box-shadow:inset 3px 0 0 var(--primary)}
+  .analysis-avg{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-weight:800;font-size:15px}
+  .analysis-avg.excellent{background:rgba(34,197,94,.12);color:#16a34a}
+  .analysis-avg.good{background:rgba(99,102,241,.12);color:#4f46e5}
+  .analysis-avg.ok{background:rgba(234,179,8,.12);color:#ca8a04}
+  .analysis-avg.poor{background:rgba(239,68,68,.12);color:#dc2626}
+  .analysis-avg.none{background:var(--bg2);color:var(--text3)}
+  .trend-bar{display:flex;align-items:flex-end;gap:3px;height:32px;padding:2px 0}
+  .trend-bar-item{width:18px;border-radius:3px 3px 0 0;min-height:4px;transition:height .2s;position:relative}
+  .trend-bar-item:hover{opacity:.8;transform:scaleY(1.05)}
+  .trend-bar-item .tooltip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:3px 8px;border-radius:6px;font-size:10px;white-space:nowrap;z-index:10;pointer-events:none;margin-bottom:4px}
+  .trend-bar-item:hover .tooltip{display:block}
+  .detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px}
+  .detail-panel h4{margin:0 0 16px;font-size:15px;color:var(--text2);display:flex;align-items:center;gap:8px}
+  .type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600}
+  .bar-track{height:8px;border-radius:4px;background:var(--bg2);overflow:hidden;flex:1;margin:0 10px}
+  .bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
 </style>
 
-<div class="section-header">
-  <div>
-    <div class="section-title">Baholash tizimi</div>
-    <div class="section-sub">5 ballik tizim. Admin baho turlarini qo'shishi/o'chirishi mumkin</div>
-  </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <select class="form-control" id="courseFilter" style="max-width:160px" onchange="onCourseChange()">
-      <option value="">Kursni tanlang</option>
-    </select>
-    <select class="form-control" id="groupFilter" style="max-width:160px" onchange="loadGrades()">
-      <option value="">Guruhni tanlang</option>
-    </select>
-    <input type="date" class="form-control" id="dateFilter" style="max-width:150px" onchange="loadGrades()">
-    <button class="btn btn-primary" onclick="saveGrades()"><i class="fas fa-check"></i> Saqlash</button>
-  </div>
+<div class="excel-toolbar">
+  <select class="form-control" id="courseFilter" onchange="onCourseChange()">
+    <option value="">Kursni tanlang</option>
+  </select>
+  <select class="form-control" id="groupFilter" onchange="loadGrades()">
+    <option value="">Guruhni tanlang</option>
+  </select>
+  <input type="date" class="form-control" id="dateFilter" onchange="loadGrades()">
+  <div style="flex:1"></div>
+  <span id="unsavedBadge" style="display:none" class="unsaved-count">0</span>
+  <button class="btn btn-primary" onclick="saveGrades()"><i class="fas fa-check"></i> Saqlash (Ctrl+S)</button>
+  <button class="btn btn-ghost btn-sm" onclick="loadGrades()"><i class="fas fa-rotate"></i></button>
 </div>
 
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('entry',this)"><i class="fas fa-pen"></i> Baho qo'yish</button>
+<div class="tabs" style="margin-bottom:14px">
+  <button class="tab-btn active" onclick="switchTab('entry',this)"><i class="fas fa-table"></i> Excel jadval</button>
   <button class="tab-btn" onclick="switchTab('types',this)"><i class="fas fa-tags"></i> Baho turlari</button>
   <button class="tab-btn" onclick="switchTab('history',this)"><i class="fas fa-clock-rotate-left"></i> Tarix</button>
+  <button class="tab-btn" onclick="switchTab('analysis',this)"><i class="fas fa-chart-simple"></i> Tahlil</button>
 </div>
 
 <div id="tab-entry">
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title" id="entryTitle">O'quvchilar bo'yicha baholar</span>
-      <span style="font-size:12px;color:var(--text3)">1 — eng past, 5 — eng yuqori</span>
+  <div class="excel-wrapper" id="excelWrapper">
+    <div id="entryContent" style="min-height:200px">
+      <div class="empty-state" style="padding:60px 20px"><div class="empty-icon"><i class="fas fa-table"></i></div><p>Kurs va guruhni tanlab, Excel-jadvalda baho qo'ying</p></div>
     </div>
-    <div id="entryContent">
-      <div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Avval kurs va guruhni tanlang</p></div>
+    <div class="status-bar" id="statusBar">
+      <span><i class="fas fa-info-circle"></i> <span id="studentCount">0</span> o'quvchi · <span id="gradeTypeCount">0</span> tur</span>
+      <span><i class="fas fa-keyboard"></i> Tab → keyingi katak · Enter → saqlash</span>
     </div>
   </div>
 </div>
@@ -55,7 +109,7 @@
 <div id="tab-types" style="display:none">
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Baho turlari</span>
+      <span class="card-title"><i class="fas fa-tags"></i> Baho turlari</span>
       <button class="btn btn-primary btn-sm" onclick="addGradeType()"><i class="fas fa-plus"></i> Yangi tur</button>
     </div>
     <div class="card-body" id="gradeTypesContent">
@@ -67,10 +121,21 @@
 <div id="tab-history" style="display:none">
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Baho tarixi</span>
+      <span class="card-title"><i class="fas fa-clock-rotate-left"></i> Baho tarixi</span>
     </div>
     <div id="historyContent">
-      <div class="empty-state"><div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div><p>O'quvchining baho tarixini ko'rish uchun ustiga bosing</p></div>
+      <div class="empty-state"><div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div><p>O'quvchi nomiga bosib tarixni ko'ring</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-analysis" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-simple"></i> Tahlil</span>
+    </div>
+    <div id="analysisContent">
+      <div class="empty-state"><div class="empty-icon"><i class="fas fa-chart-simple"></i></div><p>Kurs va guruhni tanlab, o'quvchilar tahlilini ko'ring</p></div>
     </div>
   </div>
 </div>
@@ -78,12 +143,7 @@
 {% endblock %}
 {% block scripts %}
 <script>
-let allStudents = [];
-let allCourses = [];
-let gradeTypes = [];
-let gradesData = {};
-let dirty = {};
-let teachersCache = [];
+let allStudents = [], allCourses = [], gradeTypes = [], gradesData = {}, dirty = {}, teachersCache = [];
 
 function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 
@@ -95,6 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._teachers = teachersCache;
   loadCourseFilter();
   loadGradeTypes();
+  document.addEventListener('keydown', e => { if ((e.ctrlKey||e.metaKey) && e.key==='s') { e.preventDefault(); saveGrades(); } });
 });
 
 function loadCourseFilter() {
@@ -114,155 +175,192 @@ function onCourseChange() {
   if (crs && crs.groups) {
     crs.groups.forEach(g => {
       const o = document.createElement('option');
-      const gname = typeof g === 'string' ? g : g.name;
-      o.value = gname; o.textContent = gname; sel.appendChild(o);
+      o.value = typeof g === 'string' ? g : g.name;
+      o.textContent = typeof g === 'string' ? g : g.name;
+      sel.appendChild(o);
     });
   }
   loadGrades();
 }
 
 function switchTab(name, btn) {
-  ['entry','types','history'].forEach(t => {
+  ['entry','types','history','analysis'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (name === 'types') loadGradeTypes();
   if (name === 'history') loadHistory();
+  if (name === 'analysis') loadAnalysis();
 }
 
-function avatarHtml(s) {
-  const initial = (s.first_name||'?')[0].toUpperCase();
-  return `<div class="avatar avatar-sm" style="background:var(--primary);color:#fff;width:28px;height:28px;font-size:11px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${initial}</div>`;
+function gradeCellClass(score, maxScore) {
+  const v = parseInt(score) || 0;
+  if (v === 0) return 'empty';
+  if (v === maxScore || v >= 4) return 'perfect';
+  if (v >= 3) return 'good';
+  if (v >= 2) return 'ok';
+  return 'bad';
 }
 
-/* ─── Grade Entry ─── */
+function updateUnsavedBadge() {
+  const count = Object.keys(dirty).length;
+  const el = document.getElementById('unsavedBadge');
+  if (count > 0) { el.style.display = ''; el.textContent = count; }
+  else { el.style.display = 'none'; el.textContent = '0'; }
+}
+
+/* ─── Excel-grade entry ─── */
 
 async function loadGrades() {
   const courseId = document.getElementById('courseFilter').value;
   const groupName = document.getElementById('groupFilter').value;
   const dateVal = document.getElementById('dateFilter').value || new Date().toISOString().split('T')[0];
   document.getElementById('dateFilter').value = dateVal;
+  dirty = {}; updateUnsavedBadge();
 
   if (!courseId || !groupName) {
-    document.getElementById('entryContent').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-star"></i></div><p>Avval kurs va guruhni tanlang</p></div>';
-    document.getElementById('entryTitle').textContent = 'O\'quvchilar bo\'yicha baholar';
+    document.getElementById('entryContent').innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="empty-icon"><i class="fas fa-table"></i></div><p>Kurs va guruhni tanlang</p></div>';
+    document.getElementById('studentCount').textContent = '0'; document.getElementById('gradeTypeCount').textContent = '0';
     return;
   }
 
-  const crs = allCourses.find(c => c.id === courseId);
-  document.getElementById('entryTitle').textContent = `${esc(crs?.name||'')} — ${esc(groupName)} (${dateVal})`;
-
-  let students = allStudents.filter(s => s.course_id === courseId && s.group === groupName && s.status === 'active');
+  const students = allStudents.filter(s => s.course_id === courseId && s.group === groupName && s.status === 'active');
+  document.getElementById('studentCount').textContent = students.length;
+  document.getElementById('gradeTypeCount').textContent = gradeTypes.length;
 
   if (!students.length) {
-    document.getElementById('entryContent').innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>Bu guruhda faol o\'quvchilar yo\'q</p></div>';
+    document.getElementById('entryContent').innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>Bu guruhda faol o\'quvchilar yo\'q</p></div>';
     return;
   }
 
-  // Load existing grades for this date + group
   const existing = await api(`/api/grades?course_id=${courseId}&group=${encodeURIComponent(groupName)}&date_from=${dateVal}&date_to=${dateVal}`);
+  if (!Array.isArray(existing)) {
+    document.getElementById('entryContent').innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="empty-icon"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i></div><p>Ma\'lumot yuklanmadi</p></div>';
+    return;
+  }
   gradesData = {};
-  existing.forEach(g => {
-    const key = g.student_id + '_' + g.grade_type_id;
-    gradesData[key] = g;
-  });
-  dirty = {};
+  existing.forEach(g => { gradesData[g.student_id + '_' + g.grade_type_id] = g; });
 
-  const crsGroups = crs.groups||[];
-  const teacherName = id => {
-    const t = teachersCache.find(tc => tc.id === id);
-    return t ? `${t.first_name} ${t.last_name}` : '';
-  };
-  // Find group object for teacher display
-  const grpObj = crsGroups.find(g => (typeof g === 'string' ? g : g.name) === groupName);
-  const grpInfo = grpObj && typeof grpObj !== 'string' ? grpObj : null;
+  let sumRow = {};
+  let countRow = {};
+  gradeTypes.forEach(gt => { sumRow[gt.id] = 0; countRow[gt.id] = 0; });
 
-  let html = `<div style="overflow-x:auto"><table class="data-table">
-    <thead><tr>
-      <th>O'quvchi</th>`;
+  let html = `<table class="excel-table"><thead><tr>
+    <th style="min-width:200px"><i class="fas fa-user-graduate"></i> O'quvchi</th>`;
   gradeTypes.forEach(gt => {
-    html += `<th style="text-align:center;color:${gt.color||'var(--text)'}">${esc(gt.name)}<br><small style="font-weight:400;color:var(--text3)">1-${gt.max_score||5}</small></th>`;
+    html += `<th><span style="color:${gt.color||'var(--text)'}">${esc(gt.name)}</span><br><small style="font-weight:400;color:var(--text3);font-size:10px">1–${gt.max_score||5}</small></th>`;
   });
-  html += `<th style="text-align:center;width:60px">O'rt.</th>
-    </tr></thead><tbody>`;
+  html += `<th style="width:60px;color:var(--primary)">O'rt.</th></tr></thead><tbody>`;
 
-  students.forEach(s => {
+  students.forEach((s, idx) => {
     html += `<tr>
-      <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s)}<b>${esc(s.first_name)} ${esc(s.last_name)}</b></div></td>`;
-    let sum = 0, count = 0;
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${(s.first_name||'?')[0].toUpperCase()}</span>
+        <span><b>${esc(s.first_name)} ${esc(s.last_name)}</b></span>
+      </div></td>`;
+    let sum = 0, cnt = 0;
     gradeTypes.forEach(gt => {
       const key = s.id + '_' + gt.id;
       const g = gradesData[key];
-      const val = g ? g.score : 0;
-      if (val > 0) { sum += val; count++; }
-      let cls = 'grade-input';
-      if (val >= 4) cls += ' perfect';
-      else if (val >= 3) cls += ' good';
-      else if (val >= 2) cls += ' ok';
-      else if (val === 1) cls += ' bad';
-      html += `<td style="text-align:center">
-        <input class="${cls}" type="number" min="0" max="${gt.max_score||5}" value="${val}" id="g-${s.id}-${gt.id}" onchange="onGradeChange('${s.id}','${gt.id}',this.value)">
+      const val = g ? parseInt(g.score) : 0;
+      if (val > 0) { sum += val; cnt++; sumRow[gt.id] += val; countRow[gt.id]++; }
+      const baseCls = gradeCellClass(val, gt.max_score);
+      const dirtyCls = dirty[key] !== undefined ? ' dirty' : '';
+      html += `<td>
+        <div class="grade-cell ${baseCls}${dirtyCls}" data-sid="${s.id}" data-gtid="${gt.id}" data-max="${gt.max_score}">
+          <input type="number" min="0" max="${gt.max_score}" value="${val||''}" placeholder="—"
+            onfocus="onCellFocus(this)" onblur="onCellBlur(this,'${s.id}','${gt.id}',${gt.max_score})"
+            onkeydown="onCellKeydown(event,'${s.id}','${gt.id}',${gt.max_score})">
+        </div>
       </td>`;
     });
-    const avg = count > 0 ? (sum/count).toFixed(1) : '—';
-    html += `<td style="text-align:center;font-weight:700">${avg}</td>`;
-    html += `</tr>`;
+    const avg = cnt > 0 ? (sum/cnt).toFixed(1) : '—';
+    html += `<td class="avg-cell">${avg}</td></tr>`;
   });
 
-  // Group info row
-  if (grpInfo) {
-    html += `<tr style="background:var(--surface2)"><td colspan="${2+gradeTypes.length}" style="font-size:12px;color:var(--text3)">
-      <i class="fas fa-chalkboard-user"></i> Asosiy: ${esc(teacherName(grpInfo.main_teacher_id)) || '—'}
-      &nbsp;&nbsp; <i class="fas fa-user-plus"></i> Support: ${esc(teacherName(grpInfo.support_teacher_id)) || '—'}
-      ${grpInfo.day ? `&nbsp;&nbsp; <i class="fas fa-calendar-week"></i> ${esc(grpInfo.day)}` : ''}
-      ${grpInfo.time ? `&nbsp;&nbsp; <i class="fas fa-clock"></i> ${esc(grpInfo.time)}` : ''}
-      ${grpInfo.room ? `&nbsp;&nbsp; <i class="fas fa-door-open"></i> ${esc(grpInfo.room)}` : ''}
-    </td></tr>`;
-  }
+  // Average row
+  html += `<tr style="background:rgba(99,102,241,.04);font-weight:700">
+    <td style="position:sticky;left:0;background:rgba(99,102,241,.04);z-index:2"><i class="fas fa-calculator"></i> O'rtacha</td>`;
+  gradeTypes.forEach(gt => {
+    const avg = countRow[gt.id] > 0 ? (sumRow[gt.id]/countRow[gt.id]).toFixed(1) : '—';
+    html += `<td style="font-weight:800;color:var(--primary);font-size:15px">${avg}</td>`;
+  });
+  html += `<td style="font-weight:800;color:var(--primary)">—</td></tr>`;
 
-  html += `</tbody></table></div>`;
-  html += `<div style="margin-top:12px;font-size:12px;color:var(--text3)">
-    <i class="fas fa-circle" style="color:var(--success)"></i> 4-5 a'lo
-    <i class="fas fa-circle" style="color:var(--primary)"></i> 3 yaxshi
-    <i class="fas fa-circle" style="color:var(--warning)"></i> 2 qoniqarli
-    <i class="fas fa-circle" style="color:var(--danger)"></i> 1 qoniqarsiz
-  </div>`;
-
+  html += `</tbody></table>`;
   document.getElementById('entryContent').innerHTML = html;
 }
 
-function onGradeChange(studentId, gradeTypeId, val) {
-  const key = studentId + '_' + gradeTypeId;
-  dirty[key] = parseInt(val) || 0;
+function onCellFocus(input) {
+  input.select();
+  const cell = input.closest('.grade-cell');
+  if (cell) cell.style.transform = 'scale(1.05)';
+}
+
+function onCellBlur(input, sid, gtid, maxScore) {
+  const cell = input.closest('.grade-cell');
+  if (cell) cell.style.transform = '';
+  const val = input.value.trim();
+  const score = val === '' ? 0 : Math.min(Math.max(parseInt(val) || 0, 0), maxScore);
+  input.value = score > 0 ? score : '';
+  const key = sid + '_' + gtid;
+  const existing = gradesData[key];
+  const oldVal = existing ? parseInt(existing.score) : 0;
+  if (score !== oldVal) {
+    dirty[key] = score;
+    updateUnsavedBadge();
+  } else {
+    delete dirty[key];
+    updateUnsavedBadge();
+  }
+  updateCellStyle(cell, score, maxScore);
+}
+
+function updateCellStyle(cell, score, maxScore) {
+  if (!cell) return;
+  cell.className = 'grade-cell ' + gradeCellClass(score, maxScore);
+  const key = cell.dataset.sid + '_' + cell.dataset.gtid;
+  if (dirty[key] !== undefined) cell.classList.add('dirty');
+}
+
+function onCellKeydown(e, sid, gtid, maxScore) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const input = e.target;
+    onCellBlur(input, sid, gtid, maxScore);
+    const td = input.closest('td');
+    const tr = td.closest('tr');
+    const cellIndex = Array.from(tr.children).indexOf(td);
+    let next = tr.nextElementSibling;
+    while (next) {
+      const nextCell = next.children[cellIndex];
+      const nextInput = nextCell?.querySelector('.grade-cell input');
+      if (nextInput) { nextInput.focus(); break; }
+      next = next.nextElementSibling;
+    }
+  } else if (e.key === 'Tab') {
+    const input = e.target;
+    onCellBlur(input, sid, gtid, maxScore);
+  }
 }
 
 async function saveGrades() {
   const courseId = document.getElementById('courseFilter').value;
   const groupName = document.getElementById('groupFilter').value;
   const dateVal = document.getElementById('dateFilter').value;
-
   if (!courseId || !groupName || !dateVal) return toast('Kurs, guruh va sanani tanlang', 'error');
-
   const records = [];
   Object.keys(dirty).forEach(key => {
     const [studentId, gradeTypeId] = key.split('_');
-    records.push({
-      student_id: studentId,
-      grade_type_id: gradeTypeId,
-      course_id: courseId,
-      group_name: groupName,
-      score: dirty[key],
-      date: dateVal
-    });
+    const score = dirty[key];
+    records.push({ student_id: studentId, grade_type_id: gradeTypeId, course_id: courseId, group_name: groupName, score, date: dateVal });
   });
-
   if (!records.length) return toast('O\'zgartirilgan baho yo\'q', 'warning');
-
   const res = await api('/api/grades/bulk', 'POST', { records });
   if (res?.success) {
-    toast(`${res.saved} ta baho saqlandi`, 'success');
-    dirty = {};
+    toast(`${res.saved} ta baho saqlandi ✓`, 'success');
+    dirty = {}; updateUnsavedBadge();
     loadGrades();
   } else {
     toast(res?.message || 'Xatolik', 'error');
@@ -275,38 +373,32 @@ async function loadGradeTypes() {
   gradeTypes = await api('/api/grade-types');
   const container = document.getElementById('gradeTypesContent');
   if (!gradeTypes.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-tags"></i></div><p>Baho turlari yo\'q. Yangi tur qo\'shing</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-tags"></i></div><p>Baho turlari yo\'q</p></div>';
     return;
   }
-  container.innerHTML = `<div class="grade-types-list">${gradeTypes.map(gt => `
-    <span class="grade-type-tag">
+  container.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;padding:8px 0">${gradeTypes.map(gt => `
+    <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;background:${gt.color||'#6366f1'}15;border:1.5px solid ${gt.color||'#6366f1'}40;font-size:13px;font-weight:600">
       <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${gt.color||'#6366f1'}"></span>
-      ${esc(gt.name)} <small style="color:var(--text3)">1-${gt.max_score||5}</small>
-      <button class="remove-btn" onclick="deleteGradeType('${gt.id}')" title="O'chirish">&times;</button>
+      ${esc(gt.name)}
+      <small style="color:var(--text3);font-weight:400">1–${gt.max_score||5}</small>
+      <button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:2px 6px;margin-left:4px;font-size:14px" onclick="deleteGradeType('${gt.id}')" title="O'chirish">&times;</button>
     </span>
   `).join('')}</div>`;
 }
 
 async function addGradeType() {
-  const name = prompt('Baho turi nomini kiriting (mas: Test, Uy ishi, Imtihon):');
+  const name = prompt('Baho turi nomi (mas: Test, Uy ishi, Imtihon):');
   if (!name || !name.trim()) return;
   const res = await api('/api/grade-types', 'POST', { name: name.trim(), max_score: 5 });
-  if (res?.success) {
-    toast('Baho turi qo\'shildi', 'success');
-    loadGradeTypes();
-  } else {
-    toast(res?.message || 'Xatolik', 'error');
-  }
+  if (res?.success) { toast('Baho turi qo\'shildi', 'success'); loadGradeTypes(); }
+  else toast(res?.message || 'Xatolik', 'error');
 }
 
 async function deleteGradeType(id) {
   const gt = gradeTypes.find(t => t.id === id);
   if (!confirm(`"${gt?.name}" turini o'chirishni tasdiqlaysizmi?`)) return;
   const res = await api(`/api/grade-types/${id}`, 'DELETE');
-  if (res?.success) {
-    toast('Baho turi o\'chirildi', 'success');
-    loadGradeTypes();
-  }
+  if (res?.success) { toast('Baho turi o\'chirildi', 'success'); loadGradeTypes(); }
 }
 
 /* ─── History ─── */
@@ -315,42 +407,236 @@ async function loadHistory() {
   const courseId = document.getElementById('courseFilter').value;
   const groupName = document.getElementById('groupFilter').value;
   const container = document.getElementById('historyContent');
-
   let url = '/api/grades';
   const params = [];
   if (courseId) params.push(`course_id=${courseId}`);
   if (groupName) params.push(`group=${encodeURIComponent(groupName)}`);
   if (params.length) url += '?' + params.join('&');
-
   const grades = await api(url);
   if (!grades.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div><p>Baho tarixi yo\'q</p></div>';
     return;
   }
-
   container.innerHTML = `<div style="overflow-x:auto"><table class="data-table">
     <thead><tr><th>Sana</th><th>O'quvchi</th><th>Baho turi</th><th>Baho</th><th>Kurs</th><th>Guruh</th><th></th></tr></thead>
-    <tbody>${grades.slice(0, 100).map(g => `
-      <tr>
+    <tbody>${grades.slice(0, 100).map(g => {
+      const gt = gradeTypes.find(t=>t.id===g.grade_type_id);
+      return `<tr>
         <td>${esc(g.date||'')}</td>
         <td><b>${esc(g._student_name||'')}</b></td>
-        <td><span class="badge" style="background:${gradeTypes.find(t=>t.id===g.grade_type_id)?.color||'var(--primary)'}">${esc(g._grade_type_name||'')}</span></td>
-        <td style="text-align:center;font-weight:700;font-size:16px">${g.score||0}</td>
-        <td>${esc(g.course_id||'')}</td>
+        <td><span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${gt?.color||'var(--primary)'}22;color:${gt?.color||'var(--primary)'};font-weight:600;font-size:12px">${esc(g._grade_type_name||'')}</span></td>
+        <td style="text-align:center;font-weight:800;font-size:17px;color:${parseInt(g.score)>=4?'var(--success)':parseInt(g.score)>=3?'var(--primary)':parseInt(g.score)>=2?'var(--warning)':'var(--danger)'}">${g.score||0}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(g.course_id||'')}</td>
         <td><span class="badge badge-primary">${esc(g.group_name||'')}</span></td>
         <td><button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteGrade('${g.id}')"><i class="fas fa-trash"></i></button></td>
-      </tr>
-    `).join('')}</tbody></table></div>
-    ${grades.length > 100 ? '<div style="text-align:center;padding:12px;color:var(--text3)">Oxirgi 100 ta ko\'rsatilmoqda</div>' : ''}`;
+      </tr>`;
+    }).join('')}</tbody></table></div>
+    ${grades.length > 100 ? '<div style="text-align:center;padding:12px;color:var(--text3)">Oxirgi 100 ta</div>' : ''}`;
 }
 
 async function deleteGrade(id) {
   if (!confirm('Bahoni o\'chirishni tasdiqlaysizmi?')) return;
   const res = await api(`/api/grades/${id}`, 'DELETE');
-  if (res?.success) {
-    toast('Baho o\'chirildi', 'success');
-    loadHistory();
+  if (res?.success) { toast('Baho o\'chirildi', 'success'); loadHistory(); }
+}
+
+/* ─── Analysis ─── */
+
+let analysisData = null;
+let selectedStudentId = null;
+
+function avgClass(avg) {
+  if (avg === 0 || avg === null) return 'none';
+  if (avg >= 4.5) return 'excellent';
+  if (avg >= 3.5) return 'good';
+  if (avg >= 2.5) return 'ok';
+  return 'poor';
+}
+
+function avgColor(val, max) {
+  const ratio = val / max;
+  if (ratio >= 0.9) return '#16a34a';
+  if (ratio >= 0.7) return '#4f46e5';
+  if (ratio >= 0.5) return '#ca8a04';
+  return '#dc2626';
+}
+
+async function loadAnalysis() {
+  const courseId = document.getElementById('courseFilter').value;
+  const groupName = document.getElementById('groupFilter').value;
+  const container = document.getElementById('analysisContent');
+  if (!courseId || !groupName) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-chart-simple"></i></div><p>Kurs va guruhni tanlang</p></div>';
+    return;
   }
+  const res = await api(`/api/grades/analysis?course_id=${courseId}&group=${encodeURIComponent(groupName)}`);
+  if (!res || !res.students) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><p>Tahlil ma\'lumotlari mavjud emas</p></div>';
+    return;
+  }
+  analysisData = res;
+  if (!res.students.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-user-graduate"></i></div><p>Bu guruhda faol o'quvchilar yo'q</p></div>`;
+    return;
+  }
+
+  let html = `<div style="overflow-x:auto;max-height:480px;overflow-y:auto"><table class="analysis-table" style="width:100%">
+    <thead><tr>
+      <th style="text-align:left;min-width:180px">O'quvchi</th>
+      <th style="width:60px">O'rt.</th>
+      <th style="width:50px">Soni</th>`;
+  const gtIds = Object.keys(res.group_per_type);
+  gtIds.forEach(gtid => {
+    const pt = res.group_per_type[gtid];
+    html += `<th><span style="color:${pt.color}">${esc(pt.name)}</span><br><small style="font-weight:400;color:var(--text3);font-size:10px">1–${pt.max}</small></th>`;
+  });
+  html += `<th style="width:140px">Trend (6 oy)</th></tr></thead><tbody>`;
+
+  res.students.forEach((st, idx) => {
+    const rank = idx + 1;
+    html += `<tr class="${selectedStudentId === st.id ? 'active-row' : ''}">
+      <td class="name-cell" onclick="showStudentDetail('${st.id}')">
+        <span style="display:inline-flex;align-items:center;gap:8px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${st.name[0].toUpperCase()}</span>
+          <b>${esc(st.name)}</b>
+          <small style="color:var(--text3);font-weight:400">#${rank}</small>
+        </span>
+      </td>
+      <td><span class="analysis-avg ${avgClass(st.overall_avg)}">${st.overall_avg || '—'}</span></td>
+      <td style="font-size:13px;color:var(--text2)">${st.grade_count}</td>`;
+    gtIds.forEach(gtid => {
+      const pt = st.per_type[gtid];
+      const val = pt ? pt.avg : '—';
+      const color = pt ? avgColor(pt.avg, pt.max) : 'var(--text3)';
+      html += `<td style="font-weight:700;font-size:15px;color:${color}">${val}</td>`;
+    });
+    // Trend mini bars
+    html += `<td><div class="trend-bar">`;
+    const maxTrend = Math.max(...st.trend.map(t => t.avg), 0.1);
+    st.trend.forEach(t => {
+      const h = Math.max(4, (t.avg / maxTrend) * 28);
+      const barColor = avgColor(t.avg, 5);
+      html += `<div class="trend-bar-item" style="height:${h}px;background:${barColor}">
+        <span class="tooltip">${t.month}: ${t.avg} (${t.count})</span>
+      </div>`;
+    });
+    html += `</div></td></tr>`;
+  });
+
+  // Group average row
+  html += `<tr style="background:rgba(99,102,241,.04);font-weight:700">
+    <td style="text-align:left"><i class="fas fa-users" style="margin-right:8px"></i>Guruh o'rtachasi</td>
+    <td><span class="analysis-avg ${avgClass(res.group_avg)}">${res.group_avg || '—'}</span></td>
+    <td style="color:var(--text2)">${res.group_student_count}</td>`;
+  gtIds.forEach(gtid => {
+    const pt = res.group_per_type[gtid];
+    const color = pt ? avgColor(pt.avg, pt.max) : 'var(--text3)';
+    html += `<td style="color:${color}">${pt ? pt.avg : '—'}</td>`;
+  });
+  html += `<td></td></tr>`;
+
+  html += `</tbody></table></div>`;
+
+  // Detail panel
+  html += `<div id="analysisDetail" style="display:none"></div>`;
+
+  container.innerHTML = html;
+
+  // Auto-show detail for previously selected student
+  if (selectedStudentId) {
+    const found = res.students.find(s => s.id === selectedStudentId);
+    if (found) showStudentDetail(selectedStudentId);
+    else selectedStudentId = null;
+  }
+}
+
+function showStudentDetail(sid) {
+  selectedStudentId = sid;
+  if (!analysisData) return;
+  const st = analysisData.students.find(s => s.id === sid);
+  if (!st) return;
+
+  // Highlight row
+  document.querySelectorAll('.analysis-table tbody tr').forEach(tr => tr.classList.remove('active-row'));
+  const rows = document.querySelectorAll('.analysis-table tbody tr');
+  for (let i = 0; i < analysisData.students.length; i++) {
+    if (analysisData.students[i].id === sid && rows[i]) {
+      rows[i].classList.add('active-row');
+      break;
+    }
+  }
+
+  const detail = document.getElementById('analysisDetail');
+  if (!detail) return;
+
+  const groupPerType = analysisData.group_per_type;
+  let html = `<div class="detail-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h4 style="margin:0"><i class="fas fa-user-graduate"></i> ${esc(st.name)}</h4>
+      <button class="btn btn-ghost btn-sm" onclick="closeStudentDetail()"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+      <div style="text-align:center">
+        <div class="analysis-avg ${avgClass(st.overall_avg)}" style="width:56px;height:56px;font-size:22px">${st.overall_avg || '—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Umumiy o'rtacha</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--text)">${st.grade_count}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Jami baholar</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--primary)">${analysisData.group_avg || '—'}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Guruh o'rtachasi</div>
+      </div>
+    </div>`;
+
+  // Per-type breakdown with bars
+  html += `<h4><i class="fas fa-list"></i> Baho turlari bo'yicha</h4>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">`;
+  Object.keys(st.per_type).forEach(gtid => {
+    const pt = st.per_type[gtid];
+    const gp = groupPerType[gtid];
+    const pct = pt.max > 0 ? Math.round((pt.avg / pt.max) * 100) : 0;
+    html += `<div style="display:flex;align-items:center;gap:10px">
+      <span class="type-badge" style="background:${pt.color}18;color:${pt.color};min-width:80px">${esc(pt.name)}</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${pt.color}"></div>
+      </div>
+      <span style="font-weight:700;font-size:14px;min-width:50px;color:${avgColor(pt.avg, pt.max)}">${pt.avg}</span>
+      <small style="color:var(--text3);min-width:30px">/${pt.max}</small>
+      <small style="color:var(--text2);min-width:40px">${pt.count} ta</small>
+      ${gp ? `<small style="color:var(--text3)">guruh: ${gp.avg}</small>` : ''}
+      ${gp && pt.avg > gp.avg ? `<small style="color:#16a34a"><i class="fas fa-arrow-up"></i></small>` : (gp && pt.avg < gp.avg ? `<small style="color:#dc2626"><i class="fas fa-arrow-down"></i></small>` : '')}
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Trend
+  html += `<h4><i class="fas fa-chart-line"></i> Oylik trend</h4>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">`;
+  st.trend.forEach(t => {
+    const barColor = avgColor(t.avg, 5);
+    const h = Math.max(6, (t.avg / 5) * 80);
+    html += `<div style="text-align:center;flex:1;min-width:50px">
+      <div style="display:flex;align-items:flex-end;justify-content:center;height:90px">
+        <div style="width:28px;border-radius:4px 4px 0 0;height:${h}px;background:${barColor};transition:height .3s"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-top:4px">${t.avg}</div>
+      <div style="font-size:10px;color:var(--text3)">${t.month.slice(5)}</div>
+      <div style="font-size:9px;color:var(--text3)">(${t.count})</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  detail.style.display = '';
+  detail.innerHTML = html;
+}
+
+function closeStudentDetail() {
+  selectedStudentId = null;
+  const detail = document.getElementById('analysisDetail');
+  if (detail) detail.style.display = 'none';
+  document.querySelectorAll('.analysis-table tbody tr').forEach(tr => tr.classList.remove('active-row'));
 }
 </script>
 {% endblock %}

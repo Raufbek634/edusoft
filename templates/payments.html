@@ -122,17 +122,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('payMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     document.getElementById('debtMonth').value = document.getElementById('payMonth').value;
     allStudents = await api('/api/students');
+    loadPayments();
+    loadDebtors();
+    loadChecks();
+    loadPendingCheckAlert();
+    document.getElementById('paySearch').addEventListener('input', function() {
+      clearTimeout(paySearchTimer);
+      paySearchTimer = setTimeout(loadPayments, 300);
+    });
   } catch (e) {
     console.error('Init xatosi:', e);
   }
-  loadPayments();
-  loadDebtors();
-  loadChecks();
-  loadPendingCheckAlert();
-  document.getElementById('paySearch').addEventListener('input', function() {
-    clearTimeout(paySearchTimer);
-    paySearchTimer = setTimeout(loadPayments, 300);
-  });
 });
 
 function switchTab(name, btn) {
