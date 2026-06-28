@@ -3659,7 +3659,7 @@ def create_grade_type():
     gt = {
         'id': f"GRT-{uuid.uuid4().hex[:8].upper()}",
         'name': name,
-        'max_score': min(safe_int(data.get('max_score', 5), 5), 10),
+        'max_score': min(safe_int(data.get('max_score', 5), 5), 100),
         'color': data.get('color', '#6366f1'),
         'created_at': datetime.now().isoformat()
     }
@@ -4331,9 +4331,10 @@ def parent_grades():
     student_grades = [g for g in grades if g['student_id'] == student_id]
     grade_types = {gt['id']: gt for gt in load_json('grade_types.json', filter_kg)}
     for g in student_grades:
-        gt = grade_types.get(g['grade_type_id'])
+        gt = grade_types.get(g.get('grade_type_id', ''))
         g['_type_name'] = gt['name'] if gt else '—'
         g['_type_color'] = gt.get('color', '#6366f1') if gt else '#6366f1'
+        g['_type_max'] = gt.get('max_score', 5) if gt else 5
     student_grades.sort(key=lambda x: x.get('date', ''), reverse=True)
     return jsonify({'success': True, 'grades': student_grades[:50]})
 

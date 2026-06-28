@@ -196,10 +196,12 @@ function switchTab(name, btn) {
 
 function gradeCellClass(score, maxScore) {
   const v = parseInt(score) || 0;
+  const m = parseInt(maxScore) || 5;
   if (v === 0) return 'empty';
-  if (v === maxScore || v >= 4) return 'perfect';
-  if (v >= 3) return 'good';
-  if (v >= 2) return 'ok';
+  const ratio = v / m;
+  if (ratio >= 0.9) return 'perfect';
+  if (ratio >= 0.7) return 'good';
+  if (ratio >= 0.5) return 'ok';
   return 'bad';
 }
 
@@ -389,7 +391,9 @@ async function loadGradeTypes() {
 async function addGradeType() {
   const name = prompt('Baho turi nomi (mas: Test, Uy ishi, Imtihon):');
   if (!name || !name.trim()) return;
-  const res = await api('/api/grade-types', 'POST', { name: name.trim(), max_score: 5 });
+  const maxStr = prompt(`Maksimal ball (${name.trim()} uchun):`, '5');
+  const maxScore = Math.min(Math.max(parseInt(maxStr) || 5, 1), 100);
+  const res = await api('/api/grade-types', 'POST', { name: name.trim(), max_score: maxScore });
   if (res?.success) { toast('Baho turi qo\'shildi', 'success'); loadGradeTypes(); }
   else toast(res?.message || 'Xatolik', 'error');
 }
@@ -445,11 +449,13 @@ async function deleteGrade(id) {
 let analysisData = null;
 let selectedStudentId = null;
 
-function avgClass(avg) {
+function avgClass(avg, maxScore) {
   if (avg === 0 || avg === null) return 'none';
-  if (avg >= 4.5) return 'excellent';
-  if (avg >= 3.5) return 'good';
-  if (avg >= 2.5) return 'ok';
+  const m = maxScore || 5;
+  const ratio = avg / m;
+  if (ratio >= 0.9) return 'excellent';
+  if (ratio >= 0.7) return 'good';
+  if (ratio >= 0.5) return 'ok';
   return 'poor';
 }
 
@@ -480,6 +486,7 @@ async function loadAnalysis() {
     return;
   }
 
+  const globalMaxScore = Math.max(...Object.values(res.group_per_type).map(pt => pt.max || 5), 5);
   let html = `<div style="overflow-x:auto;max-height:480px;overflow-y:auto"><table class="analysis-table" style="width:100%">
     <thead><tr>
       <th style="text-align:left;min-width:180px">O'quvchi</th>
@@ -502,7 +509,7 @@ async function loadAnalysis() {
           <small style="color:var(--text3);font-weight:400">#${rank}</small>
         </span>
       </td>
-      <td><span class="analysis-avg ${avgClass(st.overall_avg)}">${st.overall_avg || '—'}</span></td>
+      <td><span class="analysis-avg ${avgClass(st.overall_avg, globalMaxScore)}">${st.overall_avg || '—'}</span></td>
       <td style="font-size:13px;color:var(--text2)">${st.grade_count}</td>`;
     gtIds.forEach(gtid => {
       const pt = st.per_type[gtid];
@@ -515,9 +522,9 @@ async function loadAnalysis() {
     const maxTrend = Math.max(...st.trend.map(t => t.avg), 0.1);
     st.trend.forEach(t => {
       const h = Math.max(4, (t.avg / maxTrend) * 28);
-      const barColor = avgColor(t.avg, 5);
+      const barColor = avgColor(t.avg, globalMaxScore);
       html += `<div class="trend-bar-item" style="height:${h}px;background:${barColor}">
-        <span class="tooltip">${t.month}: ${t.avg} (${t.count})</span>
+        <span class="tooltip">${t.month}: ${t.avg} / ${globalMaxScore} (${t.count})</span>
       </div>`;
     });
     html += `</div></td></tr>`;
@@ -526,7 +533,7 @@ async function loadAnalysis() {
   // Group average row
   html += `<tr style="background:rgba(99,102,241,.04);font-weight:700">
     <td style="text-align:left"><i class="fas fa-users" style="margin-right:8px"></i>Guruh o'rtachasi</td>
-    <td><span class="analysis-avg ${avgClass(res.group_avg)}">${res.group_avg || '—'}</span></td>
+    <td><span class="analysis-avg ${avgClass(res.group_avg, globalMaxScore)}">${res.group_avg || '—'}</span></td>
     <td style="color:var(--text2)">${res.group_student_count}</td>`;
   gtIds.forEach(gtid => {
     const pt = res.group_per_type[gtid];
@@ -570,6 +577,7 @@ function showStudentDetail(sid) {
   if (!detail) return;
 
   const groupPerType = analysisData.group_per_type;
+  const detailMaxScore = Math.max(...Object.values(groupPerType).map(pt => pt.max || 5), 5);
   let html = `<div class="detail-panel">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h4 style="margin:0"><i class="fas fa-user-graduate"></i> ${esc(st.name)}</h4>
@@ -577,7 +585,7 @@ function showStudentDetail(sid) {
     </div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
       <div style="text-align:center">
-        <div class="analysis-avg ${avgClass(st.overall_avg)}" style="width:56px;height:56px;font-size:22px">${st.overall_avg || '—'}</div>
+        <div class="analysis-avg ${avgClass(st.overall_avg, detailMaxScore)}" style="width:56px;height:56px;font-size:22px">${st.overall_avg || '—'}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:4px">Umumiy o'rtacha</div>
       </div>
       <div style="text-align:center">
@@ -615,8 +623,8 @@ function showStudentDetail(sid) {
   html += `<h4><i class="fas fa-chart-line"></i> Oylik trend</h4>
     <div style="display:flex;gap:12px;flex-wrap:wrap">`;
   st.trend.forEach(t => {
-    const barColor = avgColor(t.avg, 5);
-    const h = Math.max(6, (t.avg / 5) * 80);
+    const barColor = avgColor(t.avg, detailMaxScore);
+    const h = Math.max(6, (t.avg / detailMaxScore) * 80);
     html += `<div style="text-align:center;flex:1;min-width:50px">
       <div style="display:flex;align-items:flex-end;justify-content:center;height:90px">
         <div style="width:28px;border-radius:4px 4px 0 0;height:${h}px;background:${barColor};transition:height .3s"></div>
