@@ -272,10 +272,14 @@ function updateUnsavedBadge() {
 
 function getWorkingDays(from, to) {
   const days = [];
-  const d = new Date(from);
-  while (d <= new Date(to)) {
+  const d = new Date(from + 'T00:00:00');
+  const end = new Date(to + 'T00:00:00');
+  while (d <= end) {
     const dow = d.getDay();
-    if (dow !== 0) days.push(d.toISOString().split('T')[0]); // Mon–Sat
+    if (dow !== 0) {
+      const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+      days.push(y+'-'+m+'-'+dd);
+    }
     d.setDate(d.getDate() + 1);
   }
   return days;
@@ -323,12 +327,14 @@ async function loadGrades() {
 
   // Determine date range
   let dateFrom, dateTo;
-  const today = new Date().toISOString().split('T')[0];
+  function todayStr() { const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
+  const today = todayStr();
   if (dateFromVal && dateToVal) { dateFrom = dateFromVal; dateTo = dateToVal; }
   else {
     dateTo = today;
     const d = new Date(); d.setDate(d.getDate() - dateRange * 1.5);
-    dateFrom = d.toISOString().split('T')[0];
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    dateFrom = y+'-'+m+'-'+dd;
   }
 
   const dates = getWorkingDays(dateFrom, dateTo);
@@ -352,7 +358,7 @@ async function loadGrades() {
   // Build table
   let html = `<div style="overflow-x:auto;overflow-y:auto;max-height:540px"><table class="excel-table" style="font-size:12.5px"><thead><tr>
     <th style="min-width:180px;text-align:left"><i class="fas fa-user-graduate"></i> O'quvchi</th>`;
-  function fmtDate(d) { const p=d.split('-'); return p[2]+'/'+p[1]; }
+  function fmtDate(d) { const p=d.split('-'); const ms=['','Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek']; return parseInt(p[2])+' '+ms[parseInt(p[1])]; }
   dates.forEach(d => {
     const isToday = d === today;
     html += `<th class="${isToday?'date-col-header today':'date-col-header'}" title="${d}">${fmtDate(d)}</th>`;
